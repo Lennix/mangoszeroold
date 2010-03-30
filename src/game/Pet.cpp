@@ -1715,6 +1715,17 @@ void Pet::ToggleAutocast(uint32 spellid, bool apply)
     if(IsPassiveSpell(spellid))
         return;
 
+    // Sacrifice is not autocastable
+    switch (spellid) {
+	case 7812:
+	case 19438:
+	case 19440:
+	case 19441:
+	case 19442:
+	case 19443:
+		return;
+    }
+
     PetSpellMap::iterator itr = m_spells.find(spellid);
 
     uint32 i;
