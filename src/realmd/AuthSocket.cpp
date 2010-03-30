@@ -943,12 +943,19 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
         case 5875:                                          // 1.12.1
         case 6005:                                          // 1.12.2
         {
+            uint32 size = 0;
+            for(RealmList::RealmMap::const_iterator  i = sRealmlist.begin(); i != sRealmlist.end(); ++i)
+            {
+                if (_accountSecurityLevel >= i->second.allowedSecurityLevel)
+                    size ++;
+            }
             pkt << uint32(0);
-            pkt << uint8(sRealmList.size());
+            pkt << uint8(size);
 
             for(RealmList::RealmMap::const_iterator  i = sRealmList.begin(); i != sRealmList.end(); ++i)
             {
-                uint8 AmountOfCharacters;
+                if (_accountSecurityLevel >= i->second.allowedSecurityLevel) {
+		uint8 AmountOfCharacters;
 
                 // No SQL injection. id of realm is controlled by the database.
                 QueryResult *result = loginDatabase.PQuery( "SELECT numchars FROM realmcharacters WHERE realmid = '%d' AND acctid='%u'", i->second.m_ID, acctid);
@@ -974,6 +981,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 pkt << uint8(i->second.timezone);                   // realm category
                 pkt << uint8(0x00);                                 // unk, may be realm number/id?
             }
+	    }
 
             pkt << uint8(0x00);
             pkt << uint8(0x02);
