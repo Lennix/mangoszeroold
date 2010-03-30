@@ -944,7 +944,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
         case 6005:                                          // 1.12.2
         {
             uint32 size = 0;
-            for(RealmList::RealmMap::const_iterator  i = sRealmlist.begin(); i != sRealmlist.end(); ++i)
+            for(RealmList::RealmMap::const_iterator  i = sRealmList.begin(); i != sRealmList.end(); ++i)
             {
                 if (_accountSecurityLevel >= i->second.allowedSecurityLevel)
                     size ++;
