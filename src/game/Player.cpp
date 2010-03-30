@@ -13231,7 +13231,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     // remember loaded power/health values to restore after stats initialization and modifier applying
     uint32 savedHealth = GetHealth();
     if(savedHealth == 1)
-        mdeathState = DEAD;
+        m_deathState = DEAD;
     uint32 savedPower[MAX_POWERS];
     for(uint32 i = 0; i < MAX_POWERS; ++i)
         savedPower[i] = GetPower(Powers(i));
