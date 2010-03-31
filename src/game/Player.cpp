@@ -9107,7 +9107,7 @@ uint8 Player::CanUseItem( Item *pItem, bool not_loading ) const
             if (pProto->RequiredSpell != 0 && !HasSpell(pProto->RequiredSpell))
                 return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
 
-            if( not_loading && GetHonorRank() < pProto->RequiredHonorRank )
+            if( not_loading && pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank -4 ) // Ehrenrang muss um 4 erniedrigt werden, da ehrenlose Ränge ebenfalls gezählt
                 return EQUIP_ERR_CANT_EQUIP_RANK;
 
             if (pProto->RequiredReputationFaction && uint32(GetReputationRank(pProto->RequiredReputationFaction)) < pProto->RequiredReputationRank)
@@ -9139,7 +9139,7 @@ bool Player::CanUseItem( ItemPrototype const *pProto )
         }
         if( pProto->RequiredSpell != 0 && !HasSpell( pProto->RequiredSpell ) )
             return false;
-        if( GetHonorRank() < pProto->RequiredHonorRank )
+        if( pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank - 4 )
             return false;
         if( getLevel() < pProto->RequiredLevel )
             return false;
@@ -9171,7 +9171,7 @@ uint8 Player::CanUseAmmo( uint32 item ) const
         }
         if( pProto->RequiredSpell != 0 && !HasSpell( pProto->RequiredSpell ) )
             return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
-        if( GetHonorRank() < pProto->RequiredHonorRank )
+        if( pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank - 4 )
             return EQUIP_ERR_CANT_EQUIP_RANK;
         /*if( GetReputationMgr().GetReputation() < pProto->RequiredReputation )
         return EQUIP_ERR_CANT_EQUIP_REPUTATION;
@@ -15982,7 +15982,7 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
     }
 
     // not check level requiremnt for normal items (PvP related bonus items is another case)
-    if(pProto->RequiredHonorRank && (GetHonorHighestRank() < pProto->RequiredHonorRank || getLevel() < pProto->RequiredLevel) )
+    if(pProto->RequiredHonorRank && (GetHonorHighestRank() < pProto->RequiredHonorRank-4 || getLevel() < pProto->RequiredLevel) )
     {
         SendBuyError(BUY_ERR_RANK_REQUIRE, pCreature, item, 0);
         return false;
