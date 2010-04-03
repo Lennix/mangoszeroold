@@ -345,7 +345,8 @@ Player::Player (WorldSession *session): Unit(), m_reputationMgr(this)
     m_auraUpdateMask = 0;
 
     m_rank_points = 0.0f;
-    m_honor_rank  = 0.0f;
+    m_honor_rank  = 0;
+    m_highest_rank = 0;
     m_stored_honorableKills = 0;
     m_stored_dishonorableKills = 0;
 
@@ -582,10 +583,6 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
     SetUInt32Value( PLAYER_GUILDID, 0 );
     SetUInt32Value( PLAYER_GUILDRANK, 0 );
     SetUInt32Value( PLAYER_GUILD_TIMESTAMP, 0 );
-
-    m_stored_honor = 0.0f;
-    m_highest_rank = 0;
-    m_standing_pos = 0;
 
     // set starting level
     if (GetSession()->GetSecurity() >= SEC_MODERATOR)
@@ -3770,8 +3767,7 @@ void Player::BuildPlayerRepop()
     }
 
     // create a corpse and place it at the player's location
-    CreateCorpse();
-    Corpse *corpse = GetCorpse();
+    Corpse *corpse = CreateCorpse();
     if(!corpse)
     {
         sLog.outError("Error creating corpse for Player %s [%u]", GetName(), GetGUIDLow());
@@ -3895,7 +3891,7 @@ void Player::KillPlayer()
     UpdateObjectVisibility();
 }
 
-void Player::CreateCorpse()
+Corpse* Player::CreateCorpse()
 {
     // prevent existence 2 corpse for player
     SpawnCorpseBones();
@@ -3905,10 +3901,10 @@ void Player::CreateCorpse()
     Corpse *corpse = new Corpse( (m_ExtraFlags & PLAYER_EXTRA_PVP_DEATH) ? CORPSE_RESURRECTABLE_PVP : CORPSE_RESURRECTABLE_PVE );
     SetPvPDeath(false);
 
-    if(!corpse->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_CORPSE), this))
+    if (!corpse->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_CORPSE), this))
     {
         delete corpse;
-        return;
+        return NULL;
     }
 
     _uf = GetUInt32Value(UNIT_FIELD_BYTES_0);
@@ -3929,11 +3925,11 @@ void Player::CreateCorpse()
     corpse->SetUInt32Value( CORPSE_FIELD_BYTES_2, _cfb2 );
 
     uint32 flags = CORPSE_FLAG_UNK2;
-    if(HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM))
+    if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM))
         flags |= CORPSE_FLAG_HIDE_HELM;
-    if(HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK))
+    if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK))
         flags |= CORPSE_FLAG_HIDE_CLOAK;
-    if(InBattleGround())
+    if (InBattleGround())
         flags |= CORPSE_FLAG_LOOTABLE;                      // to be able to remove insignia
     corpse->SetUInt32Value( CORPSE_FIELD_FLAGS, flags );
 
@@ -3946,7 +3942,7 @@ void Player::CreateCorpse()
     uint32 _cfi;
     for (int i = 0; i < EQUIPMENT_SLOT_END; ++i)
     {
-        if(m_items[i])
+        if (m_items[i])
         {
             iDisplayID = m_items[i]->GetProto()->DisplayInfoID;
             iIventoryType = (uint16)m_items[i]->GetProto()->InventoryType;
@@ -3956,14 +3952,13 @@ void Player::CreateCorpse()
         }
     }
 
-    // we don't SaveToDB for players in battlegrounds so don't do it for corpses either
-    const MapEntry *entry = sMapStore.LookupEntry(corpse->GetMapId());
-    ASSERT(entry);
-    if(entry->map_type != MAP_BATTLEGROUND)
+    // we not need saved corpses for BG/arenas
+    if (!GetMap()->IsBattleGround())
         corpse->SaveToDB();
 
     // register for player, but not show
     sObjectAccessor.AddCorpse(corpse);
+    return corpse;
 }
 
 void Player::SpawnCorpseBones()
@@ -5570,7 +5565,7 @@ void Player::UpdateHonor()
 
     //RANK POINTS
     HonorStanding *standing = sObjectMgr.GetHonorStandingByGUID(GetGUIDLow(),GetTeam());
-    uint32 rankP = GetStoredHonor();
+    float rankP = GetStoredHonor();
     if (standing)
         rankP += standing->rpEarning;
 
@@ -5578,22 +5573,22 @@ void Player::UpdateHonor()
 
     //RIGHEST RANK
     //If the new rank is highest then the old one, then m_highest_rank is updated
-    SetHonorRank(MaNGOS::Honor::CalculateHonorRank(GetRankPoints(),total_honorableKills));
-    
-    if ( GetHonorRank() > GetHonorHighestRank() )
-        SetHonorHighestRank( GetHonorRank() );
+    HonorRankInfo prk = MaNGOS::Honor::CalculateHonorRank(GetRankPoints());
+    SetHonorRank(prk.rank);
+    if (prk.visualRank > 0 && prk.visualRank > GetHonorHighestRank() )
+        SetHonorHighestRank(prk.visualRank);
 
+    // rank points is sent to client with same size of uint8(255) for each rank 
+    // so we set it in correct rate:
+    uint32 RP = uint32( GetRankPoints() >= 0 ? GetRankPoints() : -1 * GetRankPoints() );
+    RP = int8( ( (RP-prk.minRP)/(prk.maxRP-prk.minRP) ) * ( prk.positive ? 255 : -255) ); 
+    
 
     //NEXT RANK BAR
     //PLAYER_FIELD_HONOR_BAR
-    SetUInt32Value(PLAYER_FIELD_BYTES2, (uint32)GetRankPoints() > 0 ? GetRankPoints() : 0.0f);
-
+    SetInt32Value(PLAYER_FIELD_BYTES2, RP);
     //RANK (Patent)
-    if ( GetHonorRank() )
-        SetUInt32Value(PLAYER_BYTES_3, (( GetHonorRank() << 24) + 0x04000000) + (m_drunk & 0xFFFE) + getGender());
-    else
-        SetUInt32Value(PLAYER_BYTES_3, (m_drunk & 0xFFFE) + getGender());
-
+    SetUInt32Value(PLAYER_BYTES_3, ( GetHonorRank() << 24) + (m_drunk & 0xFFFE) + getGender());
     //TODAY
     SetUInt32Value(PLAYER_FIELD_SESSION_KILLS, (today_dishonorableKills << 16) + today_honorableKills );
     //YESTERDAY
@@ -5606,13 +5601,11 @@ void Player::UpdateHonor()
     SetUInt32Value(PLAYER_FIELD_LAST_WEEK_KILLS, lastWeekKills);
     SetUInt32Value(PLAYER_FIELD_LAST_WEEK_CONTRIBUTION, (uint32) (lastWeekHonor > 0.0f ? lastWeekHonor : 0.0f));
     SetUInt32Value(PLAYER_FIELD_LAST_WEEK_RANK, GetHonorLastWeekStandingPos());
-
     //LIFE TIME
     SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, total_honorableKills);
     SetUInt32Value(PLAYER_FIELD_LIFETIME_DISHONORABLE_KILLS, total_dishonorableKills);
-    //SetUInt32Value(PLAYER_FIELD_SESSION_KILLS, (GetUInt32Value(PLAYER_FIELD_LIFETIME_DISHONORABLE_KILLS) << 16) + GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS) );
     //TODO: Into what field we need to set it? Fix it!
-    SetUInt32Value(PLAYER_FIELD_PVP_MEDALS/*???*/, (GetHonorHighestRank() != 0 ? ((GetHonorHighestRank() << 24) + 0x040F0001) : 0) );
+    SetUInt32Value(PLAYER_FIELD_PVP_MEDALS/*???*/, (GetHonorHighestRank() << 24) + 0x040F0001);
 }
 
 void Player::ResetHonor()
@@ -5726,7 +5719,7 @@ bool Player::AddHonorCP(float honor,uint8 type,uint32 victim,uint8 victimType)
     {
         // DK penalties are subtracted from your RP score immediately 
         // and are not included in weekly adjustment
-        float RP = GetRankPoints() > CP.honorPoints ? GetRankPoints() - CP.honorPoints : 0;
+        float RP = GetRankPoints() > CP.honorPoints ? GetRankPoints() - CP.honorPoints : 0; // remove this check to have negative ranks
         SetStoredHonor(RP);
     }   
     
@@ -12307,7 +12300,7 @@ void Player::GroupEventHappens( uint32 questId, WorldObject const* pEventObject 
             Player *pGroupGuy = itr->getSource();
 
             // for any leave or dead (with not released body) group member at appropriate distance
-            if( pGroupGuy && pGroupGuy->IsAtGroupRewardDistance(pEventObject) && !pGroupGuy->GetCorpse() )
+            if( pGroupGuy && pGroupGuy->IsAtGroupRewardDistance(pEventObject) && !pGroupGuy->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) )
                 pGroupGuy->AreaExploredOrEventHappens(questId);
         }
     }
@@ -14389,7 +14382,7 @@ void Player::SaveToDB()
     ss << m_taxi.SaveTaxiDestinationsToString();
 
     ss << "', ";
-    ss << m_highest_rank;
+    ss << (int32)m_highest_rank;
 
     ss << ", ";
     ss << m_standing_pos;
@@ -15982,7 +15975,7 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
     }
 
     // not check level requiremnt for normal items (PvP related bonus items is another case)
-    if(pProto->RequiredHonorRank && (GetHonorHighestRank() < pProto->RequiredHonorRank-4 || getLevel() < pProto->RequiredLevel) )
+    if(pProto->RequiredHonorRank && (GetHonorHighestRank() < (int8)pProto->RequiredHonorRank || getLevel() < pProto->RequiredLevel) )
     {
         SendBuyError(BUY_ERR_RANK_REQUIRE, pCreature, item, 0);
         return false;
@@ -17375,7 +17368,7 @@ bool Player::RewardPlayerAndGroupAtKill(Unit* pVictim)
                     }
 
                     // quest objectives updated only for alive group member or dead but with not released body
-                    if(pGroupGuy->isAlive()|| !pGroupGuy->GetCorpse())
+                    if(pGroupGuy->isAlive()|| !pGroupGuy->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
                     {
                         // normal creature (not pet/etc) can be only in !PvP case
                         if(pVictim->GetTypeId()==TYPEID_UNIT)
@@ -17427,7 +17420,7 @@ void Player::RewardPlayerAndGroupAtEvent(uint32 creature_id, WorldObject* pRewar
                 continue;                               // member (alive or dead) or his corpse at req. distance
 
             // quest objectives updated only for alive group member or dead but with not released body
-            if(pGroupGuy->isAlive()|| !pGroupGuy->GetCorpse())
+            if(pGroupGuy->isAlive()|| !pGroupGuy->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
                 pGroupGuy->KilledMonsterCredit(creature_id, creature_guid);
         }
     }

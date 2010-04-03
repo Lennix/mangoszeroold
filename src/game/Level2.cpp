@@ -42,7 +42,6 @@
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "GlobalEvents.h"
 #include "Formulas.h"
 
 #include "TargetedMovementGenerator.h"                      // for HandleNpcUnFollowCommand
@@ -3518,9 +3517,9 @@ bool ChatHandler::HandleShowHonor(const char* args)
     if (!target)
         target = m_session->GetPlayer();
 
+    int8 highest_rank               = target->GetHonorHighestRank();
     uint32 dishonorable_kills       = target->GetUInt32Value(PLAYER_FIELD_LIFETIME_DISHONORABLE_KILLS);
     uint32 honorable_kills          = target->GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS);
-    uint32 highest_rank             = target->GetHonorHighestRank() < HONOR_RANK_COUNT ?  target->GetHonorHighestRank() : 0;
     uint32 today_honorable_kills    = target->GetUInt32Value(PLAYER_FIELD_SESSION_KILLS);
     uint32 today_dishonorable_kills = target->GetUInt32Value(PLAYER_FIELD_SESSION_KILLS)>>16;
     uint32 yesterday_kills          = target->GetUInt32Value(PLAYER_FIELD_YESTERDAY_KILLS);
@@ -3534,6 +3533,10 @@ bool ChatHandler::HandleShowHonor(const char* args)
     static int16 alliance_ranks[HONOR_RANK_COUNT] =
     {
         LANG_NO_RANK,
+        LANG_RANK_PARIAH,
+        LANG_RANK_OUTLAW,
+        LANG_RANK_EXILED,
+        LANG_RANK_DISHONORED,
         LANG_ALI_PRIVATE,
         LANG_ALI_CORPORAL,
         LANG_ALI_SERGEANT,
@@ -3548,11 +3551,15 @@ bool ChatHandler::HandleShowHonor(const char* args)
         LANG_ALI_MARSHAL,
         LANG_ALI_FIELD_MARSHAL,
         LANG_ALI_GRAND_MARSHAL,
-        LANG_GAME_MASTER
+        //LANG_GAME_MASTER
     };
     static int16 horde_ranks[HONOR_RANK_COUNT] =
     {
         LANG_NO_RANK,
+        LANG_RANK_PARIAH,
+        LANG_RANK_OUTLAW,
+        LANG_RANK_EXILED,
+        LANG_RANK_DISHONORED,
         LANG_HRD_SCOUT,
         LANG_HRD_GRUNT,
         LANG_HRD_SERGEANT,
@@ -3567,7 +3574,7 @@ bool ChatHandler::HandleShowHonor(const char* args)
         LANG_HRD_GENERAL,
         LANG_HRD_WARLORD,
         LANG_HRD_HIGH_WARLORD,
-        LANG_GAME_MASTER
+        //LANG_GAME_MASTER
     };
     char const* rank_name = NULL;
     char const* hrank_name = NULL;
@@ -3682,7 +3689,7 @@ bool ChatHandler::HandleModifyHonorCommand (const char* args)
     if (hasStringAbbr(field.c_str(),"points"))
        target->SetUInt32Value(PLAYER_FIELD_BYTES2, (uint32)amount);
     else if (hasStringAbbr(field.c_str(),"rank"))
-       target->SetInt32Value(PLAYER_BYTES_3, (( amount << 24) + 0x04000000) + (target->GetDrunkValue() & 0xFFFE) + target->getGender());
+       target->SetInt32Value(PLAYER_BYTES_3, ( amount << 24) + (target->GetDrunkValue() & 0xFFFE) + target->getGender());
     else if (hasStringAbbr(field.c_str(),"todaykills"))
        target->SetUInt32Value(PLAYER_FIELD_SESSION_KILLS, ((uint32)amount << 16) + (uint32)amount );
     else if (hasStringAbbr(field.c_str(),"yesterdaykills"))
@@ -4180,7 +4187,7 @@ bool ChatHandler::LookupPlayerSearchCommand(QueryResult* result, int32 limit)
 /// Triggering corpses expire check in world
 bool ChatHandler::HandleServerCorpsesCommand(const char* /*args*/)
 {
-    CorpsesErase();
+    sObjectAccessor.RemoveOldCorpses();
     return true;
 }
 
