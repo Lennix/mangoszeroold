@@ -5139,9 +5139,10 @@ void Aura::PeriodicTick()
                 return;
 
             // heal for caster damage (must be alive)
-            if(m_target != pCaster && GetSpellProto()->SpellVisual==163 && !pCaster->isAlive())
+            if((m_target != pCaster && GetSpellProto()->SpellVisual==163))
                 return;
-
+			if(!pCaster->isAlive())
+				return;
             // ignore non positive values (can be result apply spellmods to aura damage
             uint32 amount = m_modifier.m_amount > 0 ? m_modifier.m_amount : 0;
 

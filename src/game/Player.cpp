@@ -9100,7 +9100,7 @@ uint8 Player::CanUseItem( Item *pItem, bool not_loading ) const
             if (pProto->RequiredSpell != 0 && !HasSpell(pProto->RequiredSpell))
                 return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
 
-            if( not_loading && pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank -4 ) // Ehrenrang muss um 4 erniedrigt werden, da ehrenlose Ränge ebenfalls gezählt
+            if( not_loading && pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank) // Ehrenrang muss um 4 erniedrigt werden, da ehrenlose Ränge ebenfalls gezählt
                 return EQUIP_ERR_CANT_EQUIP_RANK;
 
             if (pProto->RequiredReputationFaction && uint32(GetReputationRank(pProto->RequiredReputationFaction)) < pProto->RequiredReputationRank)
@@ -9132,7 +9132,7 @@ bool Player::CanUseItem( ItemPrototype const *pProto )
         }
         if( pProto->RequiredSpell != 0 && !HasSpell( pProto->RequiredSpell ) )
             return false;
-        if( pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank - 4 )
+        if( pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank)
             return false;
         if( getLevel() < pProto->RequiredLevel )
             return false;
@@ -9164,7 +9164,7 @@ uint8 Player::CanUseAmmo( uint32 item ) const
         }
         if( pProto->RequiredSpell != 0 && !HasSpell( pProto->RequiredSpell ) )
             return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
-        if( pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank - 4 )
+        if( pProto->RequiredHonorRank && GetHonorRank() < pProto->RequiredHonorRank)
             return EQUIP_ERR_CANT_EQUIP_RANK;
         /*if( GetReputationMgr().GetReputation() < pProto->RequiredReputation )
         return EQUIP_ERR_CANT_EQUIP_REPUTATION;
