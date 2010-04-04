@@ -300,7 +300,7 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
         return;
     }
 
-    const message[256];
+    char message[256];
     uint8 type = 0;
     bool set = false;
 
