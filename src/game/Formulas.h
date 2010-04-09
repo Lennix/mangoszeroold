@@ -216,7 +216,8 @@ namespace MaNGOS
 
             int f = (10 - total_kills) >= 0 ? (10 - total_kills) : 0;
             int honor_points = int(((float)(f * 0.25)*(float)((k_level+(v_rank*5+1))*(1+0.05*diff_honor)*diff_level)));
-            return (honor_points <= 400 ? honor_points : 400) / groupsize;
+            honor_points = honor_points / groupsize;
+			return (honor_points <= 400 ? honor_points : 400);
         }
 
     }
