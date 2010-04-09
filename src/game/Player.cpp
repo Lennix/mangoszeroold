@@ -5715,7 +5715,7 @@ bool Player::CalculateHonor(Unit *uVictim,uint32 groupsize)
 bool Player::AddHonorCP(float honor,uint8 type,uint32 victim,uint8 victimType)
 {
 
-    if (!honor)
+    if (!honor && honor > 400)
         return false;
 
     // CharacterDatabase.PExecute("INSERT INTO `character_honor_cp` (`guid`,`victim`,`victim_type`,`honor`,`date`,`type`) VALUES (%u, %u, %u, %f, %u, %u)", (uint32)GetGUIDLow(), (uint32)uVictim->GetEntry(),uVictim->GetType() (float)honor_points, (uint32)today, (uint8)kill_type);
