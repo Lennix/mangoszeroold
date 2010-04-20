@@ -1407,75 +1407,11 @@ void ObjectMgr::LoadItemPrototypes()
             }
         }
 
-        // special format
-        if(proto->Spells[0].SpellId == SPELL_ID_GENERIC_LEARN)
-        {
-            // spell_1
-            if(proto->Spells[0].SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
-            {
-                sLog.outErrorDb("Item (Entry: %u) has wrong item spell trigger value in spelltrigger_%d (%u) for special learning format",i,0+1,proto->Spells[0].SpellTrigger);
-                const_cast<ItemPrototype*>(proto)->Spells[0].SpellId = 0;
-                const_cast<ItemPrototype*>(proto)->Spells[0].SpellTrigger = ITEM_SPELLTRIGGER_ON_USE;
-                const_cast<ItemPrototype*>(proto)->Spells[1].SpellId = 0;
-                const_cast<ItemPrototype*>(proto)->Spells[1].SpellTrigger = ITEM_SPELLTRIGGER_ON_USE;
-            }
-
-            // spell_2 have learning spell
-            if(proto->Spells[1].SpellTrigger != ITEM_SPELLTRIGGER_LEARN_SPELL_ID)
-            {
-                sLog.outErrorDb("Item (Entry: %u) has wrong item spell trigger value in spelltrigger_%d (%u) for special learning format.",i,1+1,proto->Spells[1].SpellTrigger);
-                const_cast<ItemPrototype*>(proto)->Spells[0].SpellId = 0;
-                const_cast<ItemPrototype*>(proto)->Spells[1].SpellId = 0;
-                const_cast<ItemPrototype*>(proto)->Spells[1].SpellTrigger = ITEM_SPELLTRIGGER_ON_USE;
-            }
-            else if(!proto->Spells[1].SpellId)
-            {
-                sLog.outErrorDb("Item (Entry: %u) not has expected spell in spellid_%d in special learning format.",i,1+1);
-                const_cast<ItemPrototype*>(proto)->Spells[0].SpellId = 0;
-                const_cast<ItemPrototype*>(proto)->Spells[1].SpellTrigger = ITEM_SPELLTRIGGER_ON_USE;
-            }
-            else
-            {
-                SpellEntry const* spellInfo = sSpellStore.LookupEntry(proto->Spells[1].SpellId);
-                if(!spellInfo)
-                {
-                    sLog.outErrorDb("Item (Entry: %u) has wrong (not existing) spell in spellid_%d (%u)",i,1+1,proto->Spells[1].SpellId);
-                    const_cast<ItemPrototype*>(proto)->Spells[0].SpellId = 0;
-                    const_cast<ItemPrototype*>(proto)->Spells[1].SpellId = 0;
-                    const_cast<ItemPrototype*>(proto)->Spells[1].SpellTrigger = ITEM_SPELLTRIGGER_ON_USE;
-                }
-                // allowed only in special format
-                else if(proto->Spells[1].SpellId==SPELL_ID_GENERIC_LEARN)
-                {
-                    sLog.outErrorDb("Item (Entry: %u) has broken spell in spellid_%d (%u)",i,1+1,proto->Spells[1].SpellId);
-                    const_cast<ItemPrototype*>(proto)->Spells[0].SpellId = 0;
-                    const_cast<ItemPrototype*>(proto)->Spells[1].SpellId = 0;
-                    const_cast<ItemPrototype*>(proto)->Spells[1].SpellTrigger = ITEM_SPELLTRIGGER_ON_USE;
-                }
-            }
-
-            // spell_3*,spell_4*,spell_5* is empty
-            for (int j = 2; j < MAX_ITEM_PROTO_SPELLS; ++j)
-            {
-                if(proto->Spells[j].SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
-                {
-                    sLog.outErrorDb("Item (Entry: %u) has wrong item spell trigger value in spelltrigger_%d (%u)",i,j+1,proto->Spells[j].SpellTrigger);
-                    const_cast<ItemPrototype*>(proto)->Spells[j].SpellId = 0;
-                    const_cast<ItemPrototype*>(proto)->Spells[j].SpellTrigger = ITEM_SPELLTRIGGER_ON_USE;
-                }
-                else if(proto->Spells[j].SpellId != 0)
-                {
-                    sLog.outErrorDb("Item (Entry: %u) has wrong spell in spellid_%d (%u) for learning special format",i,j+1,proto->Spells[j].SpellId);
-                    const_cast<ItemPrototype*>(proto)->Spells[j].SpellId = 0;
-                }
-            }
-        }
         // normal spell list
-        else
         {
             for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; ++j)
             {
-                if (proto->Spells[j].SpellTrigger >= MAX_ITEM_SPELLTRIGGER || proto->Spells[j].SpellTrigger == ITEM_SPELLTRIGGER_LEARN_SPELL_ID)
+                if (proto->Spells[j].SpellTrigger >= MAX_ITEM_SPELLTRIGGER)
                 {
                     sLog.outErrorDb("Item (Entry: %u) has wrong item spell trigger value in spelltrigger_%d (%u)",i,j+1,proto->Spells[j].SpellTrigger);
                     const_cast<ItemPrototype*>(proto)->Spells[j].SpellId = 0;
@@ -1494,12 +1430,6 @@ void ObjectMgr::LoadItemPrototypes()
                     if(!spellInfo)
                     {
                         sLog.outErrorDb("Item (Entry: %u) has wrong (not existing) spell in spellid_%d (%u)",i,j+1,proto->Spells[j].SpellId);
-                        const_cast<ItemPrototype*>(proto)->Spells[j].SpellId = 0;
-                    }
-                    // allowed only in special format
-                    else if(proto->Spells[j].SpellId==SPELL_ID_GENERIC_LEARN)
-                    {
-                        sLog.outErrorDb("Item (Entry: %u) has broken spell in spellid_%d (%u)",i,j+1,proto->Spells[j].SpellId);
                         const_cast<ItemPrototype*>(proto)->Spells[j].SpellId = 0;
                     }
                 }
@@ -4678,7 +4608,7 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
                 delete resultItems;
             }
             //if it is mail from AH, it shouldn't be returned, but deleted
-            if (m->messageType != MAIL_NORMAL || (m->checked & (MAIL_CHECK_MASK_AUCTION | MAIL_CHECK_MASK_COD_PAYMENT | MAIL_CHECK_MASK_RETURNED)))
+            if (m->messageType != MAIL_NORMAL || m->messageType == MAIL_AUCTION || (m->checked & (MAIL_CHECK_MASK_COD_PAYMENT | MAIL_CHECK_MASK_RETURNED)))
             {
                 // mail open and then not returned
                 for(std::vector<MailItemInfo>::iterator itr2 = m->items.begin(); itr2 != m->items.end(); ++itr2)
@@ -6887,6 +6817,15 @@ bool PlayerCondition::Meets(Player const * player) const
         }
         case CONDITION_NOITEM:
             return !player->HasItemCount(value1, value2);
+        case CONDITION_SPELL:
+        {
+            switch(value2)
+            {
+                case 0: return player->HasSpell(value1);
+                case 1: return !player->HasSpell(value1);
+            }
+            return false;
+        }
         default:
             return false;
     }
@@ -7079,6 +7018,22 @@ bool PlayerCondition::IsValid(ConditionType condition, uint32 value1, uint32 val
             if (value2 > 2)
             {
                 sLog.outErrorDb("Level condition has invalid argument %u (must be 0..2), skipped", value2);
+                return false;
+            }
+
+            break;
+        }
+        case CONDITION_SPELL:
+        {
+            if(!sSpellStore.LookupEntry(value1))
+            {
+                sLog.outErrorDb("Spell condition requires to have non existing spell (Id: %d), skipped", value1);
+                return false;
+            }
+
+            if (value2 > 1)
+            {
+                sLog.outErrorDb("Spell condition has invalid argument %u (must be 0..1), skipped", value2);
                 return false;
             }
 

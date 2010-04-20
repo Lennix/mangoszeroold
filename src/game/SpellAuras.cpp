@@ -257,7 +257,7 @@ m_periodicTimer(0), m_periodicTick(0), m_PeriodicEventId(0), m_AuraDRGroup(DIMIN
 
     m_spellProto = spellproto;
 
-    m_currentBasePoints = currentBasePoints ? *currentBasePoints : m_spellProto->EffectBasePoints[eff];
+    m_currentBasePoints = currentBasePoints ? *currentBasePoints : m_spellProto->CalculateSimpleValue(eff);
 
     m_isPassive = IsPassiveSpell(GetId());
     m_positive = IsPositiveEffect(GetId(), m_effIndex);
@@ -270,14 +270,14 @@ m_periodicTimer(0), m_periodicTick(0), m_PeriodicEventId(0), m_AuraDRGroup(DIMIN
     if(!caster)
     {
         m_caster_guid = target->GetGUID();
-        damage = m_currentBasePoints+1;                     // stored value-1
+        damage = m_currentBasePoints;
         m_maxduration = target->CalculateSpellDuration(m_spellProto, m_effIndex, target);
     }
     else
     {
         m_caster_guid = caster->GetGUID();
 
-        damage        = caster->CalculateSpellDamage(m_spellProto,m_effIndex,m_currentBasePoints,target);
+        damage        = caster->CalculateSpellDamage(target, m_spellProto, m_effIndex, &m_currentBasePoints);
         m_maxduration = caster->CalculateSpellDuration(m_spellProto, m_effIndex, target);
     }
 
@@ -560,7 +560,7 @@ void AreaAura::Update(uint32 diff)
                     int32 actualBasePoints = m_currentBasePoints;
                     // recalculate basepoints for lower rank (all AreaAura spell not use custom basepoints?)
                     if(actualSpellInfo != GetSpellProto())
-                        actualBasePoints = actualSpellInfo->EffectBasePoints[m_effIndex];
+                        actualBasePoints = actualSpellInfo->CalculateSimpleValue(m_effIndex);
                     AreaAura *aur = new AreaAura(actualSpellInfo, m_effIndex, &actualBasePoints, (*tIter), caster, NULL);
                     aur->SetAuraDuration(GetAuraDuration());
                     (*tIter)->AddAura(aur);
@@ -2292,18 +2292,22 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
         }
         else
         {
+            uint32 model_id;
+
             CreatureInfo const * ci = ObjectMgr::GetCreatureTemplate(m_modifier.m_miscvalue);
             if (!ci)
             {
-                                                            //pig pink ^_^
-                m_target->SetDisplayId(16358);
+                model_id = 16358;                           // pig pink ^_^
                 sLog.outError("Auras: unknown creature id = %d (only need its modelid) Form Spell Aura Transform in Spell ID = %d", m_modifier.m_miscvalue, GetId());
             }
             else
-            {
-                                                            // Will use the default model here
-                m_target->SetDisplayId(ci->DisplayID[0]);
-            }
+                model_id = ci->DisplayID[0];                // Will use the default model here
+
+            m_target->SetDisplayId(model_id);
+
+            // creature case, need to update equipment
+            if (ci && m_target->GetTypeId() == TYPEID_UNIT)
+                ((Creature*)m_target)->LoadEquipment(ci->equipmentId, true);
         }
 
         // update active transform spell only not set or not overwriting negative by positive case
@@ -2330,7 +2334,11 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
         m_target->setTransForm(0);
         m_target->SetDisplayId(m_target->GetNativeDisplayId());
 
-        // re-aplly some from still active with preference negative cases
+        // apply default equipment for creature case
+        if (m_target->GetTypeId() == TYPEID_UNIT)
+            ((Creature*)m_target)->LoadEquipment(((Creature*)m_target)->GetCreatureInfo()->equipmentId, true);
+
+        // re-apply some from still active with preference negative cases
         Unit::AuraList const& otherTransforms = m_target->GetAurasByType(SPELL_AURA_TRANSFORM);
         if (!otherTransforms.empty())
         {
@@ -4948,7 +4956,7 @@ void Aura::PeriodicTick()
                     {
                         uint32 percent =
                             GetEffIndex() < EFFECT_INDEX_2 && GetSpellProto()->Effect[GetEffIndex()] == SPELL_EFFECT_DUMMY ?
-                            pCaster->CalculateSpellDamage(GetSpellProto(), SpellEffectIndex(GetEffIndex() + 1), GetSpellProto()->EffectBasePoints[GetEffIndex() + 1], m_target) :
+                            pCaster->CalculateSpellDamage(m_target, GetSpellProto(), SpellEffectIndex(GetEffIndex() + 1)) :
                             100;
                         if(m_target->GetHealth() * 100 >= m_target->GetMaxHealth() * percent )
                         {
@@ -5066,7 +5074,7 @@ void Aura::PeriodicTick()
                         // effect 1 m_amount
                         int32 maxPercent = (*i)->GetModifier()->m_amount;
                         // effect 0 m_amount
-                        int32 stepPercent = pCaster->CalculateSpellDamage((*i)->GetSpellProto() ,EFFECT_INDEX_0,(*i)->GetSpellProto()->EffectBasePoints[0],pCaster);
+                        int32 stepPercent = pCaster->CalculateSpellDamage(pCaster, (*i)->GetSpellProto() ,EFFECT_INDEX_0);
 
                         // count affliction effects and calc additional damage in percentage
                         int32 modPercent = 0;

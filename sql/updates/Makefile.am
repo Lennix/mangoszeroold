@@ -73,6 +73,11 @@ pkgdata_DATA = \
 	z0404_100_01_mangos_command.sql \
 	z0404_100_02_mangos_mangos_string.sql \
 	z0405_101_01_mangos_mangos_string.sql \
+	z0432_103_01_realmd_realmlist.sql \
+	z0433_104_01_realmd_realmlist.sql \
+	z0435_105_01_characters_character_stats.sql \
+	z0437_106_01_characters.sql \
+	z0447_107_01_mangos_gossip_menu_option.sql \
 	README
 
 ## Additional files to include when running 'make dist'
@@ -124,4 +129,9 @@ EXTRA_DIST = \
 	z0404_100_01_mangos_command.sql \
 	z0404_100_02_mangos_mangos_string.sql \
 	z0405_101_01_mangos_mangos_string.sql \
+	z0432_103_01_realmd_realmlist.sql \
+	z0433_104_01_realmd_realmlist.sql \
+	z0435_105_01_characters_character_stats.sql \
+	z0437_106_01_characters.sql \
+	z0447_107_01_mangos_gossip_menu_option.sql \
 	README
