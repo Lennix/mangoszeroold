@@ -210,9 +210,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
                 uint32 sideb = player->GetTeam();
                 if( sidea != sideb )
                 {
-                    WorldPacket data(SMSG_CHAT_PLAYER_NOT_FOUND, (to.size()+1));
-                    data<<to;
-                    SendPacket(&data);
+                    SendWrongFactionNotice();
                     return;
                 }
             }
@@ -551,17 +549,10 @@ void WorldSession::HandleTextEmoteOpcode( WorldPacket & recv_data )
 
     Unit* unit = ObjectAccessor::GetUnit(*_player, guid);
 
-    CellPair p = MaNGOS::ComputeCellPair(GetPlayer()->GetPositionX(), GetPlayer()->GetPositionY());
-
-    Cell cell(p);
-    cell.data.Part.reserved = ALL_DISTRICT;
-    cell.SetNoCreate();
-
     MaNGOS::EmoteChatBuilder emote_builder(*GetPlayer(), text_emote, emoteNum, unit);
     MaNGOS::LocalizedPacketDo<MaNGOS::EmoteChatBuilder > emote_do(emote_builder);
     MaNGOS::PlayerDistWorker<MaNGOS::LocalizedPacketDo<MaNGOS::EmoteChatBuilder > > emote_worker(GetPlayer(),sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE),emote_do);
-    TypeContainerVisitor<MaNGOS::PlayerDistWorker<MaNGOS::LocalizedPacketDo<MaNGOS::EmoteChatBuilder > >, WorldTypeMapContainer > message(emote_worker);
-    cell.Visit(p, message, *GetPlayer()->GetMap(), *GetPlayer(), sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE));
+    Cell::VisitWorldObjects(GetPlayer(), emote_worker,  sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE));
 
     //Send scripted event call
     if (unit && unit->GetTypeId()==TYPEID_UNIT && ((Creature*)unit)->AI())
@@ -584,4 +575,23 @@ void WorldSession::HandleChatIgnoredOpcode(WorldPacket& recv_data )
     WorldPacket data;
     ChatHandler::FillMessageData(&data, this, CHAT_MSG_IGNORED, LANG_UNIVERSAL, NULL, GetPlayer()->GetGUID(), GetPlayer()->GetName(),NULL);
     player->GetSession()->SendPacket(&data);
+}
+
+void WorldSession::SendPlayerNotFoundNotice(std::string name)
+{
+    WorldPacket data(SMSG_CHAT_PLAYER_NOT_FOUND, name.size()+1);
+    data << name;
+    SendPacket(&data);
+}
+
+void WorldSession::SendWrongFactionNotice()
+{
+    WorldPacket data(SMSG_CHAT_WRONG_FACTION, 0);
+    SendPacket(&data);
+}
+
+void WorldSession::SendChatRestrictedNotice()
+{
+    WorldPacket data(SMSG_CHAT_RESTRICTED, 0);
+    SendPacket(&data);
 }

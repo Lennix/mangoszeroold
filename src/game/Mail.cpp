@@ -42,17 +42,7 @@
 #include "BattleGroundMgr.h"
 #include "Item.h"
 #include "AuctionHouseMgr.h"
-/**
- * Flags that specify special action to be take by the client when displaying this mail.
- */
-enum MailShowFlags
-{
-    MAIL_SHOW_UNK0    = 0x0001,
-    MAIL_SHOW_DELETE  = 0x0002,                             ///< forced show of the delete button instead of the return button
-    MAIL_SHOW_AUCTION = 0x0004,                             ///< from old comment
-    MAIL_SHOW_UNK2    = 0x0008,                             ///< unknown, COD will be shown even without that flag
-    MAIL_SHOW_RETURN  = 0x0010,
-};
+
 /**
  * Handles the Packet sent by the client when sending a mail.
  *
@@ -150,7 +140,8 @@ void WorldSession::HandleSendMail(WorldPacket & recv_data )
             delete result;
         }
     }
-    //do not allow to have more than 100 mails in mailbox.. mails count is in opcode uint8!!! - so max can be 255..
+
+    // do not allow to have more than 100 mails in mailbox.. mails count is in opcode uint8!!! - so max can be 255..
     if (mails_count > 100)
     {
         pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_RECIPIENT_CAP_REACHED);
@@ -202,13 +193,11 @@ void WorldSession::HandleSendMail(WorldPacket & recv_data )
 
     pl->SendMailResult(0, MAIL_SEND, MAIL_OK);
 
-    uint32 itemTextId = !body.empty() ? sObjectMgr.CreateItemText( body ) : 0;
-
     pl->ModifyMoney( -int32(reqmoney) );
 
     bool needItemDelay = false;
 
-    MailDraft draft(subject, itemTextId);
+    MailDraft draft(subject, body);
 
     if (item_guid > 0 || money > 0)
     {
@@ -254,7 +243,7 @@ void WorldSession::HandleSendMail(WorldPacket & recv_data )
     draft
         .AddMoney(money)
         .AddCOD(COD)
-        .SendMailTo(MailReceiver(receive, GUID_LOPART(rc)), pl, MAIL_CHECK_MASK_NONE, deliver_delay);
+        .SendMailTo(MailReceiver(receive, GUID_LOPART(rc)), pl, body.empty() ? MAIL_CHECK_MASK_COPIED : MAIL_CHECK_MASK_HAS_BODY, deliver_delay);
 
     CharacterDatabase.BeginTransaction();
     pl->SaveInventoryAndGoldToDB();
@@ -283,13 +272,12 @@ void WorldSession::HandleMailMarkAsRead(WorldPacket & recv_data )
         return;
 
     Player *pl = _player;
-    Mail *m = pl->GetMail(mailId);
-    if (m)
+
+    if (Mail *m = pl->GetMail(mailId))
     {
         if (pl->unReadMails)
             --pl->unReadMails;
         m->checked = m->checked | MAIL_CHECK_MASK_READ;
-        // m->expire_time = time(NULL) + (30 * DAY);        // Expire time do not change at reading mail
         pl->m_mailsUpdated = true;
         m->state = MAIL_STATE_CHANGED;
     }
@@ -315,8 +303,8 @@ void WorldSession::HandleMailDelete(WorldPacket & recv_data )
 
     Player* pl = _player;
     pl->m_mailsUpdated = true;
-    Mail *m = pl->GetMail(mailId);
-    if(m)
+
+    if(Mail *m = pl->GetMail(mailId))
     {
         // delete shouldn't show up for COD mails
         if (m->COD)
@@ -355,6 +343,7 @@ void WorldSession::HandleMailReturnToSender(WorldPacket & recv_data )
         pl->SendMailResult(mailId, MAIL_RETURNED_TO_SENDER, MAIL_ERR_INTERNAL_ERROR);
         return;
     }
+
     //we can return mail now
     //so firstly delete the old one
     CharacterDatabase.BeginTransaction();
@@ -369,19 +358,14 @@ void WorldSession::HandleMailReturnToSender(WorldPacket & recv_data )
     {
         MailDraft draft(m->subject, m->itemTextId);
         if (m->mailTemplateId)
-            draft = MailDraft(m->mailTemplateId,false);     // items already included
+            draft = MailDraft(m->mailTemplateId, false);    // items already included
 
         if(m->HasItems())
         {
             for(std::vector<MailItemInfo>::iterator itr2 = m->items.begin(); itr2 != m->items.end(); ++itr2)
             {
-                Item *item = pl->GetMItem(itr2->item_guid);
-                if(item)
+                if(Item *item = pl->GetMItem(itr2->item_guid))
                     draft.AddItem(item);
-                else
-                {
-                    //WTF?
-                }
 
                 pl->RemoveMItem(itr2->item_guid);
             }
@@ -469,7 +453,7 @@ void WorldSession::HandleMailTakeItem(WorldPacket & recv_data )
             {
                 MailDraft(m->subject)
                     .AddMoney(m->COD)
-                    .SendMailTo(MailReceiver(receive,m->sender),MailSender(MAIL_NORMAL,m->receiver), MAIL_CHECK_MASK_COD_PAYMENT);
+                    .SendMailTo(MailReceiver(receive, m->sender), MailSender(MAIL_NORMAL, m->receiver), MAIL_CHECK_MASK_COD_PAYMENT);
             }
 
             pl->ModifyMoney( -int32(m->COD) );
@@ -530,7 +514,7 @@ void WorldSession::HandleMailTakeMoney(WorldPacket & recv_data )
 
 /**
  * Handles the packet sent by the client when requesting the current mail list.
- * It will send a list of all avaible mails in the players mailbox to the client.
+ * It will send a list of all available mails in the players mailbox to the client.
  */
 void WorldSession::HandleGetMailList(WorldPacket & recv_data )
 {
@@ -572,8 +556,8 @@ void WorldSession::HandleGetMailList(WorldPacket & recv_data )
             break;
         */
 
-        data << (uint32) (*itr)->messageID;                 // Message ID
-        data << (uint8) (*itr)->messageType;                // Message Type
+        data << uint32((*itr)->messageID);                  // Message ID
+        data << uint8((*itr)->messageType);                 // Message Type
 
         switch((*itr)->messageType)
         {
@@ -590,38 +574,30 @@ void WorldSession::HandleGetMailList(WorldPacket & recv_data )
         }
 
         data << (*itr)->subject;                            // Subject string - once 00, when mail type = 3
-        data << (uint32) (*itr)->itemTextId;                // sure about this
-        data << (uint32) 0;                                 // unknown
-        data << (uint32) (*itr)->stationery;                // stationery (Stationery.dbc)
+        data << uint32((*itr)->itemTextId);                 // sure about this
+        data << uint32(0);                                  // unknown
+        data << uint32((*itr)->stationery);                 // stationery (Stationery.dbc)
 
         // 1.12.1 can have only single item
         Item *item = (*itr)->items.size() > 0 ? pl->GetMItem((*itr)->items[0].item_guid) : NULL;
-        // entry
-        data << (uint32) (item ? item->GetEntry() : 0);
+        data << uint32(item ? item->GetEntry() : 0);        // entry
         // permanent enchantment            
-        data << (uint32) (item ? item->GetEnchantmentId((EnchantmentSlot)PERM_ENCHANTMENT_SLOT) : 0);
+        data << uint32(item ? item->GetEnchantmentId((EnchantmentSlot)PERM_ENCHANTMENT_SLOT) : 0);
         // can be negative
-        data << (uint32) (item ? item->GetItemRandomPropertyId() : 0);
+        data << uint32(item ? item->GetItemRandomPropertyId() : 0);
         // unk
-        data << (uint32) (item ? item->GetItemSuffixFactor() : 0);
-        // stack count
-        data << (uint8)  (item ? item->GetCount() : 0);
-        // charges
-        data << (uint32) (item ? item->GetSpellCharges() : 0);
+        data << uint32(item ? item->GetItemSuffixFactor() : 0);
+        data << uint8(item ? item->GetCount() : 0);         // stack count
+        data << uint32(item ? item->GetSpellCharges() : 0); // charges
         // durability
-        data << (uint32) (item ? item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY) : 0);
+        data << uint32(item ? item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY) : 0);
         // durability
-        data << (uint32) (item ? item->GetUInt32Value(ITEM_FIELD_DURABILITY) : 0);
-
-        // Gold
-        data << (uint32) (*itr)->money;
-        // Cash on delivery
-        data << (uint32) (*itr)->COD;
-        data << (uint32) (*itr)->checked;
-        // expire time
-        data << (float)  ((*itr)->expire_time-time(NULL))/DAY;
-        // mail template (MailTemplate.dbc)   
-        data << (uint32) (*itr)->mailTemplateId;
+        data << uint32(item ? item->GetUInt32Value(ITEM_FIELD_DURABILITY) : 0);
+        data << uint32((*itr)->money);                      // copper
+        data << uint32((*itr)->COD);                        // Cash on delivery
+        data << uint32((*itr)->checked);                    // flags
+        data << float(((*itr)->expire_time-time(NULL))/DAY);// Time
+        data << uint32((*itr)->mailTemplateId);             // mail template (MailTemplate.dbc)
 
         mailsCount += 1;
     }
@@ -637,7 +613,7 @@ void WorldSession::HandleGetMailList(WorldPacket & recv_data )
  * Handles the packet sent by the client when requesting information about the body of a mail.
  *
  * This function is called when client needs mail message body,
- * or when player clicks on item which has ITEM_FIELD_ITEM_TEXT_ID > 0
+ * or when player clicks on item which has some flag set
  */
 void WorldSession::HandleItemTextQuery(WorldPacket & recv_data )
 {
@@ -697,18 +673,17 @@ void WorldSession::HandleMailCreateTextItem(WorldPacket & recv_data )
     bodyItem->SetUInt32Value( ITEM_FIELD_ITEM_TEXT_ID, itemTextId );
     bodyItem->SetUInt32Value( ITEM_FIELD_CREATOR, m->sender);
 
-    sLog.outDetail("HandleMailCreateTextItem mailid=%u",mailId);
+    sLog.outDetail("HandleMailCreateTextItem mailid=%u", mailId);
 
     ItemPosCountVec dest;
     uint8 msg = _player->CanStoreItem( NULL_BAG, NULL_SLOT, dest, bodyItem, false );
     if( msg == EQUIP_ERR_OK )
     {
-        m->itemTextId = 0;
+        m->checked = m->checked | MAIL_CHECK_MASK_COPIED;
         m->state = MAIL_STATE_CHANGED;
         pl->m_mailsUpdated = true;
 
         pl->StoreItem(dest, bodyItem, true);
-        //bodyItem->SetState(ITEM_NEW, pl); is set automatically
         pl->SendMailResult(mailId, MAIL_MADE_PERMANENT, MAIL_OK);
     }
     else
@@ -723,7 +698,6 @@ void WorldSession::HandleMailCreateTextItem(WorldPacket & recv_data )
  */
 void WorldSession::HandleQueryNextMailTime(WorldPacket & /**recv_data*/ )
 {
-    //TODO Fix me! ... this void has probably bad condition, but good data are sent
     WorldPacket data(MSG_QUERY_NEXT_MAIL_TIME, 8);
 
     if(!_player->m_mailsLoaded)
@@ -858,7 +832,8 @@ m_bodyId(!text.empty() ? sObjectMgr.CreateItemText(text) : 0), m_money(0), m_COD
  */
 MailDraft& MailDraft::AddItem( Item* item )
 {
-    m_items[item->GetGUIDLow()] = item; return *this;
+    m_items[item->GetGUIDLow()] = item;
+    return *this;
 }
 /**
  * Prepares the items in a MailDraft.

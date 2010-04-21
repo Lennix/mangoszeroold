@@ -471,7 +471,7 @@ enum OpcodesList
     SMSG_TRAINER_LIST                               = 0x1B1,
     CMSG_TRAINER_BUY_SPELL                          = 0x1B2,
     SMSG_TRAINER_BUY_SUCCEEDED                      = 0x1B3,
-    SMSG_TRAINER_BUY_FAILED                         = 0x1B4,
+    SMSG_TRAINER_BUY_FAILED                         = 0x1B4, // uint64, uint32, uint32 (0...2)
     CMSG_BINDER_ACTIVATE                            = 0x1B5,
     SMSG_PLAYERBINDERROR                            = 0x1B6,
     CMSG_BANKER_ACTIVATE                            = 0x1B7,
@@ -875,8 +875,6 @@ enum OpcodesList
     CMSG_MOVE_CHNG_TRANSPORT                        = 0x38D,
     MSG_PARTY_ASSIGNMENT                            = 0x38E,
     SMSG_OFFER_PETITION_ERROR                       = 0x38F,
-    SMSG_TIME_SYNC_REQ                              = 0x390,
-    CMSG_TIME_SYNC_RESP                             = 0x391,
     SMSG_RESET_FAILED_NOTIFY                        = 0x396,
     SMSG_REAL_GROUP_UPDATE                          = 0x397,
     SMSG_INIT_EXTRA_AURA_INFO                       = 0x3A3,

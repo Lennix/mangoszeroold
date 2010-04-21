@@ -234,6 +234,8 @@ AuthSocket::AuthSocket(ISocketHandler &h) : TcpSocket(h)
     pPatch = NULL;
 
     _accountSecurityLevel = SEC_PLAYER;
+
+    _build = 0;
 }
 
 /// Close patch file descriptor before leaving
@@ -348,6 +350,7 @@ void AuthSocket::SendProof(Sha1Hash sha)
         case 10505:                                         // 3.2.2a
         case 11159:                                         // 3.3.0a
         case 11403:                                         // 3.3.2
+        case 11723:                                         // 3.3.3a
         default:                                            // or later
         {
             sAuthLogonProof_S proof;
@@ -578,22 +581,7 @@ bool AuthSocket::_HandleLogonProof()
     ibuf.Read((char *)&lp, sizeof(sAuthLogonProof_C));
 
     ///- Check if the client has one of the expected version numbers
-    bool valid_version = false;
-    int accepted_versions[] = EXPECTED_REALMD_CLIENT_BUILD;
-    if (_build >= accepted_versions[0])                     // first build is low bound of always accepted range
-        valid_version = true;
-    else
-    {
-        // continue from 1 with explict equal check
-        for(int i = 1; accepted_versions[i]; ++i)
-        {
-            if(_build == accepted_versions[i])
-            {
-                valid_version = true;
-                break;
-            }
-        }
-    }
+    bool valid_version = FindBuildInfo(_build) != NULL;
 
     /// <ul><li> If the client has no valid version
     if(!valid_version)
@@ -823,6 +811,8 @@ bool AuthSocket::_HandleReconnectChallenge()
     DEBUG_LOG("[ReconnectChallenge] name(%d): '%s'", ch->I_len, ch->I);
 
     _login = (const char*)ch->I;
+    _build = ch->build;
+
     _safelogin = _login;
     loginDatabase.escape_string(_safelogin);
 
@@ -967,13 +957,30 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 else
                     AmountOfCharacters = 0;
 
-                // Show offline state for unsupported client builds
-                uint8 color = (std::find(i->second.realmbuilds.begin(), i->second.realmbuilds.end(), _build) != i->second.realmbuilds.end()) ? i->second.color : 2;
-                color = (i->second.allowedSecurityLevel > _accountSecurityLevel) ? 2 : color;
+                bool ok_build = std::find(i->second.realmbuilds.begin(), i->second.realmbuilds.end(), _build) != i->second.realmbuilds.end();
+
+                RealmBuildInfo const* buildInfo = ok_build ? FindBuildInfo(_build) : NULL;
+                if (!buildInfo)
+                    buildInfo = &i->second.realmBuildInfo;
+
+                RealmFlags realmflags = i->second.realmflags;
+
+                // 1.x clients not support explicitly REALM_FLAG_SPECIFYBUILD, so manually form similar name as show in more recent clients
+                std::string name = i->first;
+                if (realmflags & REALM_FLAG_SPECIFYBUILD)
+                {
+                    char buf[20];
+                    snprintf(buf, 20," (%u,%u,%u)", buildInfo->major_version, buildInfo->minor_version, buildInfo->bugfix_version);
+                    name += buf;
+                }
+
+                // Show offline state for unsupported client builds and locked realms (1.x clients not support locked state show)
+                if (!ok_build || (i->second.allowedSecurityLevel >= _accountSecurityLevel))
+                    realmflags = RealmFlags(realmflags | REALM_FLAG_OFFLINE);
 
                 pkt << uint32(i->second.icon);              // realm type
-                pkt << uint8(color);                        // if 2, then realm is offline
-                pkt << i->first;                            // name
+                pkt << uint8(realmflags);                   // realmflags
+                pkt << name;                                // name
                 pkt << i->second.address;                   // address
                 pkt << float(i->second.populationLevel);
                 pkt << uint8(AmountOfCharacters);
@@ -991,6 +998,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
         case 10505:                                         // 3.2.2a
         case 11159:                                         // 3.3.0a
         case 11403:                                         // 3.3.2
+        case 11723:                                         // 3.3.3a
         default:                                            // and later
         {
             pkt << uint32(0);
@@ -1011,14 +1019,26 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 else
                     AmountOfCharacters = 0;
 
+                bool ok_build = std::find(i->second.realmbuilds.begin(), i->second.realmbuilds.end(), _build) != i->second.realmbuilds.end();
+
+                RealmBuildInfo const* buildInfo = ok_build ? FindBuildInfo(_build) : NULL;
+                if (!buildInfo)
+                    buildInfo = &i->second.realmBuildInfo;
+
                 uint8 lock = (i->second.allowedSecurityLevel > _accountSecurityLevel) ? 1 : 0;
 
+                RealmFlags realmFlags = i->second.realmflags;
+
                 // Show offline state for unsupported client builds
-                uint8 color = (std::find(i->second.realmbuilds.begin(), i->second.realmbuilds.end(), _build) != i->second.realmbuilds.end()) ? i->second.color : 2;
+                if (!ok_build)
+                    realmFlags = RealmFlags(realmFlags | REALM_FLAG_OFFLINE);
+
+                if (!buildInfo)
+                    realmFlags = RealmFlags(realmFlags & ~REALM_FLAG_SPECIFYBUILD);
 
                 pkt << uint8(i->second.icon);               // realm type (this is second column in Cfg_Configs.dbc)
                 pkt << uint8(lock);                         // flags, if 0x01, then realm locked
-                pkt << uint8(color);                        // see enum RealmFlags
+                pkt << uint8(realmFlags);                   // see enum RealmFlags
                 pkt << i->first;                            // name
                 pkt << i->second.address;                   // address
                 pkt << float(i->second.populationLevel);
@@ -1026,13 +1046,13 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 pkt << uint8(i->second.timezone);           // realm category (Cfg_Categories.dbc)
                 pkt << uint8(0x2C);                         // unk, may be realm number/id?
 
-                /*if(realmFlags & REALM_FLAG_SPECIFYBUILD)
+                if (realmFlags & REALM_FLAG_SPECIFYBUILD)
                 {
-                    pkt << uint8(0);                        // major
-                    pkt << uint8(0);                        // minor
-                    pkt << uint8(0);                        // revision
-                    pkt << uint16(0);                       // build
-                }*/
+                    pkt << uint8(buildInfo->major_version);
+                    pkt << uint8(buildInfo->minor_version);
+                    pkt << uint8(buildInfo->bugfix_version);
+                    pkt << uint16(_build);
+                }
             }
 
             pkt << uint16(0x0010);

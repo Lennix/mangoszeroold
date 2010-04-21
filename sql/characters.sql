@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `character_db_version`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `character_db_version` (
-  `required_z0378_097_01_characters` bit(1) DEFAULT NULL
+  `required_z0437_106_01_characters` bit(1) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Last applied sql update to DB';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -427,7 +427,8 @@ CREATE TABLE `character_spell` (
   `spell` int(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Spell Identifier',
   `active` tinyint(3) unsigned NOT NULL DEFAULT '1',
   `disabled` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  PRIMARY KEY (`guid`,`spell`)
+  PRIMARY KEY (`guid`,`spell`),
+  KEY `Idx_spell` (`spell`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Player System';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -463,6 +464,53 @@ CREATE TABLE `character_spell_cooldown` (
 LOCK TABLES `character_spell_cooldown` WRITE;
 /*!40000 ALTER TABLE `character_spell_cooldown` DISABLE KEYS */;
 /*!40000 ALTER TABLE `character_spell_cooldown` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `character_stats`
+--
+
+DROP TABLE IF EXISTS `character_stats`;
+CREATE TABLE `character_stats` (
+  `guid` int(11) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier, Low part',
+  `maxhealth` int(10) UNSIGNED NOT NULL default '0',
+  `maxpower1` int(10) UNSIGNED NOT NULL default '0',
+  `maxpower2` int(10) UNSIGNED NOT NULL default '0',
+  `maxpower3` int(10) UNSIGNED NOT NULL default '0',
+  `maxpower4` int(10) UNSIGNED NOT NULL default '0',
+  `maxpower5` int(10) UNSIGNED NOT NULL default '0',
+  `maxpower6` int(10) UNSIGNED NOT NULL default '0',
+  `maxpower7` int(10) UNSIGNED NOT NULL default '0',
+  `strength` int(10) UNSIGNED NOT NULL default '0',
+  `agility` int(10) UNSIGNED NOT NULL default '0',
+  `stamina` int(10) UNSIGNED NOT NULL default '0',
+  `intellect` int(10) UNSIGNED NOT NULL default '0',
+  `spirit` int(10) UNSIGNED NOT NULL default '0',
+  `armor` int(10) UNSIGNED NOT NULL default '0',
+  `resHoly` int(10) UNSIGNED NOT NULL default '0',
+  `resFire` int(10) UNSIGNED NOT NULL default '0',
+  `resNature` int(10) UNSIGNED NOT NULL default '0',
+  `resFrost` int(10) UNSIGNED NOT NULL default '0',
+  `resShadow` int(10) UNSIGNED NOT NULL default '0',
+  `resArcane` int(10) UNSIGNED NOT NULL default '0',
+  `blockPct` float UNSIGNED NOT NULL default '0',
+  `dodgePct` float UNSIGNED NOT NULL default '0',
+  `parryPct` float UNSIGNED NOT NULL default '0',
+  `critPct` float UNSIGNED NOT NULL default '0',  
+  `rangedCritPct` float UNSIGNED NOT NULL default '0',
+  `attackPower` int(10) UNSIGNED NOT NULL default '0',
+  `rangedAttackPower` int(10) UNSIGNED NOT NULL default '0',
+   
+  PRIMARY KEY  (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `character_stats`
+--
+
+LOCK TABLES `character_stats` WRITE;
+/*!40000 ALTER TABLE `character_stats` DISABLE KEYS */;
+/*!40000 ALTER TABLE `character_stats` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
