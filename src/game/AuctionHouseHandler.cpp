@@ -389,7 +389,8 @@ void WorldSession::HandleAuctionPlaceBid( WorldPacket & recv_data )
         sAuctionMgr.SendAuctionSalePendingMail( auction );
         sAuctionMgr.SendAuctionSuccessfulMail( auction );
         sAuctionMgr.SendAuctionWonMail( auction );
-
+		
+		auction->SaveToLog();
         SendAuctionCommandResult(auction->Id, AUCTION_PLACE_BID, AUCTION_OK);
 
         sAuctionMgr.RemoveAItem(auction->item_guidlow);
