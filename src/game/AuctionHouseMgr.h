@@ -68,6 +68,7 @@ struct AuctionEntry
     bool BuildAuctionInfo(WorldPacket & data) const;
     void DeleteFromDB() const;
     void SaveToDB() const;
+	void SaveToLog() const;
 };
 
 //this class is used as auctionhouse instance
