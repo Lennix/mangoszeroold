@@ -519,7 +519,7 @@ void AuctionHouseObject::Update()
                 sAuctionMgr.SendAuctionSuccessfulMail( itr->second );
                 sAuctionMgr.SendAuctionWonMail( itr->second );
 
-				auction->SaveToLog();
+		itr->second->SaveToLog();
             }
 
             ///- In any case clear the auction
