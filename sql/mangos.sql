@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) DEFAULT NULL,
   `creature_ai_version` varchar(120) DEFAULT NULL,
-  `required_z0447_107_01_mangos_gossip_menu_option` bit(1) DEFAULT NULL
+  `required_z0452_109_01_mangos_instance_template` bit(1) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1889,39 +1889,42 @@ DROP TABLE IF EXISTS `gameobject_template`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `gameobject_template` (
-  `entry` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `type` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  `displayId` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `name` varchar(100) NOT NULL DEFAULT '',
-  `faction` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `flags` int(10) unsigned NOT NULL DEFAULT '0',
-  `size` float NOT NULL DEFAULT '1',
-  `data0` int(10) unsigned NOT NULL DEFAULT '0',
-  `data1` int(10) unsigned NOT NULL DEFAULT '0',
-  `data2` int(10) unsigned NOT NULL DEFAULT '0',
-  `data3` int(10) unsigned NOT NULL DEFAULT '0',
-  `data4` int(10) unsigned NOT NULL DEFAULT '0',
-  `data5` int(10) unsigned NOT NULL DEFAULT '0',
-  `data6` int(10) unsigned NOT NULL DEFAULT '0',
-  `data7` int(10) unsigned NOT NULL DEFAULT '0',
-  `data8` int(10) unsigned NOT NULL DEFAULT '0',
-  `data9` int(10) unsigned NOT NULL DEFAULT '0',
-  `data10` int(10) unsigned NOT NULL DEFAULT '0',
-  `data11` int(10) unsigned NOT NULL DEFAULT '0',
-  `data12` int(10) unsigned NOT NULL DEFAULT '0',
-  `data13` int(10) unsigned NOT NULL DEFAULT '0',
-  `data14` int(10) unsigned NOT NULL DEFAULT '0',
-  `data15` int(10) unsigned NOT NULL DEFAULT '0',
-  `data16` int(10) unsigned NOT NULL DEFAULT '0',
-  `data17` int(10) unsigned NOT NULL DEFAULT '0',
-  `data18` int(10) unsigned NOT NULL DEFAULT '0',
-  `data19` int(10) unsigned NOT NULL DEFAULT '0',
-  `data20` int(10) unsigned NOT NULL DEFAULT '0',
-  `data21` int(10) unsigned NOT NULL DEFAULT '0',
-  `data22` int(10) unsigned NOT NULL DEFAULT '0',
-  `data23` int(10) unsigned NOT NULL DEFAULT '0',
-  `ScriptName` varchar(64) NOT NULL DEFAULT '',
-  PRIMARY KEY (`entry`)
+  `entry` mediumint(8) unsigned NOT NULL default '0',
+  `type` tinyint(3) unsigned NOT NULL default '0',
+  `displayId` mediumint(8) unsigned NOT NULL default '0',
+  `name` varchar(100) NOT NULL default '',
+  `castBarCaption` varchar(100) NOT NULL default '',
+  `faction` smallint(5) unsigned NOT NULL default '0',
+  `flags` int(10) unsigned NOT NULL default '0',
+  `size` float NOT NULL default '1',
+  `data0` int(10) unsigned NOT NULL default '0',
+  `data1` int(10) unsigned NOT NULL default '0',
+  `data2` int(10) unsigned NOT NULL default '0',
+  `data3` int(10) unsigned NOT NULL default '0',
+  `data4` int(10) unsigned NOT NULL default '0',
+  `data5` int(10) unsigned NOT NULL default '0',
+  `data6` int(10) unsigned NOT NULL default '0',
+  `data7` int(10) unsigned NOT NULL default '0',
+  `data8` int(10) unsigned NOT NULL default '0',
+  `data9` int(10) unsigned NOT NULL default '0',
+  `data10` int(10) unsigned NOT NULL default '0',
+  `data11` int(10) unsigned NOT NULL default '0',
+  `data12` int(10) unsigned NOT NULL default '0',
+  `data13` int(10) unsigned NOT NULL default '0',
+  `data14` int(10) unsigned NOT NULL default '0',
+  `data15` int(10) unsigned NOT NULL default '0',
+  `data16` int(10) unsigned NOT NULL default '0',
+  `data17` int(10) unsigned NOT NULL default '0',
+  `data18` int(10) unsigned NOT NULL default '0',
+  `data19` int(10) unsigned NOT NULL default '0',
+  `data20` int(10) unsigned NOT NULL default '0',
+  `data21` int(10) unsigned NOT NULL default '0',
+  `data22` int(10) unsigned NOT NULL default '0',
+  `data23` int(10) unsigned NOT NULL default '0',
+  `mingold` mediumint(8) unsigned NOT NULL default '0',
+  `maxgold` mediumint(8) unsigned NOT NULL default '0',
+  `ScriptName` varchar(64) NOT NULL default '',
+  PRIMARY KEY  (`entry`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Gameobject System';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2052,15 +2055,14 @@ DROP TABLE IF EXISTS `instance_template`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `instance_template` (
   `map` smallint(5) unsigned NOT NULL,
-  `parent` int(10) unsigned NOT NULL,
+  `parent` smallint(5) unsigned NOT NULL default '0',
   `levelMin` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `levelMax` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `maxPlayers` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `reset_delay` int(10) unsigned NOT NULL DEFAULT '0',
-  `startLocX` float DEFAULT NULL,
-  `startLocY` float DEFAULT NULL,
-  `startLocZ` float DEFAULT NULL,
-  `startLocO` float DEFAULT NULL,
+  `ghostEntranceMap` smallint(5) unsigned NOT NULL,
+  `ghostEntranceX` float NOT NULL,
+  `ghostEntranceY` float NOT NULL,
   `script` varchar(128) NOT NULL DEFAULT '',
   PRIMARY KEY (`map`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -2073,32 +2075,32 @@ CREATE TABLE `instance_template` (
 LOCK TABLES `instance_template` WRITE;
 /*!40000 ALTER TABLE `instance_template` DISABLE KEYS */;
 INSERT INTO `instance_template` VALUES
-(33,0,22,30,10,7200,NULL,NULL,NULL,NULL,''),
-(34,0,24,32,10,7200,NULL,NULL,NULL,NULL,''),
-(36,0,15,20,10,7200,NULL,NULL,NULL,NULL,''),
-(43,0,15,21,10,7200,NULL,NULL,NULL,NULL,''),
-(47,0,29,38,10,7200,NULL,NULL,NULL,NULL,''),
-(48,0,24,32,10,7200,NULL,NULL,NULL,NULL,''),
-(70,0,35,47,10,7200,NULL,NULL,NULL,NULL,''),
-(90,0,29,38,10,7200,NULL,NULL,NULL,NULL,''),
-(109,0,45,55,10,7200,NULL,NULL,NULL,NULL,''),
-(129,0,37,46,10,7200,NULL,NULL,NULL,NULL,''),
-(189,0,34,45,10,7200,NULL,NULL,NULL,NULL,''),
-(209,0,44,54,10,7200,NULL,NULL,NULL,NULL,''),
-(229,0,58,0,10,120000,78.5083,-225.044,49.839,5.1,''),
-(230,0,52,0,5,7200,NULL,NULL,NULL,NULL,''),
-(249,0,60,0,40,432000,NULL,NULL,NULL,NULL,''),
-(289,0,57,0,5,7200,NULL,NULL,NULL,NULL,''),
-(309,0,60,0,20,259200,NULL,NULL,NULL,NULL,''),
-(329,0,58,60,5,7200,NULL,NULL,NULL,NULL,''),
-(349,0,46,55,10,7200,NULL,NULL,NULL,NULL,''),
-(389,0,13,18,10,7200,NULL,NULL,NULL,NULL,''),
-(409,0,60,0,40,604800,NULL,NULL,NULL,NULL,''),
-(429,0,55,60,5,7200,NULL,NULL,NULL,NULL,''),
-(469,0,60,0,40,604800,NULL,NULL,NULL,NULL,''),
-(509,0,60,0,20,259200,NULL,NULL,NULL,NULL,''),
-(531,0,60,0,40,604800,NULL,NULL,NULL,NULL,''),
-(533,0,60,0,40,604800,NULL,NULL,NULL,NULL,'');
+(33,0,22,30,10,0,0,-230.989,1571.57,''),
+(34,0,24,32,10,0,0,-8762.38,848.01,''),
+(36,0,15,20,10,0,0,-11207.8,1681.15,''),
+(43,0,15,21,10,0,1,-751.131,-2209.24,''),
+(47,0,29,38,10,0,1,-4459.45,-1660.21,''),
+(48,0,24,32,10,0,1,4249.12,748.387,''),
+(70,0,35,47,10,0,0,-6060.18,-2955,''),
+(90,0,29,38,10,0,0,-5162.66,931.599,''),
+(109,0,45,55,10,0,0,-10170.1,-3995.97,''),
+(129,0,37,46,10,0,1,-4662.88,-2535.87,''),
+(189,0,34,45,10,0,0,2892.24,-811.264,''),
+(209,0,44,54,10,0,1,-6790.58,-2891.28,''),
+(229,0,58,0,10,3,0,-7522.53,-1233.04,''),
+(230,0,52,0,5,0,0,-7178.1,-928.639,''),
+(249,0,60,0,40,5,1,-4753.31,-3752.42,''),
+(289,0,57,0,5,0,0,1274.78,-2552.56,''),
+(309,0,60,0,20,3,0,-11916.1,-1224.58,''),
+(329,0,58,60,5,0,0,3392.32,-3378.48,''),
+(349,0,46,55,10,0,1,-1432.7,2924.98,''),
+(389,0,13,18,10,0,1,1816.76,-4423.37,''),
+(409,0,60,0,40,7,0,-7510.56,-1036.7,''),
+(429,0,55,60,5,0,1,-3908.03,1130,''),
+(469,0,60,0,40,7,0,-7663.41,-1218.67,''),
+(509,0,60,0,20,3,1,-8114.46,1526.37,''),
+(531,0,60,0,40,7,1,-8111.72,1526.79,''),
+(533,0,60,0,40,7,-1,0,0,'');
 /*!40000 ALTER TABLE `instance_template` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2382,7 +2384,7 @@ INSERT INTO `item_template` VALUES
 (6096,4,0,'Apprentice\'s Shirt',2163,1,0,1,1,1,4,2047,255,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1000,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,0,0,0,0,7,0,0,0,0,0,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0),
 (6097,4,0,'Acolyte\'s Shirt',2470,1,0,1,1,1,4,2047,255,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1000,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,0,0,0,0,7,0,0,0,0,0,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0),
 (6098,4,1,'Neophyte\'s Robe',12679,0,0,1,4,1,20,2047,255,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,1000,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,0,0,0,0,7,0,0,0,0,35,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0),
-(6116,4,1,'Apprentice\'s Robe',12648,0,0,1,4,1,20,-1,-1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,'',0,0,0,0,0,7,0,0,0,0,0,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0), 
+(6116,4,1,'Apprentice\'s Robe',12648,0,0,1,4,1,20,-1,-1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,'',0,0,0,0,0,7,0,0,0,0,0,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0),
 (6119,4,1,'Neophyte\'s Robe',12681,0,0,1,4,1,20,2047,255,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,1000,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,0,0,0,0,7,0,0,0,0,35,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0),
 (6123,4,1,'Novice\'s Robe',12683,0,0,1,4,1,20,2047,255,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,1000,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,0,0,0,0,7,0,0,0,0,35,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0),
 (6124,4,1,'Novice\'s Pants',9987,0,0,1,5,1,7,2047,255,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1000,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,0,0,0,0,7,0,0,0,0,25,0,0,0,-1,0,'internalItemHandler',0,0,0,0,0,0),
@@ -11554,7 +11556,7 @@ DROP TABLE IF EXISTS `spell_facing`;
 CREATE TABLE `spell_facing` (
   `entry` INT(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Spell ID',
   `facingcasterflag` TINYINT(1) NOT NULL DEFAULT '1' COMMENT 'flag for facing state, usually 1',
-  PRIMARY KEY (`entry`)   
+  PRIMARY KEY (`entry`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

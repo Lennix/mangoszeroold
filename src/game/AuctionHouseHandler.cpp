@@ -619,4 +619,3 @@ void WorldSession::HandleAuctionListItems( WorldPacket & recv_data )
     data << uint32(totalcount);
     SendPacket(&data);
 }
-
