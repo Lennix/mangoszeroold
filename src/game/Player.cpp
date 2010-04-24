@@ -13824,9 +13824,9 @@ void Player::LoadPet()
     // just not added to the map
     if(IsInWorld())
     {
-        Pet *pet = new Pet;
-        if(!pet->LoadPetFromDB(this, 0, 0, true))
-            delete pet;
+        //Pet *pet = new Pet;
+        //if(!pet->LoadPetFromDB(this, 0, 0, true))
+        //    delete pet;
     }
 }
 
