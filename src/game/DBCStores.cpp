@@ -117,6 +117,28 @@ DBCStorage <WorldSafeLocsEntry> sWorldSafeLocsStore(WorldSafeLocsEntryfmt);
 
 typedef std::list<std::string> StoreProblemList;
 
+void ModifySpellData()
+{
+	// Flash of Light
+	sSpellStore.GetEntry(19750)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(19939)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(19940)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(19941)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(19942)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(19943)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+
+	// Holy Light
+	sSpellStore.GetEntry(639)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(647)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(1026)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(1042)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(3472)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(10328)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(10329)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+	sSpellStore.GetEntry(25292)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
+}
+
+
 bool IsAcceptableClientBuild(uint32 build)
 {
     int accepted_versions[] = EXPECTED_MANGOSD_CLIENT_BUILD;
@@ -448,6 +470,8 @@ void LoadDBCStores(const std::string& dataPath)
         sLog.outError("\nYou have _outdated_ DBC files. Please re-extract DBC files for one from client build: %s",AcceptableClientBuildsListStr().c_str());
         exit(1);
     }
+
+	ModifySpellData();
 
     sLog.outString();
     sLog.outString( ">> Initialized %d data stores", DBCFilesCount );
