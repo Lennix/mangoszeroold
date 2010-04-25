@@ -5586,7 +5586,8 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                                 }
 
                                 // percent stored in effect 1 (class scripts) base points
-                                int32 percent = auraSpellInfo->CalculateSimpleValue(EFFECT_INDEX_1);
+                                //int32 percent = auraSpellInfo->CalculateSimpleValue(EFFECT_INDEX_1);
+								int32 percent = 100;
 
                                 basepoints0 = originalSpell->manaCost*percent/100;
                                 trigger_spell_id = 20272;
