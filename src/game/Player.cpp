@@ -5669,9 +5669,9 @@ void Player::UpdateHonor()
     //RIGHEST RANK
     //If the new rank is highest then the old one, then m_highest_rank is updated
     HonorRankInfo prk = MaNGOS::Honor::CalculateHonorRank(GetRankPoints());
-    SetHonorRank(prk.rank);
-    if (prk.visualRank > 0 && prk.visualRank > GetHonorHighestRank() )
-        SetHonorHighestRank(prk.visualRank);
+ //   SetHonorRank(prk.rank);
+ //   if (prk.visualRank > 0 && prk.visualRank > GetHonorHighestRank() )
+ //       SetHonorHighestRank(prk.visualRank);
 
     // rank points is sent to client with same size of uint8(255) for each rank
     // so we set it in correct rate:
