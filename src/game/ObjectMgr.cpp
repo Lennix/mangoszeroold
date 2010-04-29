@@ -46,6 +46,7 @@
 #include "GossipDef.h"
 #include "Mail.h"
 #include "Formulas.h"
+#include "InstanceData.h"
 
 #include <limits>
 
@@ -4637,7 +4638,7 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
         Player *pl = 0;
         if (serverUp)
             pl = GetPlayer((uint64)m->receiver);
-        if (pl && pl->m_mailsLoaded)
+        if (pl)
         {                                                   //this code will run very improbably (the time is between 4 and 5 am, in game is online a player, who has old mail
             //his in mailbox and he has already listed his mails )
             delete m;
@@ -6908,6 +6909,15 @@ bool PlayerCondition::Meets(Player const * player) const
             }
             return false;
         }
+        case CONDITION_INSTANCE_SCRIPT:
+        {
+            // have meaning only for specific map instance script so ignore other maps
+            if (player->GetMapId() != value1)
+                return false;
+            if (InstanceData* data = player->GetInstanceData())
+                return data->CheckConditionCriteriaMeet(player, value1, value2);
+            return false;
+        }
         default:
             return false;
     }
@@ -7116,6 +7126,17 @@ bool PlayerCondition::IsValid(ConditionType condition, uint32 value1, uint32 val
             if (value2 > 1)
             {
                 sLog.outErrorDb("Spell condition has invalid argument %u (must be 0..1), skipped", value2);
+                return false;
+            }
+
+            break;
+        }
+        case CONDITION_INSTANCE_SCRIPT:
+        {
+            MapEntry const* mapEntry = sMapStore.LookupEntry(value1);
+            if (!mapEntry || !mapEntry->IsDungeon())
+            {
+                sLog.outErrorDb("Instance script condition has not existed map id %u as first arg, skipped", value1);
                 return false;
             }
 

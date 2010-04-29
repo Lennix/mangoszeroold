@@ -50,6 +50,7 @@
 #include "DBCStores.h"
 #include "VMapFactory.h"
 #include "MovementGenerator.h"
+#include "extras/Mod.h"
 
 #include <math.h>
 #include <stdarg.h>
@@ -8357,10 +8358,6 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
 
     propagateSpeedChange();
 
-    // Send speed change packet only for player
-    if (GetTypeId()!=TYPEID_PLAYER)
-        return;
-
     WorldPacket data;
     if(!forced)
     {
@@ -8403,9 +8400,13 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
     }
     else
     {
-        // register forced speed changes for WorldSession::HandleForceSpeedChangeAck
-        // and do it only for real sent packets and use run for run/mounted as client expected
-        ++((Player*)this)->m_forced_speed_changes[mtype];
+        if(GetTypeId() == TYPEID_PLAYER)
+        {
+            // register forced speed changes for WorldSession::HandleForceSpeedChangeAck
+            // and do it only for real sent packets and use run for run/mounted as client expected
+            ++((Player*)this)->m_forced_speed_changes[mtype];
+        }
+
         switch(mtype)
         {
             case MOVE_WALK:
@@ -8834,21 +8835,7 @@ void Unit::ApplyDiminishingToDuration(DiminishingGroup group, int32 &duration,Un
     if(duration == -1 || group == DIMINISHING_NONE || caster->IsFriendlyTo(this) )
         return;
 
-    // Duration of crowd control abilities on pvp target is limited by 10 sec. (2.2.0)
-    //[-ZERO] maybe you want activate it ( however not for 1.12 )
-    if(duration > 12000 && IsDiminishingReturnsGroupDurationLimited(group))
-    {
-        // test pet/charm masters instead pets/charmeds
-        Unit const* targetOwner = GetCharmerOrOwner();
-        Unit const* casterOwner = caster->GetCharmerOrOwner();
-
-        Unit const* target = targetOwner ? targetOwner : this;
-        Unit const* source = casterOwner ? casterOwner : caster;
-
-        if(target->GetTypeId() == TYPEID_PLAYER && source->GetTypeId() == TYPEID_PLAYER)
-            duration = 12000;
-    }
-    
+    sMod.applyDiminishingToDuration(this,caster,duration,group);
 
     float mod = 1.0f;
 
