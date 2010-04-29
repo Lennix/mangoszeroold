@@ -1517,7 +1517,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     {
         m_transport->RemovePassenger(this);
         m_transport = NULL;
-        m_movementInfo.SetTransportData(0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -1);
+        m_movementInfo.ClearTransportData();
     }
 
     // The player was ported to another map and looses the duel immediately.
@@ -13107,12 +13107,12 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
         transGUID = 0;
 
-        m_movementInfo.SetTransportData(0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -1);
+        m_movementInfo.ClearTransportData();
     }
 
     if (transGUID != 0)
     {
-        m_movementInfo.SetTransportData(transGUID, fields[27].GetFloat(), fields[28].GetFloat(), fields[29].GetFloat(), fields[30].GetFloat(), 0, -1);
+        m_movementInfo.SetTransportData(ObjectGuid(HIGHGUID_MO_TRANSPORT,transGUID), fields[27].GetFloat(), fields[28].GetFloat(), fields[29].GetFloat(), fields[30].GetFloat(), 0);
 
         if( !MaNGOS::IsValidMapCoord(
             GetPositionX() + m_movementInfo.GetTransportPos()->x, GetPositionY() + m_movementInfo.GetTransportPos()->y,
@@ -13126,7 +13126,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
             RelocateToHomebind();
 
-            m_movementInfo.SetTransportData(0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -1);
+            m_movementInfo.ClearTransportData();
 
             transGUID = 0;
         }
@@ -13152,7 +13152,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
             RelocateToHomebind();
 
-            m_movementInfo.SetTransportData(0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -1);
+            m_movementInfo.ClearTransportData();
 
             transGUID = 0;
         }
@@ -15930,6 +15930,58 @@ bool Player::ActivateTaxiPathTo( uint32 taxi_path_id, uint32 spellid /*= 0*/ )
     nodes[1] = entry->to;
 
     return ActivateTaxiPathTo(nodes,NULL,spellid);
+}
+
+void Player::ContinueTaxiFlight()
+{
+    if(uint32 sourceNode = m_taxi.GetTaxiSource())
+    {
+        sLog.outDebug( "WORLD: Restart character %u taxi flight", GetGUIDLow() );
+
+        uint32 mountDisplayId = sObjectMgr.GetTaxiMountDisplayId(sourceNode, GetTeam(),true);
+        uint32 path = m_taxi.GetCurrentTaxiPath();
+
+        // search appropriate start path node
+        uint32 startNode = 0;
+
+        TaxiPathNodeList const& nodeList = sTaxiPathNodesByPath[path];
+
+        float distPrev = MAP_SIZE*MAP_SIZE;
+        float distNext =
+            (nodeList[0]->x-GetPositionX())*(nodeList[0]->x-GetPositionX())+
+            (nodeList[0]->y-GetPositionY())*(nodeList[0]->y-GetPositionY())+
+            (nodeList[0]->z-GetPositionZ())*(nodeList[0]->z-GetPositionZ());
+
+        for(uint32 i = 1; i < nodeList.size(); ++i)
+        {
+            TaxiPathNodeEntry const* node = nodeList[i];
+            TaxiPathNodeEntry const* prevNode = nodeList[i-1];
+
+            // skip nodes at another map
+            if(node->mapid != GetMapId())
+                continue;
+
+            distPrev = distNext;
+
+            distNext =
+                (node->x-GetPositionX())*(node->x-GetPositionX())+
+                (node->y-GetPositionY())*(node->y-GetPositionY())+
+                (node->z-GetPositionZ())*(node->z-GetPositionZ());
+
+            float distNodes =
+                (node->x-prevNode->x)*(node->x-prevNode->x)+
+                (node->y-prevNode->y)*(node->y-prevNode->y)+
+                (node->z-prevNode->z)*(node->z-prevNode->z);
+
+            if(distNext + distPrev < distNodes)
+            {
+                startNode = i;
+                break;
+            }
+        }
+
+        m_session->SendDoFlight( mountDisplayId, path, startNode );
+    }
 }
 
 void Player::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs )
