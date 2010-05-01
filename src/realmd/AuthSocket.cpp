@@ -944,7 +944,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
             for(RealmList::RealmMap::const_iterator  i = sRealmList.begin(); i != sRealmList.end(); ++i)
             {
                 if (_accountSecurityLevel >= i->second.allowedSecurityLevel) {
-		uint8 AmountOfCharacters;
+				uint8 AmountOfCharacters;
 
                 // No SQL injection. id of realm is controlled by the database.
                 QueryResult *result = loginDatabase.PQuery( "SELECT numchars FROM realmcharacters WHERE realmid = '%d' AND acctid='%u'", i->second.m_ID, acctid);
@@ -975,7 +975,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 }
 
                 // Show offline state for unsupported client builds and locked realms (1.x clients not support locked state show)
-                if (!ok_build || (i->second.allowedSecurityLevel >= _accountSecurityLevel))
+                if (!ok_build || (i->second.allowedSecurityLevel > _accountSecurityLevel))
                     realmflags = RealmFlags(realmflags | REALM_FLAG_OFFLINE);
 
                 pkt << uint32(i->second.icon);              // realm type
