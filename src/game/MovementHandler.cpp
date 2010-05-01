@@ -483,10 +483,13 @@ void WorldSession::HandleSummonResponseOpcode(WorldPacket& recv_data)
     if(!_player->isAlive() || _player->isInCombat() )
         return;
 
-    uint64 summoner_guid;
+    uint32 summoner_guid;
     bool agree;
     recv_data >> summoner_guid;
     recv_data >> agree;
+
+	// If summon is canceled, no response is sent - so we can set agree to true
+	agree = true;
 
     _player->SummonIfPossible(agree);
 }
