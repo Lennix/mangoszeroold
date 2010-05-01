@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
-  `required_z0468_113_02_mangos_command` bit(1) default NULL
+  `required_z0488_xxx_01_mangos_spell_proc_event` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -3240,7 +3240,7 @@ INSERT INTO `mangos_string` VALUES
 (385,'Yesterday: [Kills: |c0000ff00%u|r] [Honor: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (386,'This Week: [Kills: |c0000ff00%u|r] [Honor: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (387,'Last Week: [Kills: |c0000ff00%u|r] [Honor: %u] [Standing: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(388,'Life Time: [Rank Points: |c0000ff00%f|r] [Honorable Kills: |c0000ff00%u|r] [Dishonorable Kills: |c00ff0000%u|r] [Highest Rank %u: %s]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL)
+(388,'Life Time: [Rank Points: |c0000ff00%f|r] [Honorable Kills: |c0000ff00%u|r] [Dishonorable Kills: |c00ff0000%u|r] [Highest Rank %u: %s]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (400,'|cffff0000[System Message]:|rScripts reloaded',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (401,'You change security level of account %s to %i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (402,'%s changed your security level to %i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -13153,11 +13153,11 @@ INSERT INTO `spell_proc_event` VALUES
 (20182,0,0,0,0,0,1049602,0,0),
 (20185,0,0,0,0,0,2,0,0),
 (20186,0,0,0,0,0,1049602,0,0),
-(20210,0,0,0,10,281478197936128,268435456,0,0),
-(20212,0,0,0,10,281478197936128,268435456,0,0),
-(20213,0,0,0,10,281478197936128,268435456,0,0),
-(20214,0,0,0,10,281478197936128,268435456,0,0),
-(20215,0,0,0,10,281478197936128,268435456,0,0),
+(20210,0,0,0,10,0x00000000C0200000,0x10000000,0,0),
+(20212,0,0,0,10,0x00000000C0200000,0x10000000,0,0),
+(20213,0,0,0,10,0x00000000C0200000,0x10000000,0,0),
+(20214,0,0,0,10,0x00000000C0200000,0x10000000,0,0),
+(20215,0,0,0,10,0x00000000C0200000,0x10000000,0,0),
 (20230,0,0,0,0,0,2,0,0),
 (20234,0,0,0,0,32768,131072,0,0),
 (20235,0,0,0,0,32768,131072,0,0),
