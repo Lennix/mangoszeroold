@@ -109,7 +109,7 @@ struct ChrClassesEntry
                                                             // 1-2, unused
     uint32      powerType;                                  // 3
                                                             // 4, unused
-    char*       name[8];                                    // 5-12 unused
+    char const* name[8];                                    // 5-12 unused
     uint32      spellfamily;                                // 15
                                                             // 16, unused
 };
@@ -752,19 +752,7 @@ struct TaxiPathBySourceAndDestination
 typedef std::map<uint32,TaxiPathBySourceAndDestination> TaxiPathSetForSource;
 typedef std::map<uint32,TaxiPathSetForSource> TaxiPathSetBySource;
 
-struct TaxiPathNode
-{
-    TaxiPathNode() : mapid(0), x(0),y(0),z(0),actionFlag(0),delay(0) {}
-    TaxiPathNode(uint32 _mapid, float _x, float _y, float _z, uint32 _actionFlag, uint32 _delay) : mapid(_mapid), x(_x),y(_y),z(_z),actionFlag(_actionFlag),delay(_delay) {}
-
-    uint32    mapid;
-    float     x;
-    float     y;
-    float     z;
-    uint32    actionFlag;
-    uint32    delay;
-};
-typedef std::vector<TaxiPathNode> TaxiPathNodeList;
+typedef std::vector<TaxiPathNodeEntry const*> TaxiPathNodeList;
 typedef std::vector<TaxiPathNodeList> TaxiPathNodesByPath;
 
 #define TaxiMaskSize 8

@@ -287,7 +287,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     {
         plMover->m_transport->RemovePassenger(plMover);
         plMover->m_transport = NULL;
-        movementInfo.SetTransportData(0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -1);
+        movementInfo.ClearTransportData();
     }
 
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
@@ -308,7 +308,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     WorldPacket data(opcode, recv_data.size());
     data.appendPackGUID(mover->GetGUID());                  // write guid
     movementInfo.Write(data);                               // write data
-    GetPlayer()->SendMessageToSet(&data, false);
+    mover->SendMessageToSetExcept(&data, _player);
 
     if(plMover)                                             // nothing is charmed, or player charmed
     {
@@ -483,10 +483,13 @@ void WorldSession::HandleSummonResponseOpcode(WorldPacket& recv_data)
     if(!_player->isAlive() || _player->isInCombat() )
         return;
 
-    uint64 summoner_guid;
+    uint32 summoner_guid;
     bool agree;
     recv_data >> summoner_guid;
     recv_data >> agree;
+
+	// If summon is canceled, no response is sent - so we can set agree to true
+	agree = true;
 
     _player->SummonIfPossible(agree);
 }

@@ -1575,7 +1575,8 @@ bool Creature::CanInitiateAttack()
     if (hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED))
         return false;
 
-    if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE))
+//    if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE))
+	if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
         return false;
 
     if (isPassiveToHostile())

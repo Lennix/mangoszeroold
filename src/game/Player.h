@@ -331,6 +331,15 @@ struct HonorCP
    bool isKill;
 };
 
+struct HonorRankInfo
+{
+    uint8 rank;       // internal range [0..18]
+    int8 visualRank;  // number visualized in rank bar [-4..14]
+    float maxRP;
+    float minRP;
+    bool positive;
+};
+
 enum HonorKillState
 {
    HK_NEW = 0,
@@ -623,25 +632,25 @@ enum PlayedTimeIndex
 // used at player loading query list preparing, and later result selection
 enum PlayerLoginQueryIndex
 {
-    PLAYER_LOGIN_QUERY_LOADFROM                 = 0,
-    PLAYER_LOGIN_QUERY_LOADGROUP                = 1,
-    PLAYER_LOGIN_QUERY_LOADBOUNDINSTANCES       = 2,
-    PLAYER_LOGIN_QUERY_LOADAURAS                = 3,
-    PLAYER_LOGIN_QUERY_LOADSPELLS               = 4,
-    PLAYER_LOGIN_QUERY_LOADQUESTSTATUS          = 5,
-    PLAYER_LOGIN_QUERY_LOADHONORCP              = 6,
-    PLAYER_LOGIN_QUERY_LOADTUTORIALS            = 7,        // common for all characters for some account at specific realm
-    PLAYER_LOGIN_QUERY_LOADREPUTATION           = 8,
-    PLAYER_LOGIN_QUERY_LOADINVENTORY            = 9,
-    PLAYER_LOGIN_QUERY_LOADACTIONS              = 10,
-    PLAYER_LOGIN_QUERY_LOADMAILCOUNT            = 11,
-    PLAYER_LOGIN_QUERY_LOADMAILDATE             = 12,
-    PLAYER_LOGIN_QUERY_LOADSOCIALLIST           = 13,
-    PLAYER_LOGIN_QUERY_LOADHOMEBIND             = 14,
-    PLAYER_LOGIN_QUERY_LOADSPELLCOOLDOWNS       = 15,
-    //PLAYER_LOGIN_QUERY_LOADDECLINEDNAMES      = 16,       // reserved for use in 0.12 and later
-    PLAYER_LOGIN_QUERY_LOADGUILD                = 17,
-    PLAYER_LOGIN_QUERY_LOADSKILLS               = 19,
+    PLAYER_LOGIN_QUERY_LOADFROM,
+    PLAYER_LOGIN_QUERY_LOADGROUP,
+    PLAYER_LOGIN_QUERY_LOADBOUNDINSTANCES,
+    PLAYER_LOGIN_QUERY_LOADAURAS,
+    PLAYER_LOGIN_QUERY_LOADSPELLS,
+    PLAYER_LOGIN_QUERY_LOADQUESTSTATUS,
+    PLAYER_LOGIN_QUERY_LOADHONORCP,
+    PLAYER_LOGIN_QUERY_LOADTUTORIALS,                       // common for all characters for some account at specific realm
+    PLAYER_LOGIN_QUERY_LOADREPUTATION,
+    PLAYER_LOGIN_QUERY_LOADINVENTORY,
+    PLAYER_LOGIN_QUERY_LOADACTIONS,
+    PLAYER_LOGIN_QUERY_LOADSOCIALLIST,
+    PLAYER_LOGIN_QUERY_LOADHOMEBIND,
+    PLAYER_LOGIN_QUERY_LOADSPELLCOOLDOWNS,
+    PLAYER_LOGIN_QUERY_LOADGUILD,
+    PLAYER_LOGIN_QUERY_LOADSKILLS,
+    PLAYER_LOGIN_QUERY_LOADMAILS,
+    PLAYER_LOGIN_QUERY_LOADMAILEDITEMS,
+
     MAX_PLAYER_LOGIN_QUERY
 };
 
@@ -790,6 +799,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
         bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
                                                             // mount_id can be used in scripting calls
+        void ContinueTaxiFlight();
         bool isAcceptTickets() const { return GetSession()->GetSecurity() >= SEC_GAMEMASTER && (m_ExtraFlags & PLAYER_EXTRA_GM_ACCEPT_TICKETS); }
         void SetAcceptTicket(bool on) { if(on) m_ExtraFlags |= PLAYER_EXTRA_GM_ACCEPT_TICKETS; else m_ExtraFlags &= ~PLAYER_EXTRA_GM_ACCEPT_TICKETS; }
         bool isAcceptWhispers() const { return m_ExtraFlags & PLAYER_EXTRA_ACCEPT_WHISPERS; }
@@ -1128,7 +1138,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         static void DeleteOldCharacters();
         static void DeleteOldCharacters(uint32 keepDays);
 
-        bool m_mailsLoaded;
         bool m_mailsUpdated;
 
         void SendPetTameFailure(PetTameFailureReason reason);
@@ -1190,7 +1199,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendNewMail();
         void UpdateNextMailTimeAndUnreads();
         void AddNewMailDeliverTime(time_t deliver_time);
-        bool IsMailsLoaded() const { return m_mailsLoaded; }
 
         //void SetMail(Mail *m);
         void RemoveMail(uint32 id);
@@ -1548,14 +1556,14 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool isKill(uint8 victimType) { return (victimType == TYPEID_UNIT || victimType == TYPEID_PLAYER ); }
         uint32 CalculateTotalKills(Unit *Victim,uint32 fromDate,uint32 toDate) const;
         //Acessors of honor rank
-        uint8 GetHonorRank() const { return m_honor_rank; }
-        void SetHonorRank(uint8 rank) { m_honor_rank = rank; }
+        HonorRankInfo GetHonorRankInfo() const { return m_honor_rank; }
+        void SetHonorRankInfo(HonorRankInfo rank) { m_honor_rank = rank; }
         //Acessors of total honor points
         void SetRankPoints(float rankPoints) { m_rank_points = rankPoints; }
         float GetRankPoints(void) const { return m_rank_points; }
-        //Acessors of righest rank
-        int8 GetHonorHighestRank() const { return m_highest_rank; }
-        void SetHonorHighestRank(int8 hr) { m_highest_rank = hr; }
+        //Acessors of highest rank
+        HonorRankInfo GetHonorHighestRankInfo() const { return m_highest_rank; }
+        void SetHonorHighestRankInfo(HonorRankInfo hr) { m_highest_rank = hr; }
         //Acessors of rating
         float GetStoredHonor() const { return m_stored_honor; }
         void SetStoredHonor(float rating) { m_stored_honor = rating; }
@@ -1950,9 +1958,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadBoundInstances(QueryResult *result);
         void _LoadInventory(QueryResult *result, uint32 timediff);
         void _LoadHonorCP(QueryResult *result);
-        void _LoadMailInit(QueryResult *resultUnread, QueryResult *resultDelivery);
-        void _LoadMail();
-        void _LoadMailedItems(Mail *mail);
+        void _LoadMails(QueryResult *result);
+        void _LoadMailedItems(QueryResult *result);
         void _LoadQuestStatus(QueryResult *result);
         void _LoadGroup(QueryResult *result);
         void _LoadSkills(QueryResult *result);
@@ -1995,12 +2002,12 @@ class MANGOS_DLL_SPEC Player : public Unit
         /***                  HONOR SYSTEM                     ***/
         /*********************************************************/
         HonorCPMap m_honorCP;
-        uint8 m_honor_rank;
+        HonorRankInfo m_honor_rank;
+        HonorRankInfo m_highest_rank;
         float m_rank_points;
         float m_stored_honor;
         uint32 m_stored_honorableKills;
         uint32 m_stored_dishonorableKills;
-        int8 m_highest_rank;
         int32 m_standing_pos;
 
         void outDebugValues() const;

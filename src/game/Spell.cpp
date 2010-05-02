@@ -44,6 +44,7 @@
 #include "LootMgr.h"
 #include "VMapFactory.h"
 #include "BattleGround.h"
+#include "extras/Mod.h"
 #include "Util.h"
 
 #define SPELL_CHANNEL_UPDATE_INTERVAL (1 * IN_MILLISECONDS)
@@ -1646,6 +1647,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             SpellTargetPosition const* st = sSpellMgr.GetSpellTargetPosition(m_spellInfo->Id);
             if(st)
             {
+                // teleportspells are handled in another way
+                if (m_spellInfo->Effect[effIndex] == SPELL_EFFECT_TELEPORT_UNITS)
+                    break;
                 if (st->target_mapId == m_caster->GetMapId())
                     m_targets.setDestination(st->target_X, st->target_Y, st->target_Z);
                 else
@@ -1927,9 +1931,13 @@ void Spell::prepare(SpellCastTargets * targets, Aura* triggeredByAura)
     // skip triggered spell (item equip spell casting and other not explicit character casts/item uses)
     if ( !m_IsTriggeredSpell && isSpellBreakStealth(m_spellInfo) )
     {
-        m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+		// Dont remove Stealth on rogues - we do it on spell::cast
+		if (!(m_caster->getClass() == CLASS_ROGUE))
+			m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
         m_caster->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
+
+    sMod.spellPrepare(this, m_caster);  // extra for prepare
 
     // add non-triggered (with cast time and without)
     if (!m_IsTriggeredSpell)
@@ -2216,6 +2224,28 @@ uint64 Spell::handle_delayed(uint64 t_offset)
 
 void Spell::_handle_immediate_phase()
 {
+	// Remove Stealth on Spell:Cast instead of Spell:Prepare
+	if ( m_caster->getClass() == CLASS_ROGUE && !m_IsTriggeredSpell && isSpellBreakStealth(m_spellInfo) )
+    {
+		int chance = 0;
+		// Improved Sap on Sap
+		switch(m_spellInfo->Id) {
+			case 6770:
+			case 2070:
+			case 11297:
+				if(m_caster->HasAura(14095)) // Rank 3
+					chance = 90;
+				else if(m_caster->HasAura(14094)) // Rank 2
+					chance = 60;
+				else if(m_caster->HasAura(14076)) // Rank 1
+					chance = 30;
+				break;
+			default: break;
+		}
+		if(chance == 0 || !roll_chance_i(chance))
+			m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+	}
+
     // handle some immediate features of the spell here
     HandleThreatSpells(m_spellInfo->Id);
 
@@ -2473,10 +2503,19 @@ void Spell::finish(bool ok)
                 }
             }
         }
-        if (needDrop)
+		if (needDrop) {
             ((Player*)m_caster)->ClearComboPoints();
-    }
-
+			int chance = 0;
+			if (m_caster->HasAura(14156))
+				chance = 20;
+			else if (m_caster->HasAura(14160))
+				chance = 40;
+			else if (m_caster->HasAura(14161))
+				chance = 60;
+			if (roll_chance_i(chance))
+				((Player*)m_caster)->AddComboPoints(unitTarget,1);
+		}
+	}
     // call triggered spell only at successful cast (after clear combo points -> for add some if need)
     if(!m_TriggerSpells.empty())
         CastTriggerSpells();
@@ -3055,6 +3094,7 @@ void Spell::HandleEffects(Unit *pUnitTarget,Item *pItemTarget,GameObject *pGOTar
     {
         //sLog.outDebug( "WORLD: Spell FX %d < TOTAL_SPELL_EFFECTS ", eff);
         (*this.*SpellEffects[eff])(i);
+         sMod.spellEffect(this, eff , i);  // extra for prepare
     }
     else
     {
