@@ -8354,6 +8354,10 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
 
     propagateSpeedChange();
 
+    // Send speed change packet only for player
+    if (GetTypeId()!=TYPEID_PLAYER)
+        return;
+
     WorldPacket data;
     if(!forced)
     {
