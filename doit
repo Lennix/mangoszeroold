@@ -1,0 +1,12 @@
+#!/bin/sh
+echo "Deleting buid..."
+rm -fR build
+echo "Making build..."
+mkdir build
+echo "Reconfigure..."
+autoreconf --install --force
+cd build
+echo "Configure..."
+../configure --prefix=/home/wow/server
+echo "make..."
+make
