@@ -3512,12 +3512,13 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
     // SPELL_SCHOOL_NORMAL use for weapon-like threat and rage calculation
     m_caster->DealDamage(unitTarget, eff_damage, &cleanDamage, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, true);
 
+	// Seems to be fixed
     // Hemorrhage
-    if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
-    {
-        if(m_caster->GetTypeId()==TYPEID_PLAYER)
-            ((Player*)m_caster)->AddComboPoints(unitTarget, 1);
-    }
+//    if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
+//    {
+//        if(m_caster->GetTypeId()==TYPEID_PLAYER)
+//            ((Player*)m_caster)->AddComboPoints(unitTarget, 1);
+//    }
 
     // Mangle (Cat): CP
     if (m_spellInfo->SpellFamilyName==SPELLFAMILY_DRUID && (m_spellInfo->SpellFamilyFlags==UI64LIT(0x0000040000000000)))
