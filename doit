@@ -6,7 +6,7 @@ mkdir build
 echo "Reconfigure..."
 autoreconf --install --force
 cd build
-echo "Configure..."
-../configure --prefix=/home/wow/server
+echo "Configure on dir $1"
+../configure --prefix=$1
 echo "make..."
 make
