@@ -377,18 +377,21 @@ void WorldSession::HandleLootRoll( WorldPacket &recv_data )
     ObjectGuid lootedTarget;
     uint32 itemSlot;
     uint8  rollType;
-    recv_data >> lootedTarget;                                  //guid of the item rolled
+    recv_data >> lootedTarget;                              //guid of the item rolled
     recv_data >> itemSlot;
     recv_data >> rollType;
 
-    //sLog.outDebug("WORLD RECIEVE CMSG_LOOT_ROLL, From:%u, Numberofplayers:%u, Choise:%u", (uint32)Guid, NumberOfPlayers, Choise);
+    //sLog.outDebug("WORLD RECIEVE CMSG_LOOT_ROLL, From:%u, Numberofplayers:%u, rollType:%u", (uint32)Guid, NumberOfPlayers, rollType);
 
     Group* group = GetPlayer()->GetGroup();
-    if(!group)
+    if (!group)
+        return;
+
+    if (rollType >= MAX_ROLL_FROM_CLIENT)
         return;
 
     // everything is fine, do it
-    group->CountRollVote(GetPlayer()->GetObjectGuid(), lootedTarget, itemSlot, rollType);
+    group->CountRollVote(GetPlayer()->GetObjectGuid(), lootedTarget, itemSlot, RollVote(rollType));
 }
 
 void WorldSession::HandleMinimapPingOpcode(WorldPacket& recv_data)
