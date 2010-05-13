@@ -91,7 +91,7 @@ void MapManager::LoadTransports()
         uint32 mapid;
         x = t->m_WayPoints[0].x; y = t->m_WayPoints[0].y; z = t->m_WayPoints[0].z; mapid = t->m_WayPoints[0].mapid; o = 1;
 
-         // creates the Gameobject
+        // creates the Gameobject
         if(!t->Create(entry, mapid, x, y, z, o, 100, 0))
         {
             delete t;
@@ -104,7 +104,8 @@ void MapManager::LoadTransports()
             m_TransportsByMap[*i].insert(t);
 
         //If we someday decide to use the grid to track transports, here:
-        //sMapMgr.LoadGrid(mapid,x,y,true);
+        t->SetMap(MapManager::Instance().CreateMap(mapid, t));
+
         //t->GetMap()->Add<GameObject>((GameObject *)t);
         ++count;
     } while(result->NextRow());
@@ -140,8 +141,6 @@ Transport::Transport() : GameObject()
 bool Transport::Create(uint32 guidlow, uint32 mapid, float x, float y, float z, float ang, uint32 animprogress, uint32 dynflags)
 {
     Relocate(x,y,z,ang);
-
-    SetMapId(mapid);
 
     if(!IsPositionValid())
     {
@@ -427,7 +426,6 @@ Transport::WayPointMap::const_iterator Transport::GetNextWayPoint()
 void Transport::TeleportTransport(uint32 newMapid, float x, float y, float z)
 {
     Map const* oldMap = GetMap();
-    SetMapId(newMapid);
     Relocate(x, y, z);
 
     for(PlayerSet::iterator itr = m_passengers.begin(); itr != m_passengers.end();)
@@ -453,7 +451,11 @@ void Transport::TeleportTransport(uint32 newMapid, float x, float y, float z)
         //plr->GetSession()->SendPacket(&data);
     }
 
-    Map const* newMap = GetMap();
+    //we need to create and save new Map object with 'newMapid' because if not done -> lead to invalid Map object reference...
+    //player far teleport would try to create same instance, but we need it NOW for transport...
+    //correct me if I'm wrong O.o
+    Map * newMap = MapManager::Instance().CreateMap(newMapid, this);
+    SetMap(newMap);
 
     if(oldMap != newMap)
     {
@@ -466,7 +468,7 @@ bool Transport::AddPassenger(Player* passenger)
 {
     if (m_passengers.find(passenger) == m_passengers.end())
     {
-        sLog.outDetail("Player %s boarded transport %s.", passenger->GetName(), GetName());
+        DETAIL_LOG("Player %s boarded transport %s.", passenger->GetName(), GetName());
         m_passengers.insert(passenger);
     }
     return true;
@@ -475,7 +477,7 @@ bool Transport::AddPassenger(Player* passenger)
 bool Transport::RemovePassenger(Player* passenger)
 {
     if (m_passengers.erase(passenger))
-        sLog.outDetail("Player %s removed from transport %s.", passenger->GetName(), GetName());
+        DETAIL_LOG("Player %s removed from transport %s.", passenger->GetName(), GetName());
     return true;
 }
 
@@ -511,11 +513,10 @@ void Transport::Update(time_t /*p_time*/)
 
         m_nextNodeTime = m_curr->first;
 
-        if (m_curr == m_WayPoints.begin() && (sLog.getLogFilter() & LOG_FILTER_TRANSPORT_MOVES)==0)
-            sLog.outDetail(" ************ BEGIN ************** %s", GetName());
+        if (m_curr == m_WayPoints.begin())
+            DETAIL_FILTER_LOG(LOG_FILTER_TRANSPORT_MOVES, " ************ BEGIN ************** %s", GetName());
 
-        if ((sLog.getLogFilter() & LOG_FILTER_TRANSPORT_MOVES)==0)
-            sLog.outDetail("%s moved to %f %f %f %d", GetName(), m_curr->second.x, m_curr->second.y, m_curr->second.z, m_curr->second.mapid);
+        DETAIL_FILTER_LOG(LOG_FILTER_TRANSPORT_MOVES, "%s moved to %f %f %f %d", GetName(), m_curr->second.x, m_curr->second.y, m_curr->second.z, m_curr->second.mapid);
     }
 }
 
