@@ -155,6 +155,13 @@ void WorldSession::HandleSendMail(WorldPacket & recv_data )
         return;
     }
 
+	// Trial Chars cannot send money per Mail
+	if (pl->isTrial())
+	{
+		pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_DISABLED_FOR_TRIAL_ACC);
+		return;		
+	}
+
     uint32 rc_account = receive
         ? receive->GetSession()->GetAccountId()
         : sObjectMgr.GetPlayerAccountIdByGUID(rc);
