@@ -104,8 +104,7 @@ void MapManager::LoadTransports()
             m_TransportsByMap[*i].insert(t);
 
         //If we someday decide to use the grid to track transports, here:
-        t->SetMap(MapManager::Instance().CreateMap(mapid, t));
-
+        //sMapMgr.LoadGrid(mapid,x,y,true);
         //t->GetMap()->Add<GameObject>((GameObject *)t);
         ++count;
     } while(result->NextRow());
@@ -141,6 +140,8 @@ Transport::Transport() : GameObject()
 bool Transport::Create(uint32 guidlow, uint32 mapid, float x, float y, float z, float ang, uint32 animprogress, uint32 dynflags)
 {
     Relocate(x,y,z,ang);
+
+    SetMapId(mapid);
 
     if(!IsPositionValid())
     {
@@ -426,6 +427,7 @@ Transport::WayPointMap::const_iterator Transport::GetNextWayPoint()
 void Transport::TeleportTransport(uint32 newMapid, float x, float y, float z)
 {
     Map const* oldMap = GetMap();
+    SetMapId(newMapid);
     Relocate(x, y, z);
 
     for(PlayerSet::iterator itr = m_passengers.begin(); itr != m_passengers.end();)
@@ -451,11 +453,7 @@ void Transport::TeleportTransport(uint32 newMapid, float x, float y, float z)
         //plr->GetSession()->SendPacket(&data);
     }
 
-    //we need to create and save new Map object with 'newMapid' because if not done -> lead to invalid Map object reference...
-    //player far teleport would try to create same instance, but we need it NOW for transport...
-    //correct me if I'm wrong O.o
-    Map * newMap = MapManager::Instance().CreateMap(newMapid, this);
-    SetMap(newMap);
+    Map const* newMap = GetMap();
 
     if(oldMap != newMap)
     {

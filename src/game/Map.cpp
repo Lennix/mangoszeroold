@@ -142,12 +142,14 @@ void Map::LoadMap(int gx,int gy, bool reload)
         if(GridMaps[gx][gy])
             return;
 
-        // load grid map for base map
-        if (!m_parentMap->GridMaps[gx][gy])
-            m_parentMap->EnsureGridCreated(GridPair(63-gx,63-gy));
+        Map* baseMap = const_cast<Map*>(sMapMgr.CreateBaseMap(i_id));
 
-        ((MapInstanced*)(m_parentMap))->AddGridMapReference(GridPair(gx,gy));
-        GridMaps[gx][gy] = m_parentMap->GridMaps[gx][gy];
+        // load grid map for base map
+        if (!baseMap->GridMaps[gx][gy])
+            baseMap->EnsureGridCreated(GridPair(63-gx,63-gy));
+
+        ((MapInstanced*)(baseMap))->AddGridMapReference(GridPair(gx,gy));
+        GridMaps[gx][gy] = baseMap->GridMaps[gx][gy];
         return;
     }
 
@@ -202,12 +204,12 @@ void Map::DeleteStateMachine()
     delete si_GridStates[GRID_STATE_REMOVAL];
 }
 
-Map::Map(uint32 id, time_t expiry, uint32 InstanceId, Map* _parent)
+Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
   : i_mapEntry (sMapStore.LookupEntry(id)),
   i_id(id), i_InstanceId(InstanceId), m_unloadTimer(0),
   m_VisibleDistance(DEFAULT_VISIBILITY_DISTANCE),
   m_activeNonPlayersIter(m_activeNonPlayers.end()),
-  i_gridExpiry(expiry), m_parentMap(_parent ? _parent : this)
+  i_gridExpiry(expiry)
 {
     for(unsigned int idx=0; idx < MAX_NUMBER_OF_GRIDS; ++idx)
     {
@@ -324,13 +326,6 @@ void Map::DeleteFromWorld(T* obj)
     delete obj;
 }
 
-template<>
-void Map::DeleteFromWorld(Player* pl)
-{
-    ObjectAccessor::Instance().RemoveObject(pl);
-    delete pl;
-}
-
 template<class T>
 void Map::AddNotifier(T* , Cell const& , CellPair const& )
 {
@@ -435,7 +430,8 @@ void Map::LoadGrid(const Cell& cell, bool no_unload)
 bool Map::Add(Player *player)
 {
     player->GetMapRef().link(this, player);
-    player->SetMap(this);
+
+    player->SetInstanceId(GetInstanceId());
 
     // update player state for other player and visa-versa
     CellPair p = MaNGOS::ComputeCellPair(player->GetPositionX(), player->GetPositionY());
@@ -465,8 +461,6 @@ Map::Add(T *obj)
         sLog.outError("Map::Add: Object (GUID: %u TypeId: %u) have invalid coordinates X:%f Y:%f grid cell [%u:%u]", obj->GetGUIDLow(), obj->GetTypeId(), obj->GetPositionX(), obj->GetPositionY(), p.x_coord, p.y_coord);
         return;
     }
-
-    obj->SetMap(this);
 
     Cell cell(p);
     if(obj->isActiveObject())
@@ -720,11 +714,6 @@ void Map::Update(const uint32 &t_diff)
 
 void Map::Remove(Player *player, bool remove)
 {
-    if(remove)
-        player->CleanupsBeforeDelete();
-    else
-        player->RemoveFromWorld();
-
     // this may be called during Map::Update
     // after decrement+unlink, ++m_mapRefIter will continue correctly
     // when the first element of the list is being removed
@@ -737,7 +726,7 @@ void Map::Remove(Player *player, bool remove)
     if(p.x_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP || p.y_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP)
     {
         // invalid coordinates
-        player->ResetMap();
+        player->RemoveFromWorld();
 
         if( remove )
             DeleteFromWorld(player);
@@ -757,13 +746,13 @@ void Map::Remove(Player *player, bool remove)
     NGridType *grid = getNGrid(cell.GridX(), cell.GridY());
     ASSERT(grid != NULL);
 
+    player->RemoveFromWorld();
     RemoveFromGrid(player,grid,cell);
 
     SendRemoveTransports(player);
     UpdateObjectVisibility(player,cell,p);
     UpdateObjectsVisibilityFor(player,cell,p);
 
-    player->ResetMap();
     if( remove )
         DeleteFromWorld(player);
 }
@@ -790,16 +779,11 @@ Map::Remove(T *obj, bool remove)
     if(obj->isActiveObject())
         RemoveFromActive(obj);
 
-    if(remove)
-        obj->CleanupsBeforeDelete();
-    else
-        obj->RemoveFromWorld();
-
+    obj->RemoveFromWorld();
     RemoveFromGrid(obj,grid,cell);
 
     UpdateObjectVisibility(obj,cell,p);
 
-    obj->ResetMap();
     if( remove )
     {
         // if option set then object already saved at this moment
@@ -1023,8 +1007,7 @@ bool Map::UnloadGrid(const uint32 &x, const uint32 &y, bool pForce)
             VMAP::VMapFactory::createOrGetVMapManager()->unloadMap(GetId(), gx, gy);
         }
         else
-            ((MapInstanced*)m_parentMap)->RemoveGridMapReference(GridPair(gx, gy));
-
+            ((MapInstanced*)(sMapMgr.CreateBaseMap(i_id)))->RemoveGridMapReference(GridPair(gx, gy));
         GridMaps[gx][gy] = NULL;
     }
     DEBUG_LOG("Unloading grid[%u,%u] for map %u finished", x,y, i_id);
@@ -1937,6 +1920,9 @@ void Map::RemoveAllObjectsInRemoveList()
                 Remove((GameObject*)obj,true);
                 break;
             case TYPEID_UNIT:
+                // in case triggered sequence some spell can continue casting after prev CleanupsBeforeDelete call
+                // make sure that like sources auras/etc removed before destructor start
+                ((Creature*)obj)->CleanupsBeforeDelete ();
                 Remove((Creature*)obj,true);
                 break;
             default:
@@ -2056,8 +2042,8 @@ template void Map::Remove(DynamicObject *, bool);
 
 /* ******* Dungeon Instance Maps ******* */
 
-InstanceMap::InstanceMap(uint32 id, time_t expiry, uint32 InstanceId, Map* _parent)
-  : Map(id, expiry, InstanceId, _parent),
+InstanceMap::InstanceMap(uint32 id, time_t expiry, uint32 InstanceId)
+  : Map(id, expiry, InstanceId),
     m_resetAfterUnload(false), m_unloadWhenEmpty(false),
     i_data(NULL), i_script_id(0)
 {
@@ -2406,8 +2392,8 @@ uint32 InstanceMap::GetMaxPlayers() const
 
 /* ******* Battleground Instance Maps ******* */
 
-BattleGroundMap::BattleGroundMap(uint32 id, time_t expiry, uint32 InstanceId, Map* _parent)
-  : Map(id, expiry, InstanceId, _parent)
+BattleGroundMap::BattleGroundMap(uint32 id, time_t expiry, uint32 InstanceId)
+  : Map(id, expiry, InstanceId)
 {
     //lets initialize visibility distance for BG
     BattleGroundMap::InitVisibilityDistance();
@@ -3356,6 +3342,8 @@ void Map::SendObjectUpdates()
     {
         Object* obj = *i_objectsToClientUpdate.begin();
         i_objectsToClientUpdate.erase(i_objectsToClientUpdate.begin());
+        if (!obj)
+            continue;
         obj->BuildUpdateData(update_players);
     }
 

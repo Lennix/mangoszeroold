@@ -74,14 +74,11 @@ bool Corpse::Create( uint32 guidlow )
 
 bool Corpse::Create( uint32 guidlow, Player *owner)
 {
-    ASSERT(owner);
+    SetInstanceId(owner->GetInstanceId());
 
-    WorldObject::_Create(guidlow, HIGHGUID_CORPSE);
+    WorldObject::_Create(guidlow, HIGHGUID_CORPSE, owner->GetMapId());
+
     Relocate(owner->GetPositionX(), owner->GetPositionY(), owner->GetPositionZ(), owner->GetOrientation());
-
-    //we need to assign owner's map for corpse
-    //in other way we will get a crash in Corpse::SaveToDB()
-    SetMap(owner->GetMap());
 
     if(!IsPositionValid())
     {
@@ -207,8 +204,8 @@ bool Corpse::LoadFromDB(uint32 guid, Field *fields)
     SetUInt64Value(OBJECT_FIELD_GUID, MAKE_NEW_GUID(guid, 0, HIGHGUID_CORPSE));
 
     // place
-    SetLocationInstanceId(instanceid);
-    SetLocationMapId(mapid);
+    SetInstanceId(instanceid);
+    SetMapId(mapid);
     Relocate(positionX, positionY, positionZ, ort);
 
     if(!IsPositionValid())
