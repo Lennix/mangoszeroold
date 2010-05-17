@@ -119,6 +119,7 @@ typedef std::list<std::string> StoreProblemList;
 
 void ModifySpellData()
 {
+	return;
 	uint32 palaHealSpells[14] = { 19750,19939,19940,19941,19942,19943,
 		639,647,1026,1042,3472,10328,10329,25292 };
 	for (int i = 0; i < 14; i ++) {
