@@ -450,7 +450,10 @@ bool AuthSocket::_HandleLogonChallenge()
             {
                 DEBUG_LOG("[AuthChallenge] Account '%s' is locked to IP - '%s'", _login.c_str(), (*result)[3].GetString());
                 DEBUG_LOG("[AuthChallenge] Player address is '%s'", GetRemoteAddress().c_str());
-                if ( strcmp((*result)[3].GetString(),GetRemoteAddress().c_str()) )
+                pkt << (uint8) WOW_FAIL_SUSPENDED;
+                locked=true;
+				
+				/*if ( strcmp((*result)[3].GetString(),GetRemoteAddress().c_str()) )
                 {
                     DEBUG_LOG("[AuthChallenge] Account IP differs");
                     pkt << (uint8) WOW_FAIL_SUSPENDED;
@@ -459,7 +462,7 @@ bool AuthSocket::_HandleLogonChallenge()
                 else
                 {
                     DEBUG_LOG("[AuthChallenge] Account IP matches");
-                }
+                }*/
             }
             else
             {
