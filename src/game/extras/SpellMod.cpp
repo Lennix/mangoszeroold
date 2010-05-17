@@ -58,3 +58,23 @@ void ModClass::getSpellCastTime(const SpellEntry *spellInfo, const Spell *spell,
     if(spellInfo->Id == 19968) 
         castTime = 0;
 }
+
+bool ModClass::isAffectedOnSpell(SpellEntry const *spell, uint32 spellId, SpellEffectIndex effectId)
+{
+	switch (spell->Id) { // Scorch
+		case 2948:
+		case 8444:
+		case 8445:
+		case 8446:
+		case 10205:
+		case 10206:
+		case 10207:
+			switch(spellId) { // Improved Scorch
+				case 11095:
+				case 12872:
+				case 12873:
+					return true;
+			}
+	}
+	return false;
+}

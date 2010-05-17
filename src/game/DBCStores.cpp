@@ -119,36 +119,23 @@ typedef std::list<std::string> StoreProblemList;
 
 void ModifySpellData()
 {
-	return;
+	/* Fixed with z0515
 	uint32 palaHealSpells[14] = { 19750,19939,19940,19941,19942,19943,
 		639,647,1026,1042,3472,10328,10329,25292 };
 	for (int i = 0; i < 14; i ++) {
 		sSpellStore.GetEntry(palaHealSpells[i])->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-//		sSpellStore.GetEntry(palaHealSpells[i])->SpellFamilyFlags = 8192;
-//		sSpellStore.GetEntry(palaHealSpells[i])->SpellFamilyFlags = 1285914688;
 		sSpellStore.GetEntry(palaHealSpells[i])->SpellFamilyFlags = 1075863552;
 		// 1073741824
 	}
 
-/*	// Flash of Light
-	sSpellStore.GetEntry(19750)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(19939)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(19940)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(19941)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(19942)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(19943)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(19943)->SpellFamilyFlags = 8192;
-
-	// Holy Light
-	sSpellStore.GetEntry(639)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(647)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(1026)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(1042)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(3472)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(10328)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	sSpellStore.GetEntry(10329)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
 	sSpellStore.GetEntry(25292)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-*/
+	*/
+
+	// Mage - Scorch
+	/*uint32 improvedScorchID[3] = { 11095,12872,12873 };
+	for (int i = 0; i < 3; i++) {
+		sSpellStore.GetEntry(improvedScorchID[i])->Spell = 1073741840;
+	}*/
 }
 
 bool IsAcceptableClientBuild(uint32 build)

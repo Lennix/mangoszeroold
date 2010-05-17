@@ -1032,6 +1032,9 @@ bool Aura::isAffectedOnSpell(SpellEntry const *spell) const
     if (spell->SpellFamilyName != m_spellProto->SpellFamilyName)
         return false;
 
+	if (sMod.isAffectedOnSpell(spell,GetId(),GetEffIndex()))
+		return true;
+
     uint64 mask = sSpellMgr.GetSpellAffectMask(GetId(),GetEffIndex());
     return (mask & spell->SpellFamilyFlags);
 }
