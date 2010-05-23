@@ -389,11 +389,11 @@ bool AuthSocket::_HandleLogonChallenge()
             if((*result)[2].GetUInt8() == 1)                // if ip is locked
             {
                 DEBUG_LOG("[AuthChallenge] Account '%s' is locked to IP - '%s'", _login.c_str(), (*result)[3].GetString());
-                DEBUG_LOG("[AuthChallenge] Player address is '%s'", GetRemoteAddress().c_str());
+//                DEBUG_LOG("[AuthChallenge] Player address is '%s'", get_remote_adress().c_str());
                 pkt << (uint8) WOW_FAIL_SUSPENDED;
                 locked=true;
 				
-		/*if ( strcmp((*result)[3].GetString(),GetRemoteAddress().c_str()) )
+				/*if ( strcmp((*result)[3].GetString(),GetRemoteAddress().c_str()) )
                 {
                     DEBUG_LOG("[AuthChallenge] Account IP differs");
                     pkt << (uint8) WOW_FAIL_SUSPENDED;
@@ -682,14 +682,9 @@ bool AuthSocket::_HandleLogonProof()
     }
     else
     {
-<<<<<<< HEAD:src/realmd/AuthSocket.cpp
         //char data[4]= { AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT, 3, 0};
 		char data[2]= { AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT};
-        SendBuf(data, sizeof(data));
-=======
-        char data[4]= { AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT, 3, 0};
         send(data, sizeof(data));
->>>>>>> 76e05e99f46d14901a04346261becc5b76f2d5ed:src/realmd/AuthSocket.cpp
         BASIC_LOG("[AuthChallenge] account %s tried to login with wrong password!",_login.c_str ());
 
         uint32 MaxWrongPassCount = sConfig.GetIntDefault("WrongPass.MaxCount", 0);
