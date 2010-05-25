@@ -864,15 +864,6 @@ enum Mechanics
     MECHANIC_SAPPED           = 30
 };
 
-// Used for spell 42292 Immune Movement Impairment and Loss of Control (0x49967da6)
-#define IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK ( \
-    (1<<(MECHANIC_CHARM   -1))|(1<<(MECHANIC_DISORIENTED-1))|(1<<(MECHANIC_FEAR  -1))| \
-    (1<<(MECHANIC_ROOT    -1))|(1<<(MECHANIC_PACIFY     -1))|(1<<(MECHANIC_SLEEP -1))| \
-    (1<<(MECHANIC_SNARE   -1))|(1<<(MECHANIC_STUN       -1))|(1<<(MECHANIC_FREEZE-1))| \
-    (1<<(MECHANIC_KNOCKOUT-1))|(1<<(MECHANIC_POLYMORPH  -1))|(1<<(MECHANIC_BANISH-1))| \
-    (1<<(MECHANIC_SHACKLE -1))|(1<<(MECHANIC_TURN       -1))|(1<<(MECHANIC_HORROR-1))| \
-    (1<<(MECHANIC_DAZE    -1))|(1<<(MECHANIC_SAPPED     -1)))
-
 #define IMMUNE_TO_ROOT_AND_SNARE_MASK ( \
     (1<<(MECHANIC_ROOT-1))|(1<<(MECHANIC_SNARE-1)))
 
@@ -1726,18 +1717,26 @@ enum CreatureEliteType
     CREATURE_UNKNOWN               = 5                      // found in 2.2.3 for 2 mobs
 };
 
-// values based at QuestInfo.dbc
-enum QuestTypes
+enum HolidayIds
 {
-    QUEST_TYPE_ELITE               = 1,
-    QUEST_TYPE_LIFE                = 21,
-    QUEST_TYPE_PVP                 = 41,
-    QUEST_TYPE_RAID                = 62,
-    QUEST_TYPE_DUNGEON             = 81,
-    //tbc?
-    QUEST_TYPE_WORLD_EVENT         = 82,
-    QUEST_TYPE_LEGENDARY           = 83,
-    QUEST_TYPE_ESCORT              = 84,
+    HOLIDAY_FIREWORKS_SPECTACULAR    = 62,
+    HOLIDAY_FEAST_OF_WINTER_VEIL     = 141,
+    HOLIDAY_NOBLEGARDEN              = 181,
+    HOLIDAY_CHILDRENS_WEEK           = 201,
+    HOLIDAY_CALL_TO_ARMS_AV          = 283,
+    HOLIDAY_CALL_TO_ARMS_WG          = 284,
+    HOLIDAY_CALL_TO_ARMS_AB          = 285,
+    HOLIDAY_FISHING_EXTRAVAGANZA     = 301,
+    HOLIDAY_HARVEST_FESTIVAL         = 321,
+    HOLIDAY_HALLOWS_END              = 324,
+    HOLIDAY_LUNAR_FESTIVAL           = 327,
+    HOLIDAY_LOVE_IS_IN_THE_AIR       = 335,
+    HOLIDAY_FIRE_FESTIVAL            = 341,
+    HOLIDAY_CALL_TO_ARMS_ES          = 353,
+    HOLIDAY_BREWFEST                 = 372,
+    HOLIDAY_DARKMOON_FAIRE_ELWYNN    = 374,
+    HOLIDAY_DARKMOON_FAIRE_THUNDER   = 375,
+    HOLIDAY_DARKMOON_FAIRE_SHATTRATH = 376,
 };
 
 // values based at QuestSort.dbc
@@ -1997,12 +1996,13 @@ enum TotemCategory
 
 enum UnitDynFlags
 {
-    UNIT_DYNFLAG_LOOTABLE          = 0x0001,
-    UNIT_DYNFLAG_TRACK_UNIT        = 0x0002,
-    UNIT_DYNFLAG_OTHER_TAGGER      = 0x0004,
-    UNIT_DYNFLAG_ROOTED            = 0x0008,
-    UNIT_DYNFLAG_SPECIALINFO       = 0x0010,
-    UNIT_DYNFLAG_DEAD              = 0x0020
+    UNIT_DYNFLAG_NONE                       = 0x0000,
+    UNIT_DYNFLAG_LOOTABLE                   = 0x0001,
+    UNIT_DYNFLAG_TRACK_UNIT                 = 0x0002,
+    UNIT_DYNFLAG_TAPPED                     = 0x0004,       // Lua_UnitIsTapped
+    UNIT_DYNFLAG_ROOTED                     = 0x0008,
+    UNIT_DYNFLAG_SPECIALINFO                = 0x0010,
+    UNIT_DYNFLAG_DEAD                       = 0x0020,
 };
 
 enum CorpseDynFlags

@@ -110,11 +110,25 @@ enum __QuestGiverStatus
     // [-ZERO] tbc?  DIALOG_STATUS_REWARD                   = 8              // yellow dot on minimap
 };
 
+// values based at QuestInfo.dbc
+enum QuestTypes
+{
+    QUEST_TYPE_ELITE               = 1,
+    QUEST_TYPE_LIFE                = 21,
+    QUEST_TYPE_PVP                 = 41,
+    QUEST_TYPE_RAID                = 62,
+    QUEST_TYPE_DUNGEON             = 81,
+    //tbc?
+    QUEST_TYPE_WORLD_EVENT         = 82,
+    QUEST_TYPE_LEGENDARY           = 83,
+    QUEST_TYPE_ESCORT              = 84,
+};
+
 enum __QuestFlags
 {
     // Flags used at server and sent to client
     QUEST_FLAGS_STAY_ALIVE     = 0x00000001,                // Not used currently
-    QUEST_FLAGS_PARTY_ACCEPT   = 0x00000002,                // Not used currently. If player in party, all players that can accept this quest will receive confirmation box to accept quest CMSG_QUEST_CONFIRM_ACCEPT/SMSG_QUEST_CONFIRM_ACCEPT
+    QUEST_FLAGS_PARTY_ACCEPT   = 0x00000002,                // If player in party, all players that can accept this quest will receive confirmation box to accept quest CMSG_QUEST_CONFIRM_ACCEPT/SMSG_QUEST_CONFIRM_ACCEPT
     QUEST_FLAGS_EXPLORATION    = 0x00000004,                // Not used currently
     QUEST_FLAGS_SHARABLE       = 0x00000008,                // Can be shared: Player::CanShareQuest()
     //QUEST_FLAGS_NONE2        = 0x00000010,                // Not used currently
@@ -213,6 +227,7 @@ class Quest
         bool   IsRepeatable() const { return QuestFlags & QUEST_MANGOS_FLAGS_REPEATABLE; }
         bool   IsAutoComplete() const { return QuestMethod ? false : true; }
         uint32 GetFlags() const { return QuestFlags; }
+        bool   IsAllowedInRaid() const { return Type == QUEST_TYPE_RAID; }
 
         // multiple values
         std::string ObjectiveText[QUEST_OBJECTIVES_COUNT];
@@ -220,7 +235,6 @@ class Quest
         uint32 ReqItemCount[QUEST_OBJECTIVES_COUNT];
         uint32 ReqSourceId[QUEST_SOURCE_ITEM_IDS_COUNT];
         uint32 ReqSourceCount[QUEST_SOURCE_ITEM_IDS_COUNT];
-        uint32 ReqSourceRef[QUEST_SOURCE_ITEM_IDS_COUNT];
         int32  ReqCreatureOrGOId[QUEST_OBJECTIVES_COUNT];   // >0 Creature <0 Gameobject
         uint32 ReqCreatureOrGOCount[QUEST_OBJECTIVES_COUNT];
         uint32 ReqSpell[QUEST_OBJECTIVES_COUNT];
