@@ -806,7 +806,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetAcceptWhispers(bool on) { if(on) m_ExtraFlags |= PLAYER_EXTRA_ACCEPT_WHISPERS; else m_ExtraFlags &= ~PLAYER_EXTRA_ACCEPT_WHISPERS; }
         bool isGameMaster() const { return m_ExtraFlags & PLAYER_EXTRA_GM_ON; }
 		
-		bool isTrial() const { return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_TRIAL); }
+		bool m_isTrial;
+		bool isTrial() const { return m_isTrial; }
 
         void SetGameMaster(bool on);
         bool isGMChat() const { return GetSession()->GetSecurity() >= SEC_MODERATOR && (m_ExtraFlags & PLAYER_EXTRA_GM_CHAT); }

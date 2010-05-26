@@ -13241,6 +13241,18 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     m_Played_time[PLAYED_TIME_TOTAL]= fields[20].GetUInt32();
     m_Played_time[PLAYED_TIME_LEVEL]= fields[21].GetUInt32();
 
+	QueryResult *trialCheck = CharacterDatabase.PQuery("SELECT MAX(param) FROM character_job WHERE guid = '%u' AND job = '11';",guid);
+	if(trialCheck) // Trial character - Check if unlocked
+	{
+		Field* trialField = trialCheck->Fetch();
+		if(trialField[0].GetUInt16() == 1)
+			m_isTrial = true;
+		else
+			m_isTrial = false;
+	}
+	else
+		m_isTrial = false;
+
 	if(isTrial() && m_Played_time[PLAYED_TIME_TOTAL] > 86400)
 	{
 		sLog.outError("Player #%d Trial is expired.", GUID_LOPART(guid));
