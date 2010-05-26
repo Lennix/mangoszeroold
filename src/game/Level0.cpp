@@ -270,3 +270,16 @@ bool ChatHandler::HandleServerMotdCommand(const char* /*args*/)
     PSendSysMessage(LANG_MOTD_CURRENT, sWorld.GetMotd());
     return true;
 }
+
+bool ChatHandler::HandleHeroicCommand(const char* /*args*/)
+{
+	if(!m_session)
+        return NULL;
+	bool toggledHeroic = m_session->GetPlayer()->GetMap()->ToggleHeroic();
+	if (toggledHeroic)
+		SendSysMessage("Heroic Mode is now enabled!");
+	else
+		SendSysMessage("Heroic Mode is now disabled!");
+
+	return false;
+}
