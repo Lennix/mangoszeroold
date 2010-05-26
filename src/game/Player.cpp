@@ -5675,9 +5675,9 @@ void Player::UpdateHonor()
     //RIGHEST RANK
     //If the new rank is highest then the old one, then m_highest_rank is updated
     HonorRankInfo prk =  MaNGOS::Honor::CalculateHonorRank(GetRankPoints());
-//    SetHonorRankInfo(prk);
-//    if (prk.visualRank > 0 && prk.visualRank > GetHonorHighestRankInfo().visualRank )
-//        SetHonorHighestRankInfo(prk);
+    SetHonorRankInfo(prk);
+    if (prk.visualRank > 0 && prk.visualRank > GetHonorHighestRankInfo().visualRank )
+        SetHonorHighestRankInfo(prk);
 
     // rank points is sent to client with same size of uint8(255) for each rank
     // so we set it in correct rate:
@@ -13200,6 +13200,18 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 	m_cinematic = fields[19].GetUInt32();
     m_Played_time[PLAYED_TIME_TOTAL]= fields[20].GetUInt32();
     m_Played_time[PLAYED_TIME_LEVEL]= fields[21].GetUInt32();
+
+	QueryResult *trialCheck = CharacterDatabase.PQuery("SELECT MAX(param) FROM character_job WHERE guid = '%u' AND job = '11';",guid);
+	if(trialCheck) // Trial character - Check if unlocked
+	{
+		Field* trialField = trialCheck->Fetch();
+		if(trialField[0].GetUInt16() == 1)
+			m_isTrial = true;
+		else
+			m_isTrial = false;
+	}
+	else
+		m_isTrial = false;
 
 	if(isTrial() && m_Played_time[PLAYED_TIME_TOTAL] > 86400)
 	{

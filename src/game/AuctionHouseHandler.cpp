@@ -340,6 +340,11 @@ void WorldSession::HandleAuctionPlaceBid( WorldPacket & recv_data )
         return;
     }
 
+	if (pl->isTrial())
+	{
+		return;
+	}
+
     if (price > pl->GetMoney())
     {
         // you don't have enough money!, client tests!
