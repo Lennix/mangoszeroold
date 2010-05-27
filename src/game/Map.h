@@ -330,9 +330,9 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         bool IsDungeon() const { return i_mapEntry && i_mapEntry->IsDungeon(); }
         bool IsRaid() const { return i_mapEntry && i_mapEntry->IsRaid(); }
         
-		bool i_spawnMode;
-		bool IsHeroic() { return i_spawnMode; }
-		bool ToggleHeroic() { i_spawnMode = !i_spawnMode; return i_spawnMode; }
+		uint8 i_spawnMode;
+		bool IsHeroic() { return i_spawnMode == DIFFICULTY_HEROIC; }
+		void SetSpawnMode(uint8 spawnMode) { i_spawnMode = spawnMode; }
 
 		bool IsBattleGround() const { return i_mapEntry && i_mapEntry->IsBattleGround(); }
 
