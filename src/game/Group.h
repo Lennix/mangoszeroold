@@ -292,6 +292,13 @@ class MANGOS_DLL_SPEC Group
         }
 
         void SetTargetIcon(uint8 id, uint64 guid);
+		
+		// Difficulty
+		uint8 m_difficulty;
+		void SetDifficulty(uint8 difficulty) { m_difficulty = difficulty; };
+        uint8 GetDifficulty() { return m_difficulty; }
+
+
         uint16 InInstance();
         bool InCombatToInstance(uint32 instanceId);
         void ResetInstances(uint8 method, Player* SendMsgTo);
