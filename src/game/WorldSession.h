@@ -42,6 +42,8 @@ class QueryResult;
 class LoginQueryHolder;
 class CharacterHandler;
 
+struct OpcodeHandler;
+
 enum PartyOperation
 {
     PARTY_OP_INVITE = 0,
@@ -139,12 +141,12 @@ class MANGOS_DLL_SPEC WorldSession
 
         void SendBattlegGroundList( uint64 guid, BattleGroundTypeId bgTypeId );
 
-        void SendTradeStatus(uint32 status);
+        void SendTradeStatus(TradeStatus status);
         void SendCancelTrade();
 
         void SendStablePet(uint64 guid );
         void SendPetitionQueryOpcode( uint64 petitionguid);
-        void SendUpdateTrade();
+        void SendUpdateTrade(bool trader_state = true);
 
         //pet
         void SendPetNameQuery(uint64 guid, uint32 petnumber);
@@ -180,7 +182,7 @@ class MANGOS_DLL_SPEC WorldSession
         bool LookingForGroup_auto_join;
         bool LookingForGroup_auto_add;
 
-        void BuildPartyMemberStatsChangedPacket(Player *player, WorldPacket *data);
+        bool BuildPartyMemberStatsChangedPacket(Player *player, WorldPacket *data);
 
         void DoLootRelease(ObjectGuid lguid);
 
@@ -567,6 +569,8 @@ class MANGOS_DLL_SPEC WorldSession
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
+
+        void ExecuteOpcode( OpcodeHandler const& opHandle, WorldPacket* packet );
 
         // logging helper
         void LogUnexpectedOpcode(WorldPacket *packet, const char * reason);

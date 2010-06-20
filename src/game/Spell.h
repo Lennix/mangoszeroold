@@ -24,11 +24,14 @@
 #include "SharedDefines.h"
 #include "DBCEnums.h"
 #include "ObjectGuid.h"
+#include "LootMgr.h"
+#include "Unit.h"
+#include "Player.h"
 
 class WorldSession;
-class Unit;
+class WorldPacket;
 class DynamicObj;
-class Player;
+class Item;
 class GameObject;
 class Group;
 class Aura;
@@ -163,14 +166,8 @@ class SpellCastTargets
         Item* getItemTarget() const { return m_itemTarget; }
         uint32 getItemTargetEntry() const { return m_itemTargetEntry; }
         void setItemTarget(Item* item);
-        void updateTradeSlotItem()
-        {
-            if(m_itemTarget && (m_targetMask & TARGET_FLAG_TRADE_ITEM))
-            {
-                m_itemTargetGUID = m_itemTarget->GetGUID();
-                m_itemTargetEntry = m_itemTarget->GetEntry();
-            }
-        }
+        void setTradeItemTarget(Player* caster);
+        void updateTradeSlotItem();
 
         bool IsEmpty() const { return m_GOTargetGUID.IsEmpty() && m_unitTargetGUID.IsEmpty() && m_itemTarget==NULL && m_CorpseTargetGUID.IsEmpty(); }
 
@@ -461,6 +458,7 @@ class Spell
     protected:
 
         void SendLoot(uint64 guid, LootType loottype);
+        bool IgnoreItemRequirements() const;                        // some item use spells have unexpected reagent data
         void UpdateOriginalCasterPointer();
 
         Unit* m_caster;
@@ -508,10 +506,18 @@ class Spell
         // -------------------------------------------
         GameObject* focusObject;
 
+        // Damage and healing in effects need just calculate
+        int32 m_damage;           // Damge   in effects count here
+        int32 m_healing;          // Healing in effects count here
+        int32 m_healthLeech;      // Health leech in effects for all targets count here
+
         //******************************************
         // Spell trigger system
         //******************************************
-        void doTriggers(SpellMissInfo missInfo, uint32 damage=0, SpellSchoolMask damageSchoolMask = SPELL_SCHOOL_MASK_NONE, uint32 block=0, uint32 absorb=0, bool crit=false);
+        bool   m_canTrigger;                  // Can start trigger (m_IsTriggeredSpell can`t use for this)
+        uint32 m_procAttacker;                // Attacker trigger flags
+        uint32 m_procVictim;                  // Victim   trigger flags
+        void   prepareDataForTriggerSystem();
 
         //*****************************************
         // Spell target subsystem
@@ -739,6 +745,7 @@ namespace MaNGOS
         template<> inline void Visit(CorpseMapType & ) {}
         template<> inline void Visit(GameObjectMapType & ) {}
         template<> inline void Visit(DynamicObjectMapType & ) {}
+        template<> inline void Visit(CameraMapType & ) {}
         #endif
     };
 
@@ -746,6 +753,7 @@ namespace MaNGOS
     template<> inline void SpellNotifierCreatureAndPlayer::Visit(CorpseMapType& ) {}
     template<> inline void SpellNotifierCreatureAndPlayer::Visit(GameObjectMapType& ) {}
     template<> inline void SpellNotifierCreatureAndPlayer::Visit(DynamicObjectMapType& ) {}
+    template<> inline void SpellNotifierCreatureAndPlayer::Visit(CameraMapType& ) {}
     #endif
 }
 

@@ -100,6 +100,13 @@ pkgdata_DATA = \
 	z0537_118_01_mangos_mangos_string.sql \
 	z0537_118_02_mangos_command.sql \
 	z0540_119_01_mangos_quest_template.sql \
+	z0555_120_01_mangos_spell_proc_event.sql \
+	z0556_121_01_realmd_realmd_db_version.sql \
+	z0557_124_01_mangos_creature_template.sql \
+	z0557_124_02_mangos_creature_template.sql \
+	z0588_126_02_mangos_spell_proc_event.sql \
+	z0595_xxx_01_mangos_spell_proc_event.sql \
+	z0627_130_01_mangos_command.sql \
 	README
 
 ## Additional files to include when running 'make dist'
@@ -178,4 +185,11 @@ EXTRA_DIST = \
 	z0537_118_01_mangos_mangos_string.sql \
 	z0537_118_02_mangos_command.sql \
 	z0540_119_01_mangos_quest_template.sql \
+	z0555_120_01_mangos_spell_proc_event.sql \
+	z0556_121_01_realmd_realmd_db_version.sql \
+	z0557_124_01_mangos_creature_template.sql \
+	z0557_124_02_mangos_creature_template.sql \
+	z0588_126_02_mangos_spell_proc_event.sql \
+	z0595_xxx_01_mangos_spell_proc_event.sql \
+	z0627_130_01_mangos_command.sql \
 	README
