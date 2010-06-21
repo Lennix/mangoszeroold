@@ -197,7 +197,7 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
 
     uint8 type = 0;
     uint32 winner = 0;
-    char message[256];
+    const char *message = "";
 
     Source->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
     if (Source->GetTeam() == ALLIANCE)
@@ -209,9 +209,8 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
         m_FlagState[BG_TEAM_HORDE] = BG_WS_FLAG_STATE_WAIT_RESPAWN;
                                                             // Drop Horde Flag from Player
         Source->RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
-        //message = GetMangosString(LANG_BG_WS_CAPTURED_HF);
-        sprintf(message, GetMangosString(LANG_BG_WS_CAPTURED_HF), Source->GetName());
-		type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
+        message = GetMangosString(LANG_BG_WS_CAPTURED_HF);
+        type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
         if (GetTeamScore(ALLIANCE) < BG_WS_MAX_TEAM_SCORE)
             AddPoint(ALLIANCE, 1);
         PlaySoundToAll(BG_WS_SOUND_FLAG_CAPTURED_ALLIANCE);
@@ -226,9 +225,8 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
         m_FlagState[BG_TEAM_ALLIANCE] = BG_WS_FLAG_STATE_WAIT_RESPAWN;
                                                             // Drop Alliance Flag from Player
         Source->RemoveAurasDueToSpell(BG_WS_SPELL_SILVERWING_FLAG);
-        //message = GetMangosString(LANG_BG_WS_CAPTURED_AF);
-        sprintf(message, GetMangosString(LANG_BG_WS_CAPTURED_AF), Source->GetName());
-		type = CHAT_MSG_BG_SYSTEM_HORDE;
+        message = GetMangosString(LANG_BG_WS_CAPTURED_AF);
+        type = CHAT_MSG_BG_SYSTEM_HORDE;
         if (GetTeamScore(HORDE) < BG_WS_MAX_TEAM_SCORE)
             AddPoint(HORDE, 1);
         PlaySoundToAll(BG_WS_SOUND_FLAG_CAPTURED_HORDE);
@@ -300,7 +298,7 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
         return;
     }
 
-    char message[256];
+    const char *message = "";
     uint8 type = 0;
     bool set = false;
 
@@ -313,9 +311,8 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
             SetHordeFlagPicker(0);
             Source->RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
             m_FlagState[BG_TEAM_HORDE] = BG_WS_FLAG_STATE_ON_GROUND;
-            //message = GetMangosString(LANG_BG_WS_DROPPED_HF);
-            sprintf(message, GetMangosString(LANG_BG_WS_DROPPED_HF), Source->GetName());
-			type = CHAT_MSG_BG_SYSTEM_HORDE;
+            message = GetMangosString(LANG_BG_WS_DROPPED_HF);
+            type = CHAT_MSG_BG_SYSTEM_HORDE;
             Source->CastSpell(Source, BG_WS_SPELL_WARSONG_FLAG_DROPPED, true);
             set = true;
         }
@@ -329,9 +326,8 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
             SetAllianceFlagPicker(0);
             Source->RemoveAurasDueToSpell(BG_WS_SPELL_SILVERWING_FLAG);
             m_FlagState[BG_TEAM_ALLIANCE] = BG_WS_FLAG_STATE_ON_GROUND;
-            //message = GetMangosString(LANG_BG_WS_DROPPED_AF);
-            sprintf(message, GetMangosString(LANG_BG_WS_DROPPED_AF), Source->GetName());			
-			type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
+            message = GetMangosString(LANG_BG_WS_DROPPED_AF);
+            type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
             Source->CastSpell(Source, BG_WS_SPELL_SILVERWING_FLAG_DROPPED, true);
             set = true;
         }
@@ -359,7 +355,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     if (GetStatus() != STATUS_IN_PROGRESS)
         return;
 
-    char message[256];
+    const char *message = NULL;
     uint8 type = 0;
 
     uint8 event = (sBattleGroundMgr.GetGameObjectEventIndex(target_obj->GetDBTableGUIDLow())).event1;
@@ -368,9 +364,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     if(Source->GetTeam() == HORDE && GetFlagState(ALLIANCE) == BG_WS_FLAG_STATE_ON_BASE
         && event == WS_EVENT_FLAG_A)
     {
-        //message = GetMangosString(LANG_BG_WS_PICKEDUP_AF);
-        sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_AF), Source->GetName());	
-		type = CHAT_MSG_BG_SYSTEM_HORDE;
+        message = GetMangosString(LANG_BG_WS_PICKEDUP_AF);
+        type = CHAT_MSG_BG_SYSTEM_HORDE;
         PlaySoundToAll(BG_WS_SOUND_ALLIANCE_FLAG_PICKED_UP);
         SpawnEvent(WS_EVENT_FLAG_A, 0, false);
         SetAllianceFlagPicker(Source->GetGUID());
@@ -385,8 +380,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     if (Source->GetTeam() == ALLIANCE && GetFlagState(HORDE) == BG_WS_FLAG_STATE_ON_BASE
         && event == WS_EVENT_FLAG_H)
     {
-        //message = GetMangosString(LANG_BG_WS_PICKEDUP_HF);
-		sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_HF), Source->GetName());
+        message = GetMangosString(LANG_BG_WS_PICKEDUP_HF);
         type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
         PlaySoundToAll(BG_WS_SOUND_HORDE_FLAG_PICKED_UP);
         SpawnEvent(WS_EVENT_FLAG_H, 0, false);
@@ -403,9 +397,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     {
         if (Source->GetTeam() == ALLIANCE)
         {
-            //message = GetMangosString(LANG_BG_WS_RETURNED_AF);
-            sprintf(message, GetMangosString(LANG_BG_WS_RETURNED_AF), Source->GetName());
-			type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
+            message = GetMangosString(LANG_BG_WS_RETURNED_AF);
+            type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
             UpdateFlagState(HORDE, BG_WS_FLAG_STATE_WAIT_RESPAWN);
             RespawnFlag(ALLIANCE, false);
             PlaySoundToAll(BG_WS_SOUND_FLAG_RETURNED);
@@ -413,9 +406,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
         }
         else
         {
-            //message = GetMangosString(LANG_BG_WS_PICKEDUP_AF);
-            sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_AF), Source->GetName());
-			type = CHAT_MSG_BG_SYSTEM_HORDE;
+            message = GetMangosString(LANG_BG_WS_PICKEDUP_AF);
+            type = CHAT_MSG_BG_SYSTEM_HORDE;
             PlaySoundToAll(BG_WS_SOUND_ALLIANCE_FLAG_PICKED_UP);
             SpawnEvent(WS_EVENT_FLAG_A, 0, false);
             SetAllianceFlagPicker(Source->GetGUID());
@@ -433,8 +425,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     {
         if (Source->GetTeam() == HORDE)
         {
-            //message = GetMangosString(LANG_BG_WS_RETURNED_HF);
-			sprintf(message, GetMangosString(LANG_BG_WS_RETURNED_HF), Source->GetName());
+            message = GetMangosString(LANG_BG_WS_RETURNED_HF);
             type = CHAT_MSG_BG_SYSTEM_HORDE;
             UpdateFlagState(ALLIANCE, BG_WS_FLAG_STATE_WAIT_RESPAWN);
             RespawnFlag(HORDE, false);
@@ -443,8 +434,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
         }
         else
         {
-            //message = GetMangosString(LANG_BG_WS_PICKEDUP_HF);
-			sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_HF), Source->GetName());
+            message = GetMangosString(LANG_BG_WS_PICKEDUP_HF);
             type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
             PlaySoundToAll(BG_WS_SOUND_HORDE_FLAG_PICKED_UP);
             SpawnEvent(WS_EVENT_FLAG_H, 0, false);

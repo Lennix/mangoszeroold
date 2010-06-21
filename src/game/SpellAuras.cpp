@@ -113,7 +113,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS]=
     &Aura::HandleNoImmediateEffect,                         // 59 SPELL_AURA_MOD_DAMAGE_DONE_CREATURE implemented in Unit::MeleeDamageBonus and Unit::SpellDamageBonus
     &Aura::HandleAuraModPacifyAndSilence,                   // 60 SPELL_AURA_MOD_PACIFY_SILENCE
     &Aura::HandleAuraModScale,                              // 61 SPELL_AURA_MOD_SCALE
-    &Aura::HandlePeriodicHealthFunnel,                      // 62 SPELL_AURA_PERIODIC_HEALTH_FUNNEL
+    &Aura::HandleNULL,                                      // 62 SPELL_AURA_PERIODIC_HEALTH_FUNNEL
     &Aura::HandleUnused,                                    // 63 SPELL_AURA_PERIODIC_MANA_FUNNEL obsolete?
     &Aura::HandlePeriodicManaLeech,                         // 64 SPELL_AURA_PERIODIC_MANA_LEECH
     &Aura::HandleModCastingSpeed,                           // 65 SPELL_AURA_MOD_CASTING_SPEED
@@ -1025,9 +1025,6 @@ bool Aura::isAffectedOnSpell(SpellEntry const *spell) const
     // Check family name
     if (spell->SpellFamilyName != m_spellProto->SpellFamilyName)
         return false;
-
-	if (sMod.isAffectedOnSpell(spell,GetId(),GetEffIndex()))
-		return true;
 
     uint64 mask = sSpellMgr.GetSpellAffectMask(GetId(),GetEffIndex());
     return (mask & spell->SpellFamilyFlags);
@@ -3755,27 +3752,6 @@ void Aura::HandlePeriodicLeech(bool apply, bool /*Real*/)
     m_isPeriodic = apply;
 }
 
-void Aura::HandlePeriodicHealthFunnel(bool apply, bool /*Real*/)
-{
-    m_isPeriodic = apply;
-
-    // For prevent double apply bonuses
-    bool loading = (m_target->GetTypeId() == TYPEID_PLAYER && ((Player*)m_target)->GetSession()->PlayerLoading());
-
-    // Custom damage calculation after
-    if (apply)
-    {
-        if(loading)
-            return;
-
-        Unit *caster = GetCaster();
-        if (!caster)
-            return;
-
-        m_modifier.m_amount = caster->SpellDamageBonus(m_target, GetSpellProto(), m_modifier.m_amount, DOT);
-    }
-}
-
 void Aura::HandlePeriodicManaLeech(bool apply, bool /*Real*/)
 {
     if (m_periodicTimer <= 0)
@@ -5227,10 +5203,9 @@ void Aura::PeriodicTick()
                 return;
 
             // heal for caster damage (must be alive)
-            if((m_target != pCaster && GetSpellProto()->SpellVisual==163))
+            if(m_target != pCaster && GetSpellProto()->SpellVisual==163 && !pCaster->isAlive())
                 return;
-			if(!pCaster->isAlive())
-				return;
+
             // ignore non positive values (can be result apply spellmods to aura damage
             uint32 amount = m_modifier.m_amount > 0 ? m_modifier.m_amount : 0;
 
@@ -5557,7 +5532,7 @@ void Aura::UnregisterSingleCastAura()
         else
         {
             sLog.outError("Couldn't find the caster of the single target aura (SpellId %u), may crash later!", GetId());
-            //ASSERT(false);
+            ASSERT(false);
         }
         m_isSingleTargetAura = false;
     }

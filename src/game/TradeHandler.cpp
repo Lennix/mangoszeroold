@@ -284,6 +284,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
         his_trade->SetAccepted(false, true);
         return;
     }
+
     // not accept if some items now can't be trade (cheating)
     for(int i = 0; i < TRADE_SLOT_TRADED_COUNT; ++i)
     {
@@ -570,12 +571,6 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         SendTradeStatus(TRADE_STATUS_BUSY);
         return;
     }
-
-	if (GetPlayer()->isTrial() || pOther->isTrial())
-	{
-		SendTradeStatus(TRADE_STATUS_TRIAL_ACCOUNT);
-		return;
-	}
 
     if (!pOther->isAlive())
     {

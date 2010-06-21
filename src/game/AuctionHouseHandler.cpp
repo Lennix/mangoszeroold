@@ -228,12 +228,6 @@ void WorldSession::HandleAuctionSellItem( WorldPacket & recv_data )
         return;
     }
 
-	if(pl->isTrial())
-	{
-		SendAuctionCommandResult(0, AUCTION_SELL_ITEM, AUCTION_INTERNAL_ERROR);
-        return;
-    }
-
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap( pCreature->getFaction() );
 
     //we have to take deposit :
@@ -340,11 +334,6 @@ void WorldSession::HandleAuctionPlaceBid( WorldPacket & recv_data )
         return;
     }
 
-	if (pl->isTrial())
-	{
-		return;
-	}
-
     if (price > pl->GetMoney())
     {
         // you don't have enough money!, client tests!
@@ -400,8 +389,7 @@ void WorldSession::HandleAuctionPlaceBid( WorldPacket & recv_data )
         sAuctionMgr.SendAuctionSalePendingMail( auction );
         sAuctionMgr.SendAuctionSuccessfulMail( auction );
         sAuctionMgr.SendAuctionWonMail( auction );
-		
-		auction->SaveToLog();
+
         SendAuctionCommandResult(auction->Id, AUCTION_PLACE_BID, AUCTION_OK);
 
         sAuctionMgr.RemoveAItem(auction->item_guidlow);

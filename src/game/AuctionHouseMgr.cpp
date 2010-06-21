@@ -517,8 +517,6 @@ void AuctionHouseObject::Update()
                 //we send the money to the seller
                 sAuctionMgr.SendAuctionSuccessfulMail( itr->second );
                 sAuctionMgr.SendAuctionWonMail( itr->second );
-
-		itr->second->SaveToLog();
             }
 
             ///- In any case clear the auction
@@ -678,14 +676,6 @@ void AuctionEntry::SaveToDB() const
 {
     //No SQL injection (no strings)
     CharacterDatabase.PExecute("INSERT INTO auctionhouse (id,auctioneerguid,itemguid,item_template,itemowner,buyoutprice,time,buyguid,lastbid,startbid,deposit,location) "
-        "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u', '%u')",
-        Id, auctioneer, item_guidlow, item_template, owner, buyout, (uint64)expire_time, bidder, bid, startbid, deposit, GetHouseId());
-}
-
-void AuctionEntry::SaveToLog() const
-{
-    //No SQL injection (no strings)
-    CharacterDatabase.PExecute("INSERT INTO auctionhouse_log (id,auctioneerguid,itemguid,item_template,itemowner,buyoutprice,time,buyguid,lastbid,startbid,deposit,location) "
         "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u', '%u')",
         Id, auctioneer, item_guidlow, item_template, owner, buyout, (uint64)expire_time, bidder, bid, startbid, deposit, GetHouseId());
 }

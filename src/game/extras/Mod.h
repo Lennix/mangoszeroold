@@ -84,9 +84,6 @@ class MANGOS_DLL_SPEC ModClass
         void auraApplyModifier(Aura* aura,AuraType aType,bool apply,bool real);
         void getSpellCastTime(SpellEntry const* spellInfo, Spell const* spell, int32 &castTime);
 
-		// ==== Aura mods ==== //
-		bool isAffectedOnSpell(SpellEntry const *spell, uint32 spellId, SpellEffectIndex effectId);
-
         // ==== Unit mods ==== //
 
         void applyDiminishingToDuration(Unit* unit,Unit* caster,int32 &duration, DiminishingGroup group);

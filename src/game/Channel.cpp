@@ -88,13 +88,12 @@ void Channel::Join(uint64 p, const char *pass)
         plr->JoinedChannel(this);
     }
 
-// Remove announce messages
-/*    if(m_announce && (!plr || plr->GetSession()->GetSecurity() < SEC_GAMEMASTER || !sWorld.getConfig(CONFIG_BOOL_SILENTLY_GM_JOIN_TO_CHANNEL) ))
+    if(m_announce && (!plr || plr->GetSession()->GetSecurity() < SEC_GAMEMASTER || !sWorld.getConfig(CONFIG_BOOL_SILENTLY_GM_JOIN_TO_CHANNEL) ))
     {
         MakeJoined(&data, p);
         SendToAll(&data);
     }
-*/
+
     data.clear();
 
     PlayerInfo pinfo;
@@ -143,14 +142,12 @@ void Channel::Leave(uint64 p, bool send)
         bool changeowner = players[p].IsOwner();
 
         players.erase(p);
-// Remove leave message
-/*        if(m_announce && (!plr || plr->GetSession()->GetSecurity() < SEC_GAMEMASTER || !sWorld.getConfig(CONFIG_BOOL_SILENTLY_GM_JOIN_TO_CHANNEL) ))
+        if(m_announce && (!plr || plr->GetSession()->GetSecurity() < SEC_GAMEMASTER || !sWorld.getConfig(CONFIG_BOOL_SILENTLY_GM_JOIN_TO_CHANNEL) ))
         {
             WorldPacket data;
             MakeLeft(&data, p);
             SendToAll(&data);
         }
-*/
 
         LeaveNotify(p);
 

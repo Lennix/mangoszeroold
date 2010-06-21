@@ -1857,8 +1857,8 @@ void World::SetPlayerLimit( int32 limit, bool needUpdate )
 
     m_playerLimit = limit;
 
-//    if(db_update_need)
-//      loginDatabase.PExecute("UPDATE realmlist SET allowedSecurityLevel = '%u' WHERE id = '%d'",uint8(GetPlayerSecurityLimit()),realmID);
+    if (db_update_need)
+        loginDatabase.PExecute("UPDATE realmlist SET allowedSecurityLevel = '%u' WHERE id = '%d'",uint8(GetPlayerSecurityLimit()),realmID);
 }
 
 void World::UpdateMaxSessionCounters()

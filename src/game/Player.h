@@ -374,7 +374,6 @@ enum PlayerFlags
     PLAYER_FLAGS_SANCTUARY      = 0x00010000,               // player entered sanctuary
     PLAYER_FLAGS_UNK18          = 0x00020000,               // taxi benchmark mode (on/off) (2.0.1)
     PLAYER_FLAGS_PVP_TIMER      = 0x00040000,               // 3.0.2, pvp timer active (after you disable pvp manually)
-	PLAYER_FLAGS_TRIAL          = 0x00080000,               // 3.0.2, pvp timer active (after you disable pvp manually)
 };
 
 // used in PLAYER_FIELD_BYTES values
@@ -857,10 +856,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool isAcceptWhispers() const { return m_ExtraFlags & PLAYER_EXTRA_ACCEPT_WHISPERS; }
         void SetAcceptWhispers(bool on) { if(on) m_ExtraFlags |= PLAYER_EXTRA_ACCEPT_WHISPERS; else m_ExtraFlags &= ~PLAYER_EXTRA_ACCEPT_WHISPERS; }
         bool isGameMaster() const { return m_ExtraFlags & PLAYER_EXTRA_GM_ON; }
-		
-		bool m_isTrial;
-		bool isTrial() const { return m_isTrial; }
-
         void SetGameMaster(bool on);
         bool isGMChat() const { return GetSession()->GetSecurity() >= SEC_MODERATOR && (m_ExtraFlags & PLAYER_EXTRA_GM_CHAT); }
         void SetGMChat(bool on) { if(on) m_ExtraFlags |= PLAYER_EXTRA_GM_CHAT; else m_ExtraFlags &= ~PLAYER_EXTRA_GM_CHAT; }
@@ -1900,7 +1895,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void   SaveRecallPosition();
 
         void SetHomebindToLocation(WorldLocation const& loc, uint32 area_id);
-        void RelocateToHomebind() { SetMapId(m_homebindMapId); Relocate(m_homebindX, m_homebindY, m_homebindZ); }
+        void RelocateToHomebind() { SetLocationMapId(m_homebindMapId); Relocate(m_homebindX,m_homebindY,m_homebindZ); }
         bool TeleportToHomebind(uint32 options = 0) { return TeleportTo(m_homebindMapId, m_homebindX, m_homebindY, m_homebindZ, GetOrientation(), options); }
 
         Object* GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask);

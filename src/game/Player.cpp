@@ -630,7 +630,7 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
     for (int i = 0; i < PLAYER_SLOTS_COUNT; ++i)
         m_items[i] = NULL;
 
-    SetMapId(info->mapId);
+    SetLocationMapId(info->mapId);
     Relocate(info->positionX,info->positionY,info->positionZ);
 
     ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(class_);
@@ -639,6 +639,8 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
         sLog.outError("Class %u not found in DBC (Wrong DBC files?)",class_);
         return false;
     }
+
+    SetMap(MapManager::Instance().CreateMap(info->mapId, this));
 
     uint8 powertype = cEntry->powerType;
 
@@ -1766,6 +1768,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 }
                 GetSession()->SendPacket( &data );
                 SendSavedInstances();
+            }
 
             // remove from old map now
             if (oldmap)
@@ -5884,7 +5887,7 @@ bool Player::RewardHonor(Unit *uVictim,uint32 groupsize)
 bool Player::AddHonorCP(float honor,uint8 type,uint32 victim,uint8 victimType)
 {
 
-    if (!honor && honor > 400)
+    if (!honor)
         return false;
 
     // CharacterDatabase.PExecute("INSERT INTO `character_honor_cp` (`guid`,`victim`,`victim_type`,`honor`,`date`,`type`) VALUES (%u, %u, %u, %f, %u, %u)", (uint32)GetGUIDLow(), (uint32)uVictim->GetEntry(),uVictim->GetType() (float)honor_points, (uint32)today, (uint8)kill_type);
@@ -11479,7 +11482,11 @@ void Player::PrepareQuestMenu( uint64 guid )
     }
     else
     {
-        GameObject *pGameObject = GetMap()->GetGameObject(guid);
+        //we should obtain map pointer from GetMap() in 99% of cases. Special case
+        //only for quests which cast teleport spells on player
+        Map * _map = IsInWorld() ? GetMap() : MapManager::Instance().FindMap(GetMapId(), GetInstanceId());
+        ASSERT(_map);
+        GameObject *pGameObject = _map->GetGameObject(guid);
         if( pGameObject )
         {
             pObject = (Object*)pGameObject;
@@ -13295,30 +13302,6 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     SetUInt32Value(PLAYER_BYTES_3, (GetUInt32Value(PLAYER_BYTES_3) & ~1) | fields[6].GetUInt8());
     SetUInt32Value(PLAYER_FLAGS, fields[12].GetUInt32());
 
-	// Get Total Played time for check
-	m_cinematic = fields[19].GetUInt32();
-    m_Played_time[PLAYED_TIME_TOTAL]= fields[20].GetUInt32();
-    m_Played_time[PLAYED_TIME_LEVEL]= fields[21].GetUInt32();
-
-	QueryResult *trialCheck = CharacterDatabase.PQuery("SELECT MAX(param) FROM character_job WHERE guid = '%u' AND job = '11';",guid);
-	if(trialCheck) // Trial character - Check if unlocked
-	{
-		Field* trialField = trialCheck->Fetch();
-		if(trialField[0].GetUInt16() == 1)
-			m_isTrial = true;
-		else
-			m_isTrial = false;
-	}
-	else
-		m_isTrial = false;
-
-	if(isTrial() && m_Played_time[PLAYED_TIME_TOTAL] > 86400)
-	{
-		sLog.outError("Player #%d Trial is expired.", GUID_LOPART(guid));
-        delete result;
-        return false;
-	}
-
     InitDisplayIds();
 
     // cleanup inventory related item value fields (its will be filled correctly in _LoadInventory)
@@ -13358,7 +13341,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     // init saved position, and fix it later if problematic
     uint32 transGUID = fields[31].GetUInt32();
     Relocate(fields[13].GetFloat(),fields[14].GetFloat(),fields[15].GetFloat(),fields[17].GetFloat());
-    SetMapId(fields[16].GetUInt32());
+    SetLocationMapId(fields[16].GetUInt32());
 
     _LoadGroup(holder->GetResult(PLAYER_LOGIN_QUERY_LOADGROUP));
 
@@ -13413,7 +13396,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
             {
                 m_transport = *iter;
                 m_transport->AddPassenger(this);
-                SetMapId(m_transport->GetMapId());
+                SetLocationMapId(m_transport->GetMapId());
                 break;
             }
         }
@@ -13433,11 +13416,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     // NOW player must have valid map
     // load the player's map here if it's not already loaded
-    Map *map = GetMap();
-
-    // since the player may not be bound to the map yet, make sure subsequent
-    // getmap calls won't create new maps
-    SetInstanceId(map->GetInstanceId());
+    SetMap(MapManager::Instance().CreateMap(GetMapId(), this));
 
     // if the player is in an instance and it has been reset in the meantime teleport him to the entrance
     if(GetInstanceId() && !sInstanceSaveMgr.GetInstanceSave(GetInstanceId()))
@@ -13481,6 +13460,10 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
         SetRestBonus(GetRestBonus()+ time_diff*((float)GetUInt32Value(PLAYER_NEXT_LEVEL_XP)/72000)*bubble);
     }
+
+    m_cinematic = fields[19].GetUInt32();
+    m_Played_time[PLAYED_TIME_TOTAL]= fields[20].GetUInt32();
+    m_Played_time[PLAYED_TIME_LEVEL]= fields[21].GetUInt32();
 
     m_resetTalentsCost = fields[25].GetUInt32();
     m_resetTalentsTime = time_t(fields[26].GetUInt64());
@@ -13541,8 +13524,6 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     // remember loaded power/health values to restore after stats initialization and modifier applying
     uint32 savedHealth = GetHealth();
-    if(savedHealth == 1)
-        m_deathState = DEAD;
     uint32 savedPower[MAX_POWERS];
     for(uint32 i = 0; i < MAX_POWERS; ++i)
         savedPower[i] = GetPower(Powers(i));
@@ -13600,15 +13581,19 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
         {
             sLog.outError("Character %u have wrong data in taxi destination list, teleport to homebind.",GetGUIDLow());
             RelocateToHomebind();
-            SaveRecallPosition();                           // save as recall also to prevent recall and fall from sky
         }
         else                                                // have start node, to it
         {
             sLog.outError("Character %u have too short taxi destination list, teleport to original node.",GetGUIDLow());
-            SetMapId(nodeEntry->map_id);
+            SetLocationMapId(nodeEntry->map_id);
             Relocate(nodeEntry->x, nodeEntry->y, nodeEntry->z,0.0f);
-            SaveRecallPosition();                           // save as recall also to prevent recall and fall from sky
         }
+
+        //we can be relocated from taxi and still have an outdated Map pointer!
+        //so we need to get a new Map pointer!
+        SetMap(MapManager::Instance().CreateMap(GetMapId(), this));
+        SaveRecallPosition();                           // save as recall also to prevent recall and fall from sky
+
         m_taxi.ClearTaxiDestinations();
     }
     else if(uint32 node_id = m_taxi.GetTaxiSource())
@@ -14141,9 +14126,9 @@ void Player::LoadPet()
     // just not added to the map
     if(IsInWorld())
     {
-        //Pet *pet = new Pet;
-        //if(!pet->LoadPetFromDB(this, 0, 0, true))
-        //    delete pet;
+        Pet *pet = new Pet;
+        if(!pet->LoadPetFromDB(this, 0, 0, true))
+            delete pet;
     }
 }
 
@@ -14605,13 +14590,13 @@ void Player::SaveToDB()
     CharacterDatabase.BeginTransaction();
 
     UpdateHonor();
-    //CharacterDatabase.PExecute("DELETE FROM characters WHERE guid = '%u'",GetGUIDLow());
+    CharacterDatabase.PExecute("DELETE FROM characters WHERE guid = '%u'",GetGUIDLow());
 
     std::string sql_name = m_name;
     CharacterDatabase.escape_string(sql_name);
 
     std::ostringstream ss;
-    ss << "REPLACE INTO characters (guid,account,name,race,class,gender,level,xp,money,playerBytes,playerBytes2,playerFlags,"
+    ss << "INSERT INTO characters (guid,account,name,race,class,gender,level,xp,money,playerBytes,playerBytes2,playerFlags,"
         "map, position_x, position_y, position_z, orientation, data, "
         "taximask, online, cinematic, "
         "totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost, resettalents_time, "

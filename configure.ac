@@ -308,11 +308,7 @@ AC_CONFIG_FILES([
    src/mangosd/mangosd.conf.dist
    src/mangosd/mods.conf.dist
    src/bindings/Makefile
-   src/bindings/scriptdevzero/Makefile
-   src/bindings/scriptdevzero/scriptdevzero.conf.dist
-   src/bindings/scriptdevzero/config.h
-   src/bindings/scriptdevzero/sql/Makefile
-   src/bindings/scriptdevzero/sql/Updates/Makefile
+   src/bindings/universal/Makefile
 ])
 
 ## Configure ACE, if needed

@@ -40,7 +40,7 @@ void ModClass::auraApplyModifier(Aura *aura, AuraType aType, bool apply, bool re
 void ModClass::applyDiminishingToDuration(Unit *unit, Unit *caster, int32 &duration, DiminishingGroup group)
 {
     // [MOD] Duration of crowd control abilities on pvp target is limited by 10 sec. (after patch 2.2.0)
-    if(getModConfig(MODCONFIG_BOOL_TBC_DIMINISHING_DURATION) && duration > 16*IN_MILLISECONDS && IsDiminishingReturnsGroupDurationLimited(group))
+    if(getModConfig(MODCONFIG_BOOL_TBC_DIMINISHING_DURATION) && duration > 10*IN_MILLISECONDS && IsDiminishingReturnsGroupDurationLimited(group))
     {
         // test pet/charm masters instead pets/charmeds
         Unit const* targetOwner = unit->GetCharmerOrOwner();
@@ -50,7 +50,7 @@ void ModClass::applyDiminishingToDuration(Unit *unit, Unit *caster, int32 &durat
         Unit const* source = casterOwner ? casterOwner : caster;
 
         if(target->GetTypeId() == TYPEID_PLAYER && source->GetTypeId() == TYPEID_PLAYER)
-            duration = 16000;
+            duration = 10000;
     }
 }
 
@@ -60,24 +60,4 @@ void ModClass::getSpellCastTime(const SpellEntry *spellInfo, const Spell *spell,
     // it should be instant instead
     if(spellInfo->Id == 19968) 
         castTime = 0;
-}
-
-bool ModClass::isAffectedOnSpell(SpellEntry const *spell, uint32 spellId, SpellEffectIndex effectId)
-{
-	switch (spell->Id) { // Scorch
-		case 2948:
-		case 8444:
-		case 8445:
-		case 8446:
-		case 10205:
-		case 10206:
-		case 10207:
-			switch(spellId) { // Improved Scorch
-				case 11095:
-				case 12872:
-				case 12873:
-					return true;
-			}
-	}
-	return false;
 }

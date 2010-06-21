@@ -117,27 +117,6 @@ DBCStorage <WorldSafeLocsEntry> sWorldSafeLocsStore(WorldSafeLocsEntryfmt);
 
 typedef std::list<std::string> StoreProblemList;
 
-void ModifySpellData()
-{
-	/* Fixed with z0515
-	uint32 palaHealSpells[14] = { 19750,19939,19940,19941,19942,19943,
-		639,647,1026,1042,3472,10328,10329,25292 };
-	for (int i = 0; i < 14; i ++) {
-		sSpellStore.GetEntry(palaHealSpells[i])->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-		sSpellStore.GetEntry(palaHealSpells[i])->SpellFamilyFlags = 1075863552;
-		// 1073741824
-	}
-
-	sSpellStore.GetEntry(25292)->Effect[EFFECT_INDEX_0] = SPELL_EFFECT_HEAL;
-	*/
-
-	// Mage - Scorch
-	/*uint32 improvedScorchID[3] = { 11095,12872,12873 };
-	for (int i = 0; i < 3; i++) {
-		sSpellStore.GetEntry(improvedScorchID[i])->Spell = 1073741840;
-	}*/
-}
-
 bool IsAcceptableClientBuild(uint32 build)
 {
     int accepted_versions[] = EXPECTED_MANGOSD_CLIENT_BUILD;
@@ -468,8 +447,6 @@ void LoadDBCStores(const std::string& dataPath)
         sLog.outError("\nYou have _outdated_ DBC files. Please re-extract DBC files for one from client build: %s",AcceptableClientBuildsListStr().c_str());
         exit(1);
     }
-
-	ModifySpellData();
 
     sLog.outString();
     sLog.outString( ">> Initialized %d data stores", DBCFilesCount );

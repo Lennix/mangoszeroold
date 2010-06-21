@@ -5905,7 +5905,6 @@ void Unit::Uncharm()
 
 float Unit::GetCombatDistance( const Unit* target ) const
 {
-	if (!target) return 0;
     float radius = target->GetFloatValue(UNIT_FIELD_COMBATREACH) + GetFloatValue(UNIT_FIELD_COMBATREACH);
     float dx = GetPositionX() - target->GetPositionX();
     float dy = GetPositionY() - target->GetPositionY();
@@ -8746,7 +8745,7 @@ void Unit::CleanupsBeforeDelete()
         RemoveAllAuras(AURA_REMOVE_BY_DELETE);
         GetMotionMaster()->Clear(false);                    // remove different non-standard movement generators.
     }
-    RemoveFromWorld();
+    WorldObject::CleanupsBeforeDelete();
 }
 
 CharmInfo* Unit::InitCharmInfo(Unit *charm)

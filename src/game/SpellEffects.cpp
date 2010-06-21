@@ -3053,7 +3053,6 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
                 return;
 
             OldSummon->GetMap()->Remove((Creature*)OldSummon,false);
-            OldSummon->SetMapId(m_caster->GetMapId());
 
             float px, py, pz;
             m_caster->GetClosePoint(px, py, pz, OldSummon->GetObjectSize());
@@ -3414,13 +3413,12 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
     m_caster->MeleeDamageBonus(unitTarget, &eff_damage, m_attackType, m_spellInfo);
     m_damage+= eff_damage;
 
-	// Seems to be fixed
     // Hemorrhage
-//    if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
-//    {
-//        if(m_caster->GetTypeId()==TYPEID_PLAYER)
-//            ((Player*)m_caster)->AddComboPoints(unitTarget, 1);
-//    }
+    if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
+    {
+        if(m_caster->GetTypeId()==TYPEID_PLAYER)
+            ((Player*)m_caster)->AddComboPoints(unitTarget, 1);
+    }
 
     // Mangle (Cat): CP
     if (m_spellInfo->SpellFamilyName==SPELLFAMILY_DRUID && (m_spellInfo->SpellFamilyFlags==UI64LIT(0x0000040000000000)))

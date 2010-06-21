@@ -357,14 +357,12 @@ void WorldSession::LogoutPlayer(bool Save)
             _player->TeleportToHomebind();
             //this is a bad place to call for far teleport because we need player to be in world for successful logout
             //maybe we should implement delayed far teleport logout?
-			while(_player->IsBeingTeleportedFar())
-				HandleMoveWorldportAckOpcode();
         }
 
         // FG: finish pending transfers after starting the logout
         // this should fix players beeing able to logout and login back with full hp at death position
-        //while(_player->IsBeingTeleportedFar())
-        //    HandleMoveWorldportAckOpcode();
+        while(_player->IsBeingTeleportedFar())
+            HandleMoveWorldportAckOpcode();
 
         for (int i=0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
         {
@@ -431,15 +429,9 @@ void WorldSession::LogoutPlayer(bool Save)
         // the player may not be in the world when logging out
         // e.g if he got disconnected during a transfer to another map
         // calls to GetMap in this case may cause crashes
-        if(_player->IsInWorld()) _player->GetMap()->Remove(_player, false);
-        // RemoveFromWorld does cleanup that requires the player to be in the accessor
-        sObjectAccessor.RemoveObject(_player);
-
-        ///- Delete the player object
-        _player->CleanupsBeforeDelete();                    // do some cleanup before deleting to prevent crash at crossreferences to already deleted data
-
-        delete _player;
-        SetPlayer(NULL);
+        Map* _map = _player->GetMap();
+        _map->Remove(_player, true);
+        SetPlayer(NULL);                                    // deleted in Remove call
 
         ///- Send the 'logout complete' packet to the client
         WorldPacket data( SMSG_LOGOUT_COMPLETE, 0 );

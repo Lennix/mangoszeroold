@@ -389,11 +389,8 @@ bool AuthSocket::_HandleLogonChallenge()
             if((*result)[2].GetUInt8() == 1)                // if ip is locked
             {
                 DEBUG_LOG("[AuthChallenge] Account '%s' is locked to IP - '%s'", _login.c_str(), (*result)[3].GetString());
-//                DEBUG_LOG("[AuthChallenge] Player address is '%s'", get_remote_adress().c_str());
-                pkt << (uint8) WOW_FAIL_SUSPENDED;
-                locked=true;
-				
-				/*if ( strcmp((*result)[3].GetString(),GetRemoteAddress().c_str()) )
+                DEBUG_LOG("[AuthChallenge] Player address is '%s'", get_remote_address().c_str());
+                if ( strcmp((*result)[3].GetString(),get_remote_address().c_str()) )
                 {
                     DEBUG_LOG("[AuthChallenge] Account IP differs");
                     pkt << (uint8) WOW_FAIL_SUSPENDED;
@@ -402,7 +399,7 @@ bool AuthSocket::_HandleLogonChallenge()
                 else
                 {
                     DEBUG_LOG("[AuthChallenge] Account IP matches");
-                }*/
+                }
             }
             else
             {
@@ -682,8 +679,7 @@ bool AuthSocket::_HandleLogonProof()
     }
     else
     {
-        //char data[4]= { AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT, 3, 0};
-	char data[2]= { AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT};
+        char data[4]= { AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT, 3, 0};
         send(data, sizeof(data));
         BASIC_LOG("[AuthChallenge] account %s tried to login with wrong password!",_login.c_str ());
 
@@ -882,19 +878,12 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
         case 5875:                                          // 1.12.1
         case 6005:                                          // 1.12.2
         {
-            uint32 size = 0;
-            for(RealmList::RealmMap::const_iterator  i = sRealmList.begin(); i != sRealmList.end(); ++i)
-            {
-                if (_accountSecurityLevel >= i->second.allowedSecurityLevel)
-                    size ++;
-            }
             pkt << uint32(0);
-            pkt << uint8(size);
+            pkt << uint8(sRealmList.size());
 
             for(RealmList::RealmMap::const_iterator  i = sRealmList.begin(); i != sRealmList.end(); ++i)
             {
-                if (_accountSecurityLevel >= i->second.allowedSecurityLevel) {
-				uint8 AmountOfCharacters;
+                uint8 AmountOfCharacters;
 
                 // No SQL injection. id of realm is controlled by the database.
                 QueryResult *result = loginDatabase.PQuery( "SELECT numchars FROM realmcharacters WHERE realmid = '%d' AND acctid='%u'", i->second.m_ID, acctid);
@@ -925,7 +914,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 }
 
                 // Show offline state for unsupported client builds and locked realms (1.x clients not support locked state show)
-                if (!ok_build || (i->second.allowedSecurityLevel > _accountSecurityLevel))
+                if (!ok_build || (i->second.allowedSecurityLevel >= _accountSecurityLevel))
                     realmflags = RealmFlags(realmflags | REALM_FLAG_OFFLINE);
 
                 pkt << uint32(i->second.icon);              // realm type
@@ -937,7 +926,6 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 pkt << uint8(i->second.timezone);           // realm category
                 pkt << uint8(0x00);                         // unk, may be realm number/id?
             }
-	    }
 
             pkt << uint8(0x00);
             pkt << uint8(0x02);

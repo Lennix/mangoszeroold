@@ -873,13 +873,12 @@ WorldObject::WorldObject()
 
 void WorldObject::CleanupsBeforeDelete()
 {
+    RemoveFromWorld();
 }
 
-void WorldObject::_Create( uint32 guidlow, HighGuid guidhigh, uint32 mapid )
+void WorldObject::_Create( uint32 guidlow, HighGuid guidhigh )
 {
     Object::_Create(guidlow, 0, guidhigh);
-
-    m_mapId = mapid;
 }
 
 void WorldObject::Relocate(float x, float y, float z, float orientation)
@@ -1393,14 +1392,19 @@ void WorldObject::SendGameObjectCustomAnim(uint64 guid)
     SendMessageToSet(&data, true);
 }
 
-Map* WorldObject::GetMap() const
+void WorldObject::SetMap(Map * map)
 {
-    return sMapMgr.GetMap(GetMapId(), this);
+    ASSERT(map);
+    m_currMap = map;
+    //lets save current map's Id/instanceId
+    m_mapId = map->GetId();
+    m_InstanceId = map->GetInstanceId();
 }
 
 Map const* WorldObject::GetBaseMap() const
 {
-    return sMapMgr.CreateBaseMap(GetMapId());
+    ASSERT(m_currMap);
+    return m_currMap->GetParent();
 }
 
 void WorldObject::AddObjectToRemoveList()
@@ -1412,7 +1416,6 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
 {
     TemporarySummon* pCreature = new TemporarySummon(GetObjectGuid());
 
-    pCreature->SetInstanceId(GetInstanceId());
     uint32 team = 0;
     if (GetTypeId()==TYPEID_PLAYER)
         team = ((Player*)this)->GetTeam();
