@@ -205,6 +205,8 @@ class ChatHandler
         bool HandleHonorAddKillCommand(const char* args);
         bool HandleUpdateHonorFieldsCommand(const char* args);
 
+		bool HandleHeroicCommand(const char* args);
+
         bool HandleInstanceListBindsCommand(const char* args);
         bool HandleInstanceUnbindCommand(const char* args);
         bool HandleInstanceStatsCommand(const char* args);

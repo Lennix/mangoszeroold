@@ -202,6 +202,19 @@ bool Creature::InitEntry(uint32 Entry, uint32 team, const CreatureData *data )
 
     uint32 actualEntry = Entry;
     CreatureInfo const *cinfo = normalInfo;
+    if (normalInfo->HeroicEntry)
+    {
+//        Map *map = MapManager::Instance().FindMap(GetMapId(), GetInstanceId());
+//        if (map && map->IsHeroic())
+        {
+            cinfo = sObjectMgr.GetCreatureTemplate(normalInfo->HeroicEntry);
+            if (!cinfo)
+            {
+                sLog.outErrorDb("Creature::UpdateEntry creature heroic entry %u does not exist.", actualEntry);
+                return false;
+            }
+        }
+    }
 
     SetEntry(Entry);                                        // normal entry always
     m_creatureInfo = cinfo;                                 // map mode related always

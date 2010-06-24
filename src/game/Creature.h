@@ -65,6 +65,7 @@ enum CreatureFlagsExtra
 struct CreatureInfo
 {
     uint32  Entry;
+	uint32	HeroicEntry;
     uint32  KillCredit[MAX_KILL_CREDIT];
     uint32  DisplayID[2];
     char*   Name;

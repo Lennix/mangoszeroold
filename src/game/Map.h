@@ -331,7 +331,12 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         // NOTE: this duplicate of Instanceable(), but Instanceable() can be changed when BG also will be instanceable
         bool IsDungeon() const { return i_mapEntry && i_mapEntry->IsDungeon(); }
         bool IsRaid() const { return i_mapEntry && i_mapEntry->IsRaid(); }
-        bool IsBattleGround() const { return i_mapEntry && i_mapEntry->IsBattleGround(); }
+        
+		uint8 i_spawnMode;
+		bool IsHeroic() { return i_spawnMode == DIFFICULTY_HEROIC; }
+		void SetSpawnMode(uint8 spawnMode) { i_spawnMode = spawnMode; }
+
+		bool IsBattleGround() const { return i_mapEntry && i_mapEntry->IsBattleGround(); }
 
         void AddObjectToRemoveList(WorldObject *obj);
 

@@ -143,8 +143,8 @@ enum Target
 enum EventFlags
 {
     EFLAG_REPEATABLE            = 0x01,                     //Event repeats
-    EFLAG_RESERVED_1            = 0x02,
-    EFLAG_RESERVED_2            = 0x04,
+    EFLAG_NORMAL	            = 0x02,
+    EFLAG_HEROIC	            = 0x04,
     EFLAG_RESERVED_3            = 0x08,
     EFLAG_RESERVED_4            = 0x10,
     EFLAG_RESERVED_5            = 0x20,
