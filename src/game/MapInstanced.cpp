@@ -148,8 +148,8 @@ Map* MapInstanced::CreateInstance(const uint32 mapId, Player * player)
             NewInstanceId = MapManager::Instance().GenerateInstanceId();
             map = CreateInstance(NewInstanceId);
         }
-
-		map->SetSpawnMode(player->GetGroup()->GetDifficulty());
+		if(player->GetGroup())
+			map->SetSpawnMode(player->GetGroup()->GetDifficulty());
     }
 
     return map;

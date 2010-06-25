@@ -276,8 +276,20 @@ bool ChatHandler::HandleHeroicCommand(const char* /*args*/)
 	if(!m_session)
         return NULL;
 
+	if(!m_session->GetPlayer()->GetGroup())
+	{
+		SendSysMessage("You have to be in group to activate heroic mode");
+		return true;
+	}
+
+	if(m_session->GetPlayer()->GetGroup()->GetLeaderGUID() != m_session->GetPlayer()->GetGUID())
+	{
+		SendSysMessage("You need to be leader to change heroic mode");
+		return true;
+	}
+
 	uint8 difficulty = m_session->GetPlayer()->GetGroup()->GetDifficulty();
-	if (difficulty <> DIFFICULTY_HEROIC)
+	if (difficulty != DIFFICULTY_HEROIC)
 	{
 		SendSysMessage("Heroic Mode is now enabled!");
 		m_session->GetPlayer()->GetGroup()->SetDifficulty(DIFFICULTY_HEROIC);
