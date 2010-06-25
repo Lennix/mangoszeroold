@@ -174,8 +174,8 @@ Map* MapInstanced::GetInstance(const WorldObject* obj)
                 return CreateInstance(NewInstanceId, NULL);
             }
         }
-
-		map->SetSpawnMode(player->GetGroup()->GetDifficulty());
+		if(player->GetGroup())
+			map->SetSpawnMode(player->GetGroup()->GetDifficulty());
     }
 }
 
