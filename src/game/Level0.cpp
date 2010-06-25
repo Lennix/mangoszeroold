@@ -275,12 +275,17 @@ bool ChatHandler::HandleHeroicCommand(const char* /*args*/)
 {
 	if(!m_session)
         return NULL;
-	m_session->GetPlayer()->GetGroup()->SetDifficulty(DIFFICULTY_HEROIC);
-	uint8 difficulty = m_session->GetPlayer()->GetGroup()->GetDifficulty();
-	if (difficulty == DIFFICULTY_HEROIC)
-		SendSysMessage("Heroic Mode is now enabled!");
-	else
-		SendSysMessage("Heroic Mode is now disabled!");
 
-	return false;
+	uint8 difficulty = m_session->GetPlayer()->GetGroup()->GetDifficulty();
+	if (difficulty <> DIFFICULTY_HEROIC)
+	{
+		SendSysMessage("Heroic Mode is now enabled!");
+		m_session->GetPlayer()->GetGroup()->SetDifficulty(DIFFICULTY_HEROIC);
+	}
+	else
+	{
+		SendSysMessage("Heroic Mode is now disabled!");
+		m_session->GetPlayer()->GetGroup()->SetDifficulty(DIFFICULTY_NORMAL);
+	}
+	return true;
 }
