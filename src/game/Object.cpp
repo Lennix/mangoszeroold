@@ -904,7 +904,9 @@ void WorldObject::Relocate(float x, float y, float z)
 
 uint32 WorldObject::GetZoneId() const
 {
-    return GetBaseMap()->GetZoneId(m_positionX, m_positionY, m_positionZ);
+    if(GetBaseMap())	
+		return GetBaseMap()->GetZoneId(m_positionX, m_positionY, m_positionZ);
+	return 0;
 }
 
 uint32 WorldObject::GetAreaId() const
@@ -1404,7 +1406,9 @@ void WorldObject::SetMap(Map * map)
 Map const* WorldObject::GetBaseMap() const
 {
     ASSERT(m_currMap);
-    return m_currMap->GetParent();
+	if(m_currMap && m_currMap->GetParent())
+		return m_currMap->GetParent();
+	return NULL;
 }
 
 void WorldObject::AddObjectToRemoveList()
