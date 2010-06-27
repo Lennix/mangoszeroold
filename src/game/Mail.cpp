@@ -407,6 +407,13 @@ void WorldSession::HandleMailTakeItem(WorldPacket & recv_data )
         return;
     }
 
+	// Trials should not take items with COD due to exploiting!
+	if(pl->isTrial() && m->COD > 0)
+	{
+		pl->SendMailResult(mailId, MAIL_ITEM_TAKEN, MAIL_ERR_INTERNAL_ERROR);
+		return;
+	}
+
     // prevent cheating with skip client money check
     if(pl->GetMoney() < m->COD)
     {
