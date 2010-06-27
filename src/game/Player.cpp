@@ -14707,8 +14707,15 @@ void Player::SaveToDB()
     ss << ", ";
     ss << uint32(m_atLoginFlags);
 
+	// 
     ss << ", ";
-    ss << GetZoneId();
+    if(IsBeingTeleportedFar())
+	{
+		uint32 tmp = 0;
+		ss << tmp;
+	}
+	else
+		ss << GetZoneId();
 
     ss << ", ";
     ss << (uint64)m_deathExpireTime;
