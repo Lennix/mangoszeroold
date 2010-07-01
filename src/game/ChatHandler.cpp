@@ -76,6 +76,12 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
 
     DEBUG_LOG("CHAT: packet received. type %u, lang %u", type, lang );
 
+	// Player try to crash server using very big lang, lets see if this helps
+	if(lang > 20000)
+	{
+		DEBUG_LOG("CHAT: crash by player: player: %u, type %u, lang %u", GetPlayer()->GetGUIDLow(), type, lang );
+		return;
+	}
     // prevent talking at unknown language (cheating)
     LanguageDesc const* langDesc = GetLanguageDescByID(lang);
     if(!langDesc)
