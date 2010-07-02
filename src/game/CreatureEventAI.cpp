@@ -59,7 +59,7 @@ CreatureEventAI::CreatureEventAI(Creature *c ) : CreatureAI(c)
     if (CreatureEvents != sEventAIMgr.GetCreatureEventAIMap().end())
     {
         std::vector<CreatureEventAI_Event>::const_iterator i;
-        for (i = (*CreatureEvents).second.begin(); i != (*CreatureEvents).second.end(); ++i)
+/*        for (i = (*CreatureEvents).second.begin(); i != (*CreatureEvents).second.end(); ++i)
         {
 
             //Debug check
@@ -71,6 +71,24 @@ CreatureEventAI::CreatureEventAI(Creature *c ) : CreatureAI(c)
             {
 				if ((m_creature->GetMap()->IsHeroic() && (*i).event_flags & EFLAG_HEROIC) ||
                     ((*i).event_flags & EFLAG_NORMAL))
+                {                
+					//event flagged for instance mode
+                    CreatureEventAIList.push_back(CreatureEventAIHolder(*i));
+				}
+                continue;
+            }
+            CreatureEventAIList.push_back(CreatureEventAIHolder(*i));
+        }*/
+		for (i = (*CreatureEvents).second.begin(); i != (*CreatureEvents).second.end(); ++i)
+        {
+
+            //Debug check
+            #ifndef MANGOS_DEBUG
+            if ((*i).event_flags & EFLAG_DEBUG_ONLY)
+                continue;
+            #endif
+            if (m_creature->GetMap()->IsDungeon())
+            {
                 {                
 					//event flagged for instance mode
                     CreatureEventAIList.push_back(CreatureEventAIHolder(*i));
