@@ -2769,6 +2769,9 @@ void Aura::HandleModCharm(bool apply, bool Real)
                 ((Creature*)target)->AI()->AttackedBy(caster);
         }
     }
+
+	if(target->GetTypeId() == TYPEID_PLAYER)
+			((Player*)target)->SetCharmed(apply, GetCasterGUID(), GetId());
 }
 
 void Aura::HandleModConfuse(bool apply, bool Real)

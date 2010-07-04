@@ -1122,6 +1122,19 @@ void Player::Update( uint32 p_time )
     if(!IsInWorld())
         return;
 
+	if( HasAuraType(SPELL_AURA_MOD_CHARM))
+	{
+		if (isAttackReady())
+		{
+			//if we are within range meele the target
+			if (IsWithinDistInMap(getVictim(), ATTACK_DISTANCE))
+			{
+				AttackerStateUpdate(getVictim());
+				resetAttackTimer();
+			}
+		}
+	}
+
     // undelivered mail
     if(m_nextMailDelivereTime && m_nextMailDelivereTime <= time(NULL))
     {
@@ -3931,6 +3944,36 @@ void Player::SetMovement(PlayerMovementType pType)
     data << GetPackGUID();
     data << uint32(0);
     GetSession()->SendPacket( &data );
+}
+
+void Player::SetCharmed(bool apply, uint64 casterGUID, uint32 spellID)
+{
+    SetClientControl(this, !apply);
+    if (apply)
+	{
+        if (Unit* pCaster = ObjectAccessor::GetUnit(*this,casterGUID))
+        {
+            ThreatList const& threatlist = pCaster->getThreatManager().getThreatList();
+            if (threatlist.size())
+                for (uint8 i = 0;i < 3;++i)
+                {
+                    ThreatList::const_iterator itr = threatlist.begin();
+                    advance(itr,(rand() % (threatlist.size())));
+                    if (Unit* pTarget = Unit::GetUnit((*pCaster),(*itr)->getUnitGuid()))
+                        if (pTarget != this || !pTarget->isAlive())
+                        {
+                            GetMotionMaster()->MoveChase(pTarget);
+                            Attack(pTarget,true);       //attack to make a victim for further attacks
+                            break;
+                        }
+                }
+        }
+	}
+    if (!apply)
+    {
+        GetMotionMaster()->Clear();
+        AttackStop();
+    }
 }
 
 /* Preconditions:
