@@ -74,7 +74,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
         return;
     }
 
-    DEBUG_LOG("CHAT: packet received. type %u, lang %u", type, lang );
+    DEBUG_LOG("CHAT: packet received. player: %u, type %u, lang %u", GetPlayer()->GetGUIDLow(), type, lang );
 
 	// Player try to crash server using very big lang, lets see if this helps
 	if(lang > 20000)
