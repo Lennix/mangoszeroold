@@ -156,45 +156,6 @@ class InstanceResetScheduler
         ResetTimeQueue m_resetTimeQueue;
 };
 
-/* resetTime is a global propery of each (raid/heroic) map
-    all instances of that map reset at the same time */
-struct InstanceResetEvent
-{
-    uint8 type;
-    uint16 mapid;
-    uint16 instanceId;
-    InstanceResetEvent(uint8 t = 0, uint16 m = 0, uint16 i = 0) : type(t), mapid(m), instanceId(i) {}
-    bool operator == (const InstanceResetEvent& e) { return e.instanceId == instanceId; }
-};
-
-class InstanceSaveManager;
-
-class InstanceResetScheduler
-{
-    public:                                                 // constructors
-        explicit InstanceResetScheduler(InstanceSaveManager& mgr) : m_InstanceSaves(mgr) {}
-        void LoadResetTimes();
-
-    public:                                                 // accessors
-        time_t GetResetTimeFor(uint32 mapid) { return m_resetTimeByMapId[mapid]; }
-
-    public:                                                 // modifiers
-        void ScheduleReset(bool add, time_t time, InstanceResetEvent event);
-
-        void Update();
-
-    private:                                                // fields
-        InstanceSaveManager& m_InstanceSaves;
-
-
-        // fast lookup for reset times (always use existed functions for access/set)
-        typedef std::vector<time_t /*resetTime*/> ResetTimeVector;
-        ResetTimeVector m_resetTimeByMapId;
-
-        typedef std::multimap<time_t /*resetTime*/, InstanceResetEvent> ResetTimeQueue;
-        ResetTimeQueue m_resetTimeQueue;
-};
-
 class MANGOS_DLL_DECL InstanceSaveManager : public MaNGOS::Singleton<InstanceSaveManager, MaNGOS::ClassLevelLockable<InstanceSaveManager, ACE_Thread_Mutex> >
 {
     friend class InstanceResetScheduler;
