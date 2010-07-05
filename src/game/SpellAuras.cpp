@@ -2771,7 +2771,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
     }
 
 	if(target->GetTypeId() == TYPEID_PLAYER)
-			((Player*)target)->SetCharmed(apply, GetCasterGUID(), GetId());
+		((Player*)target)->SetCharmed(apply, GetCasterGUID(), GetId());
 }
 
 void Aura::HandleModConfuse(bool apply, bool Real)
