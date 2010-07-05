@@ -125,6 +125,8 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map *map, float x, float
         return false;
     }
 
+    SetObjectScale(goinfo->size);
+
     SetFloatValue(GAMEOBJECT_POS_X, x);
     SetFloatValue(GAMEOBJECT_POS_Y, y);
     SetFloatValue(GAMEOBJECT_POS_Z, z);
@@ -133,8 +135,6 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map *map, float x, float
     SetFloatValue(GAMEOBJECT_ROTATION+1, rotation1);
 
     UpdateRotationFields(rotation2,rotation3);              // GAMEOBJECT_FACING, GAMEOBJECT_ROTATION+2/3
-
-    SetFloatValue(OBJECT_FIELD_SCALE_X, goinfo->size);
 
     SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
     SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
@@ -1416,4 +1416,10 @@ bool GameObject::IsFriendlyTo(Unit const* unit) const
 
     // common faction based case (GvC,GvP)
     return tester_faction->IsFriendlyTo(*target_faction);
+}
+
+float GameObject::GetObjectBoundingRadius() const
+{
+    // 1.12.1 GameObjectDisplayInfo.dbc not have any info related to size
+    return DEFAULT_WORLD_OBJECT_SIZE;
 }

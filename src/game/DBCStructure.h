@@ -289,7 +289,6 @@ struct GameObjectDisplayInfoEntry
     uint32      Displayid;                                  // 0        m_ID
     // char* filename;                                      // 1
     // uint32 unknown2[10];                                 // 2-11     unknown data
-    // float  unknown12[6];                                 // 12-17    unknown data
 };
 
 // All Gt* DBC store data for 100 levels, some by 100 per class/race
@@ -590,10 +589,14 @@ struct SpellRadiusEntry
 
 struct SpellRangeEntry
 {
-    uint32    ID;
-    float     minRange;
-    float     maxRange;
-    // uint32    type;                                      // unused
+    uint32    ID;                                           // 0
+    float     minRange;                                     // 1
+    float     maxRange;                                     // 2
+    //uint32   Flags;                                       // 3
+    //char*  Name[8];                                       // 4-11 unused
+    //uint32 NameFlags;                                     // 12 unused
+    //char*  ShortName[8];                                  // 13-20 unused
+    //uint32 NameFlags;                                     // 21 unused
 };
 
 struct SpellShapeshiftEntry
