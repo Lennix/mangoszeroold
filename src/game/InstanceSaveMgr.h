@@ -93,9 +93,17 @@ class InstanceSave
         /* currently it is possible to omit this information from this structure
            but that would depend on a lot of things that can easily change in future */
 
+        void SetUsedByMapState(bool state)
+        {
+            m_usedByMap = state;
+            if (!state)
+                UnloadIfEmpty();
+        }
+
+    private:
         typedef std::list<Player*> PlayerListType;
         typedef std::list<Group*> GroupListType;
-    private:
+
         bool UnloadIfEmpty();
         /* the only reason the instSave-object links are kept is because
            the object-instSave links need to be broken at reset time
@@ -106,6 +114,46 @@ class InstanceSave
         uint32 m_instanceid;
         uint16 m_mapid;
         bool m_canReset;
+        bool m_usedByMap;                                   // true when instance map loaded
+};
+
+/* resetTime is a global propery of each (raid/heroic) map
+    all instances of that map reset at the same time */
+struct InstanceResetEvent
+{
+    uint8 type;
+    uint16 mapid;
+    uint16 instanceId;
+    InstanceResetEvent(uint8 t = 0, uint16 m = 0, uint16 i = 0) : type(t), mapid(m), instanceId(i) {}
+    bool operator == (const InstanceResetEvent& e) { return e.instanceId == instanceId; }
+};
+
+class InstanceSaveManager;
+
+class InstanceResetScheduler
+{
+    public:                                                 // constructors
+        explicit InstanceResetScheduler(InstanceSaveManager& mgr) : m_InstanceSaves(mgr) {}
+        void LoadResetTimes();
+
+    public:                                                 // accessors
+        time_t GetResetTimeFor(uint32 mapid) { return m_resetTimeByMapId[mapid]; }
+
+    public:                                                 // modifiers
+        void ScheduleReset(bool add, time_t time, InstanceResetEvent event);
+
+        void Update();
+
+    private:                                                // fields
+        InstanceSaveManager& m_InstanceSaves;
+
+
+        // fast lookup for reset times (always use existed functions for access/set)
+        typedef std::vector<time_t /*resetTime*/> ResetTimeVector;
+        ResetTimeVector m_resetTimeByMapId;
+
+        typedef std::multimap<time_t /*resetTime*/, InstanceResetEvent> ResetTimeQueue;
+        ResetTimeQueue m_resetTimeQueue;
 };
 
 /* resetTime is a global propery of each (raid/heroic) map
@@ -154,9 +202,6 @@ class MANGOS_DLL_DECL InstanceSaveManager : public MaNGOS::Singleton<InstanceSav
         InstanceSaveManager();
         ~InstanceSaveManager();
 
-        typedef UNORDERED_MAP<uint32 /*InstanceId*/, InstanceSave*> InstanceSaveHashMap;
-        typedef UNORDERED_MAP<uint32 /*mapId*/, InstanceSaveHashMap> InstanceSaveMapMap;
-
         void CleanupInstances();
         void PackInstances();
 
@@ -166,8 +211,6 @@ class MANGOS_DLL_DECL InstanceSaveManager : public MaNGOS::Singleton<InstanceSav
         void RemoveInstanceSave(uint32 InstanceId);
         static void DeleteInstanceFromDB(uint32 instanceid);
 
-        InstanceSave *GetInstanceSave(uint32 InstanceId);
-
         /* statistics */
         uint32 GetNumInstanceSaves() { return m_instanceSaveById.size(); }
         uint32 GetNumBoundPlayersTotal();
@@ -175,6 +218,11 @@ class MANGOS_DLL_DECL InstanceSaveManager : public MaNGOS::Singleton<InstanceSav
 
         void Update() { m_Scheduler.Update(); }
     private:
+        typedef UNORDERED_MAP<uint32 /*InstanceId*/, InstanceSave*> InstanceSaveHashMap;
+        typedef UNORDERED_MAP<uint32 /*mapId*/, InstanceSaveHashMap> InstanceSaveMapMap;
+
+        InstanceSave *GetInstanceSave(uint32 InstanceId);
+
         //  called by scheduler
         void _ResetOrWarnAll(uint32 mapid, bool warn, uint32 timeleft);
         void _ResetInstance(uint32 mapid, uint32 instanceId);
