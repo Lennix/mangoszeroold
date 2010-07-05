@@ -3952,8 +3952,11 @@ void Player::SetCharmed(bool apply, uint64 casterGUID, uint32 spellID)
     if (apply)
 	{
         if (Unit* pCaster = ObjectAccessor::GetUnit(*this,casterGUID))
-        {
-            ThreatList const& threatlist = pCaster->getThreatManager().getThreatList();
+		{ 
+			ThreatList const& threatlist = pCaster->getThreatManager().getThreatList();
+			if (!pCaster->CanHaveThreatList() && pCaster->GetCharmerOrOwner())
+				ThreatList const& threatlist = pCaster->GetCharmerOrOwner()->getThreatManager().getThreatList();
+
             if (threatlist.size())
                 for (uint8 i = 0;i < 3;++i)
                 {
