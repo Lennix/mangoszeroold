@@ -2668,6 +2668,11 @@ void Aura::HandleModCharm(bool apply, bool Real)
 
     if( apply )
     {
+		//cannot charm only one player enemy
+        if(target->GetTypeId() == TYPEID_PLAYER)
+            if(caster->getThreatManager().getThreatList().size() < 2)
+                return;
+
         if (target->GetCharmerGUID())
         {
             target->RemoveSpellsCausingAura(SPELL_AURA_MOD_CHARM);
