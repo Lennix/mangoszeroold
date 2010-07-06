@@ -44,6 +44,7 @@
 #include "BattleGround.h"
 #include "InstanceSaveMgr.h"
 #include "GridNotifiersImpl.h"
+#include "OutdoorPvP.h"
 #include "CellImpl.h"
 #include "Path.h"
 #include "Traveller.h"

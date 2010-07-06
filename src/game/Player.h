@@ -1831,6 +1831,14 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool CanCaptureTowerPoint();
 
         /*********************************************************/
+        /***               OUTDOOR PVP SYSTEM                  ***/
+        /*********************************************************/
+
+        OutdoorPvP * GetOutdoorPvP() const;
+        // returns true if the player is in active state for outdoor pvp objective capturing, false otherwise
+        bool IsOutdoorPvPActive();
+
+        /*********************************************************/
         /***                    REST SYSTEM                    ***/
         /*********************************************************/
 

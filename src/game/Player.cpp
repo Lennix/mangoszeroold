@@ -54,6 +54,8 @@
 #include "BattleGround.h"
 #include "BattleGroundAV.h"
 #include "BattleGroundMgr.h"
+#include "OutdoorPvP.h"
+#include "OutdoorPvPMgr.h"
 #include "Chat.h"
 #include "Database/DatabaseImpl.h"
 #include "Spell.h"
@@ -6077,6 +6079,7 @@ void Player::UpdateArea(uint32 newArea)
 
 void Player::UpdateZone(uint32 newZone, uint32 newArea)
 {
+    uint32 oldZoneId  = m_zoneUpdateId;
     if(m_zoneUpdateId != newZone)
         SendInitWorldStates(newZone);                       // only if really enters to new zone, not just area change, works strange...
 
@@ -6215,6 +6218,12 @@ void Player::CheckDuelDistance(time_t currTime)
             DuelComplete(DUEL_FLED);
         }
     }
+}
+
+bool Player::IsOutdoorPvPActive()
+{
+    return (isAlive() && !HasInvisibilityAura() && !HasStealthAura() &&
+           (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_IN_PVP) || sWorld.IsPvPRealm()) && !isInFlight());
 }
 
 void Player::DuelComplete(DuelCompleteType type)
@@ -17650,6 +17659,11 @@ void Player::AutoUnequipOffhandIfNeed()
         std::string subject = GetSession()->GetMangosString(LANG_NOT_EQUIPPED_ITEM);
         MailDraft(subject).AddItem(offItem).SendMailTo(this, MailSender(this, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_COPIED);
     }
+}
+
+OutdoorPvP * Player::GetOutdoorPvP() const
+{
+    return sOutdoorPvPMgr.GetOutdoorPvPToZoneId(GetZoneId());
 }
 
 bool Player::HasItemFitToSpellReqirements(SpellEntry const* spellInfo, Item const* ignoreItem)

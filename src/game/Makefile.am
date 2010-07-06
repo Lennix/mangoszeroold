@@ -184,6 +184,16 @@ libmangosgame_a_SOURCES = \
 	ObjectPosSelector.h \
 	Opcodes.cpp \
 	Opcodes.h \
+	OutdoorPvP.cpp \
+	OutdoorPvP.h \
+	OutdoorPvPEP.cpp \
+	OutdoorPvPEP.h \
+	OutdoorPvPMgr.cpp \
+	OutdoorPvPMgr.h \
+	OutdoorPvPObjectiveAI.cpp \
+	OutdoorPvPObjectiveAI.h \
+	OutdoorPvPSI.cpp \
+	OutdoorPvPSI.h \
 	Path.h \
 	PetAI.cpp \
 	PetAI.h \

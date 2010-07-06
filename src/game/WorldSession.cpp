@@ -35,6 +35,7 @@
 #include "World.h"
 #include "ObjectAccessor.h"
 #include "BattleGroundMgr.h"
+#include "OutdoorPvPMgr.h"
 #include "MapManager.h"
 #include "SocialMgr.h"
 
@@ -350,6 +351,9 @@ void WorldSession::LogoutPlayer(bool Save)
         ///- Remove player from battleground (teleport to entrance)
         if(_player->InBattleGround())
             _player->LeaveBattleground();
+
+        // Delete player from outdoorPVP
+        sOutdoorPvPMgr.HandlePlayerLeaveZone(_player,_player->GetZoneId());
 
         ///- Teleport to home if the player is in an invalid instance
         if(!_player->m_InstanceValid && !_player->isGameMaster())

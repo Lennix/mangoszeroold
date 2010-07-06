@@ -687,6 +687,27 @@ enum MangosStrings
     //LANG_ARENA_FIFTEEN_SECONDS          = 703,
     //LANG_ARENA_BEGUN                    = 704,
 
+    // opvp ep
+    LANG_OPVP_EP_CAPTURE_NPT_H          = 9033,
+    LANG_OPVP_EP_CAPTURE_NPT_A          = 9034,
+    LANG_OPVP_EP_CAPTURE_EWT_H          = 9035,
+    LANG_OPVP_EP_CAPTURE_EWT_A          = 9036,
+    LANG_OPVP_EP_CAPTURE_CGT_H          = 9037,
+    LANG_OPVP_EP_CAPTURE_CGT_A          = 9038,
+    LANG_OPVP_EP_CAPTURE_PWT_H          = 9039,
+    LANG_OPVP_EP_CAPTURE_PWT_A          = 9040,
+    LANG_OPVP_EP_LOOSE_NPT_H            = 9041,
+    LANG_OPVP_EP_LOOSE_NPT_A            = 9042,
+    LANG_OPVP_EP_LOOSE_EWT_H            = 9043,
+    LANG_OPVP_EP_LOOSE_EWT_A            = 9044,
+    LANG_OPVP_EP_LOOSE_CGT_H            = 9045,
+    LANG_OPVP_EP_LOOSE_CGT_A            = 9046,
+    LANG_OPVP_EP_LOOSE_PWT_H            = 9047,
+    LANG_OPVP_EP_LOOSE_PWT_A            = 9048,
+    // opvp si
+    LANG_OPVP_SI_CAPTURE_H              = 9049,
+    LANG_OPVP_SI_CAPTURE_A              = 9050,
+
     LANG_WAIT_BEFORE_SPEAKING           = 705,
     LANG_NOT_EQUIPPED_ITEM              = 706,
     LANG_PLAYER_DND                     = 707,
