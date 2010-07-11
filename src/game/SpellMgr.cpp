@@ -1418,6 +1418,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                         (spellInfo_2->Id == 8326 && spellInfo_1->Id == 20584) )
                          return false;
 
+					// BloodSiphon
+					if( (spellInfo_1->Id == 24324 && spellInfo_2->Id == 24322) ||
+						(spellInfo_1->Id == 24324 && spellInfo_2->Id == 24322) )
+						return false;
+
                     break;
                 }
                 case SPELLFAMILY_MAGE:

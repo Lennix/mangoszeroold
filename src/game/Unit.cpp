@@ -8169,6 +8169,8 @@ int32 Unit::CalculateSpellDuration(SpellEntry const* spellProto, SpellEffectInde
     else
         duration = minduration;
 
+	sMod.getSpellDuration(spellProto,effect_index,duration);
+
     return duration;
 }
 

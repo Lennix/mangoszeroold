@@ -287,8 +287,8 @@ m_periodicTimer(0), m_periodicTick(0), m_PeriodicEventId(0), m_AuraDRGroup(DIMIN
 
     Player* modOwner = caster ? caster->GetSpellModOwner() : NULL;
 
-    if(!m_permanent && modOwner)
-        modOwner->ApplySpellMod(GetId(), SPELLMOD_DURATION, m_maxduration);
+ /*   if(!m_permanent && modOwner)
+        modOwner->ApplySpellMod(GetId(), SPELLMOD_DURATION, m_maxduration);*/
 
     m_duration = m_maxduration;
 
@@ -299,7 +299,15 @@ m_periodicTimer(0), m_periodicTick(0), m_PeriodicEventId(0), m_AuraDRGroup(DIMIN
 
     SetModifier(AuraType(m_spellProto->EffectApplyAuraName[eff]), damage, m_spellProto->EffectAmplitude[eff], m_spellProto->EffectMiscValue[eff]);
 
-    m_isDeathPersist = IsDeathPersistentSpell(m_spellProto);
+	// Apply periodic time mod
+    if(modOwner && m_modifier.periodictime)
+        modOwner->ApplySpellMod(GetId(), SPELLMOD_ACTIVATION_TIME, m_modifier.periodictime);
+
+    // Start periodic on next tick or at aura apply
+    if (!(m_spellProto->AttributesEx4 & SPELL_ATTR_EX5_START_PERIODIC_AT_APPLY))
+        m_periodicTimer += m_modifier.periodictime;
+	
+	m_isDeathPersist = IsDeathPersistentSpell(m_spellProto);
 
     m_procCharges = m_spellProto->procCharges;
     if(modOwner)
@@ -464,16 +472,16 @@ void Aura::Update(uint32 diff)
         m_periodicTimer -= diff;
         if(m_periodicTimer <= 0)                            // tick also at m_periodicTimer==0 to prevent lost last tick in case max m_duration == (max m_periodicTimer)*N
         {
-            if( m_modifier.m_auraname == SPELL_AURA_MOD_REGEN ||
-                m_modifier.m_auraname == SPELL_AURA_MOD_POWER_REGEN ||
-                                                            // Cannibalize, eating items and other spells
-                m_modifier.m_auraname == SPELL_AURA_OBS_MOD_HEALTH ||
-                                                            // Eating items and other spells
-                m_modifier.m_auraname == SPELL_AURA_OBS_MOD_MANA )
-            {
-                ApplyModifier(true);
-                return;
-            }
+            //if( m_modifier.m_auraname == SPELL_AURA_MOD_REGEN ||
+            //    m_modifier.m_auraname == SPELL_AURA_MOD_POWER_REGEN ||
+            //                                                // Cannibalize, eating items and other spells
+            //    m_modifier.m_auraname == SPELL_AURA_OBS_MOD_HEALTH ||
+            //                                                // Eating items and other spells
+            //    m_modifier.m_auraname == SPELL_AURA_OBS_MOD_MANA )
+            //{
+            //    ApplyModifier(true);
+            //    return;
+            //}
             // update before applying (aura can be removed in TriggerSpell or PeriodicTick calls)
             m_periodicTimer += m_modifier.periodictime;
 
@@ -740,18 +748,18 @@ void Aura::_AddAura()
             break;
     }
 
-    // not call total regen auras at adding
-    switch (m_modifier.m_auraname)
-    {
-        case SPELL_AURA_OBS_MOD_HEALTH:
-        case SPELL_AURA_OBS_MOD_MANA:
-            m_periodicTimer = m_modifier.periodictime;
-            break;
-        case SPELL_AURA_MOD_REGEN:
-        case SPELL_AURA_MOD_POWER_REGEN:
-            m_periodicTimer = 5000;
-            break;
-    }
+    //// not call total regen auras at adding
+    //switch (m_modifier.m_auraname)
+    //{
+    //    case SPELL_AURA_OBS_MOD_HEALTH:
+    //    case SPELL_AURA_OBS_MOD_MANA:
+    //        m_periodicTimer = m_modifier.periodictime;
+    //        break;
+    //    case SPELL_AURA_MOD_REGEN:
+    //    case SPELL_AURA_MOD_POWER_REGEN:
+    //        m_periodicTimer = 5000;
+    //        break;
+    //}
 
     // register aura
     if (getDiminishGroup() != DIMINISHING_NONE )
@@ -3499,8 +3507,8 @@ void Aura::HandleAuraModStalked(bool apply, bool /*Real*/)
 
 void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
 {
-    if (m_periodicTimer <= 0)
-        m_periodicTimer += m_modifier.periodictime;
+    //if (m_periodicTimer <= 0)
+    //    m_periodicTimer += m_modifier.periodictime;
 
     m_isPeriodic = apply;
     m_isTrigger = apply;
@@ -3583,8 +3591,8 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
     if(!Real)
         return;
 
-    if (m_periodicTimer <= 0)
-        m_periodicTimer += m_modifier.periodictime;
+    //if (m_periodicTimer <= 0)
+    //    m_periodicTimer += m_modifier.periodictime;
 
     m_isPeriodic = apply;
 
@@ -3750,16 +3758,16 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
 
 void Aura::HandlePeriodicDamagePCT(bool apply, bool /*Real*/)
 {
-    if (m_periodicTimer <= 0)
-        m_periodicTimer += m_modifier.periodictime;
+    //if (m_periodicTimer <= 0)
+    //    m_periodicTimer += m_modifier.periodictime;
 
     m_isPeriodic = apply;
 }
 
 void Aura::HandlePeriodicLeech(bool apply, bool /*Real*/)
 {
-    if (m_periodicTimer <= 0)
-        m_periodicTimer += m_modifier.periodictime;
+    //if (m_periodicTimer <= 0)
+    //    m_periodicTimer += m_modifier.periodictime;
 
     m_isPeriodic = apply;
 }
@@ -3767,22 +3775,13 @@ void Aura::HandlePeriodicLeech(bool apply, bool /*Real*/)
 void Aura::HandlePeriodicHealthFunnel(bool apply, bool /*Real*/)
 {
     m_isPeriodic = apply;
+	
+	Unit *caster = GetCaster();
+    if (!caster)
+       return;
 
-    // For prevent double apply bonuses
-    bool loading = (m_target->GetTypeId() == TYPEID_PLAYER && ((Player*)m_target)->GetSession()->PlayerLoading());
-
-    // Custom damage calculation after
-    if (apply)
-    {
-        if(loading)
-            return;
-
-        Unit *caster = GetCaster();
-        if (!caster)
-            return;
-
-        m_modifier.m_amount = caster->SpellDamageBonus(m_target, GetSpellProto(), m_modifier.m_amount, DOT);
-    }
+	if(caster->GetTypeId() == TYPEID_PLAYER)
+		((Player*)caster)->SetClientControl(caster,!apply);
 }
 
 void Aura::HandlePeriodicManaLeech(bool apply, bool /*Real*/)
@@ -4018,113 +4017,138 @@ void Aura::HandleAuraModTotalHealthPercentRegen(bool apply, bool /*Real*/)
     Need additional checking for auras who reduce or increase healing, magic effect like Dumpen Magic,
     so this aura not fully working.
     */
-    if(apply)
-    {
-        if(!m_target->isAlive())
-            return;
+    //if(apply)
+    //{
+    //    if(!m_target->isAlive())
+    //        return;
 
-        if((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED) && !m_target->IsSitState())
-            m_target->SetStandState(UNIT_STAND_STATE_SIT);
+    //    if((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED) && !m_target->IsSitState())
+    //        m_target->SetStandState(UNIT_STAND_STATE_SIT);
 
-        if(m_periodicTimer <= 0)
-        {
-            m_periodicTimer += m_modifier.periodictime;
+    //    if(m_periodicTimer <= 0)
+    //    {
+    //        m_periodicTimer += m_modifier.periodictime;
 
-            if(m_target->GetHealth() < m_target->GetMaxHealth())
-            {
-                // PeriodicTick can cast triggered spells with stats changes
-                PeriodicTick();
-            }
-        }
-    }
+    //        if(m_target->GetHealth() < m_target->GetMaxHealth())
+    //        {
+    //            // PeriodicTick can cast triggered spells with stats changes
+    //            PeriodicTick();
+    //        }
+    //    }
+    //}
 
     m_isPeriodic = apply;
 }
 
 void Aura::HandleAuraModTotalManaPercentRegen(bool apply, bool /*Real*/)
 {
-    if((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED) && apply  && !m_target->IsSitState())
-        m_target->SetStandState(UNIT_STAND_STATE_SIT);
-    if(apply)
-    {
-        if(m_modifier.periodictime == 0)
-            m_modifier.periodictime = 1000;
-        if(m_periodicTimer <= 0 && m_target->getPowerType() == POWER_MANA)
-        {
-            m_periodicTimer += m_modifier.periodictime;
+    //if((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED) && apply  && !m_target->IsSitState())
+    //    m_target->SetStandState(UNIT_STAND_STATE_SIT);
+    //if(apply)
+    //{
+    //    if(m_modifier.periodictime == 0)
+    //        m_modifier.periodictime = 1000;
+    //    if(m_periodicTimer <= 0 && m_target->getPowerType() == POWER_MANA)
+    //    {
+    //        m_periodicTimer += m_modifier.periodictime;
 
-            if(m_target->GetPower(POWER_MANA) < m_target->GetMaxPower(POWER_MANA))
-            {
-                // PeriodicTick can cast triggered spells with stats changes
-                PeriodicTick();
-            }
-        }
-    }
+    //        if(m_target->GetPower(POWER_MANA) < m_target->GetMaxPower(POWER_MANA))
+    //        {
+    //            // PeriodicTick can cast triggered spells with stats changes
+    //            PeriodicTick();
+    //        }
+    //    }
+    //}
+
+	if(m_modifier.periodictime == 0)
+        m_modifier.periodictime = 1000;
+
+	m_periodicTimer += m_modifier.periodictime;
 
     m_isPeriodic = apply;
 }
 
 void Aura::HandleModRegen(bool apply, bool /*Real*/)        // eating
 {
-    if(apply)
-    {
-        if(!m_target->isAlive())
-            return;
+    //if(apply)
+    //{
+    //    if(!m_target->isAlive())
+    //        return;
 
-        if ((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED)  && !m_target->IsSitState())
-            m_target->SetStandState(UNIT_STAND_STATE_SIT);
+    //    if ((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED)  && !m_target->IsSitState())
+    //        m_target->SetStandState(UNIT_STAND_STATE_SIT);
 
-        if(m_periodicTimer <= 0)
-        {
-            m_periodicTimer += 5000;
-            int32 gain = m_target->ModifyHealth(m_modifier.m_amount);
-            Unit *caster = GetCaster();
-            if (caster)
-            {
-                SpellEntry const *spellProto = GetSpellProto();
-                if (spellProto)
-                    m_target->getHostileRefManager().threatAssist(caster, float(gain) * 0.5f, spellProto);
-            }
-        }
-    }
+    //    if(m_periodicTimer <= 0)
+    //    {
+    //        m_periodicTimer += 5000;
+    //        int32 gain = m_target->ModifyHealth(m_modifier.m_amount);
+    //        Unit *caster = GetCaster();
+    //        if (caster)
+    //        {
+    //            SpellEntry const *spellProto = GetSpellProto();
+    //            if (spellProto)
+    //                m_target->getHostileRefManager().threatAssist(caster, float(gain) * 0.5f, spellProto);
+    //        }
+    //    }
+    //}
+
+	if(m_modifier.periodictime == 0)
+        m_modifier.periodictime = 5000;
+
+	m_periodicTimer = 5000;
 
     m_isPeriodic = apply;
 }
 
 void Aura::HandleModPowerRegen(bool apply, bool Real)       // drinking
 {
-    if ((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED) && apply && !m_target->IsSitState())
-        m_target->SetStandState(UNIT_STAND_STATE_SIT);
+    //if ((GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED) && apply && !m_target->IsSitState())
+    //    m_target->SetStandState(UNIT_STAND_STATE_SIT);
+	if(!Real)
+		return;
 
-    if(apply && m_periodicTimer <= 0)
+	Powers pt = m_target->getPowerType();
+	if(m_modifier.periodictime == 0)
+//    if(apply && m_periodicTimer <= 0)
     {
-        m_periodicTimer += 2000;
+        //m_periodicTimer += 2000;
+		if(pt == POWER_RAGE)
+			m_modifier.periodictime = 1000;
+		else
+			m_modifier.periodictime = 2000;
+	}
 
-        Powers pt = m_target->getPowerType();
-        if(int32(pt) != m_modifier.m_miscvalue)
-            return;
+        //Powers pt = m_target->getPowerType();
+        //if(int32(pt) != m_modifier.m_miscvalue)
+        //    return;
 
-        if ( GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED )
-        {
-            // eating anim
-            m_target->HandleEmoteCommand(EMOTE_ONESHOT_EAT);
-        }
-        else if( GetId() == 20577 )
-        {
-            // cannibalize anim
-            m_target->HandleEmoteCommand(EMOTE_STATE_CANNIBALIZE);
-        }
+        //if ( GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED )
+        //{
+        //    // eating anim
+        //    m_target->HandleEmoteCommand(EMOTE_ONESHOT_EAT);
+        //}
+        //else if( GetId() == 20577 )
+        //{
+        //    // cannibalize anim
+        //    m_target->HandleEmoteCommand(EMOTE_STATE_CANNIBALIZE);
+        //}
 
-        // Warrior talent, gain 1 rage every 3 seconds while in combat
-        if(pt == POWER_RAGE && m_target->isInCombat())
-        {
-            m_target->ModifyPower(pt, m_modifier.m_amount*10/17);
-            m_periodicTimer += 1000;
-        }
-    }
-    m_isPeriodic = apply;
-    if (Real && m_target->GetTypeId() == TYPEID_PLAYER && m_modifier.m_miscvalue == POWER_MANA)
+        //// Warrior talent, gain 1 rage every 3 seconds while in combat
+        //if(pt == POWER_RAGE && m_target->isInCombat())
+        //{
+        //    m_target->ModifyPower(pt, m_modifier.m_amount*10/17);
+        //    m_periodicTimer += 1000;
+        //}
+    //}
+
+	m_periodicTimer = 5000;
+
+	if (m_target->GetTypeId() == TYPEID_PLAYER && m_modifier.m_miscvalue == POWER_MANA)
         ((Player*)m_target)->UpdateManaRegen();
+
+    m_isPeriodic = apply;
+    //if (Real && m_target->GetTypeId() == TYPEID_PLAYER && m_modifier.m_miscvalue == POWER_MANA)
+    //    ((Player*)m_target)->UpdateManaRegen();
 }
 
 void Aura::HandleModPowerRegenPCT(bool /*apply*/, bool Real)
@@ -4923,11 +4947,47 @@ void Aura::CleanupTriggeredSpells()
 
 void Aura::HandleAuraPowerBurn(bool apply, bool Real)
 {
-    if (m_periodicTimer <= 0)
-        m_periodicTimer += m_modifier.periodictime;
+    /*if (m_periodicTimer <= 0)
+        m_periodicTimer += m_modifier.periodictime;*/
 
     m_isPeriodic = apply;
 }
+
+//void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
+//{
+//    // spells required only Real aura add/remove
+//    if(!Real)
+//        return;
+//
+//    // For prevent double apply bonuses
+//    bool loading = (m_target->GetTypeId() == TYPEID_PLAYER && ((Player*)m_target)->GetSession()->PlayerLoading());
+//
+//    Unit* caster = GetCaster();
+//
+//    SpellEntry const*spell = GetSpellProto();
+//    switch( spell->SpellFamilyName)
+//    {
+//        case SPELLFAMILY_ROGUE:
+//        {
+//            // Master of Subtlety
+//            if (spell->Id==31666 && !apply)
+//            {
+//                m_target->RemoveAurasDueToSpell(31665);
+//                break;
+//            }
+//            break;
+//        }
+//        case SPELLFAMILY_HUNTER:
+//        {
+//            // Explosive Shot
+//            if (apply && !loading && caster)
+//                m_modifier.m_amount +=caster->GetTotalAttackPowerValue(RANGED_ATTACK) * 8 / 100;
+//            break;
+//        }
+//    }
+//
+//    m_isPeriodic = apply;
+//}
 
 void Aura::HandleSchoolAbsorb(bool apply, bool Real)
 {
@@ -5100,7 +5160,50 @@ void Aura::PeriodicTick()
             pCaster->DealDamage(m_target, pdamage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellProto()), GetSpellProto(), true);
             break;
         }
-        case SPELL_AURA_PERIODIC_LEECH:
+        case SPELL_AURA_PERIODIC_HEALTH_FUNNEL:
+		{
+			// don't damage target if not alive, possible death persistent effects
+            if (!m_target->isAlive())
+                return;
+
+            Unit *pCaster = GetCaster();
+            if(!pCaster)
+                return;
+
+            if(!pCaster->isAlive())
+                return;
+
+			uint32 absorb=0;
+            uint32 resist=0;
+			CleanDamage cleanDamage =  CleanDamage(0, BASE_ATTACK, MELEE_HIT_NORMAL );
+
+			uint32 pdamage = m_modifier.m_amount > 0 ? m_modifier.m_amount : 0;
+
+			if(pCaster->GetHealth() < pdamage)
+                pdamage = uint32(pCaster->GetHealth());
+
+            pCaster->SendSpellNonMeleeDamageLog(pCaster, GetId(), pdamage, GetSpellSchoolMask(GetSpellProto()), absorb, resist, false, 0);
+			
+            float multiplier = GetSpellProto()->EffectMultipleValue[GetEffIndex()] > 0 ? GetSpellProto()->EffectMultipleValue[GetEffIndex()] : 1;
+
+			// Set trigger flag
+            uint32 procAttacker = PROC_FLAG_ON_DO_PERIODIC;//   | PROC_FLAG_SUCCESSFUL_HARMFUL_SPELL_HIT;
+            uint32 procVictim   = PROC_FLAG_ON_TAKE_PERIODIC;// | PROC_FLAG_TAKEN_HARMFUL_SPELL_HIT;
+            pdamage = (pdamage <= absorb+resist) ? 0 : (pdamage-absorb-resist);
+            if (pdamage)
+                procVictim|=PROC_FLAG_TAKEN_ANY_DAMAGE;
+            pCaster->ProcDamageAndSpell(pCaster, procAttacker, procVictim, PROC_EX_NORMAL_HIT, pdamage, BASE_ATTACK, GetSpellProto());
+            int32 new_damage = pCaster->DealDamage(m_target, pdamage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellProto()), GetSpellProto(), false);            
+
+	        uint32 heal = (uint32)new_damage*multiplier;
+
+            int32 gain = pCaster->DealHeal(m_target, heal, GetSpellProto());
+            pCaster->getHostileRefManager().threatAssist(m_target, gain * 0.5f, GetSpellProto());
+			break;
+
+		}
+
+		case SPELL_AURA_PERIODIC_LEECH:
         {
             // don't damage target if not alive, possible death persistent effects
             if (!m_target->isAlive())
@@ -5208,7 +5311,8 @@ void Aura::PeriodicTick()
             if (pdamage)
                 procVictim|=PROC_FLAG_TAKEN_ANY_DAMAGE;
             pCaster->ProcDamageAndSpell(m_target, procAttacker, procVictim, PROC_EX_NORMAL_HIT, pdamage, BASE_ATTACK, GetSpellProto());
-            int32 new_damage = pCaster->DealDamage(m_target, pdamage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellProto()), GetSpellProto(), false);            if (!m_target->isAlive() && pCaster->IsNonMeleeSpellCasted(false))
+            int32 new_damage = pCaster->DealDamage(m_target, pdamage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellProto()), GetSpellProto(), false);            
+			if (!m_target->isAlive() && pCaster->IsNonMeleeSpellCasted(false))
                 for (uint32 i = CURRENT_FIRST_NON_MELEE_SPELL; i < CURRENT_MAX_SPELL; ++i)
                     if (Spell* spell = pCaster->GetCurrentSpell(CurrentSpellTypes(i)))
                         if (spell->m_spellInfo->Id == GetId())
@@ -5452,6 +5556,35 @@ void Aura::PeriodicTick()
             pCaster->ProcDamageAndSpell(damageInfo.target, procAttacker, procVictim, procEx, damageInfo.damage, BASE_ATTACK, spellProto);
 
             pCaster->DealSpellDamage(&damageInfo, true);
+            break;
+        }
+		case SPELL_AURA_MOD_REGEN:
+        {
+            int32 gain = m_target->ModifyHealth(m_modifier.m_amount);
+            if (Unit *caster = GetCaster())
+                m_target->getHostileRefManager().threatAssist(caster, float(gain) * 0.5f, GetSpellProto());
+            break;
+        }
+        case SPELL_AURA_MOD_POWER_REGEN:
+        {
+            Powers pt = m_target->getPowerType();
+            if(int32(pt) != m_modifier.m_miscvalue)
+                return;
+            
+            if ( GetSpellProto()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED )
+            {
+                // eating anim
+                m_target->HandleEmoteCommand(EMOTE_ONESHOT_EAT);
+            }
+            else if( GetId() == 20577 )
+            {
+                // cannibalize anim
+                m_target->HandleEmoteCommand(EMOTE_STATE_CANNIBALIZE);
+            }
+            
+            // Warrior talent, gain 1 rage every 3 seconds while in combat
+            if(pt == POWER_RAGE && m_target->isInCombat())
+                m_target->ModifyPower(pt, m_modifier.m_amount*10/17);
             break;
         }
         // Here tick dummy auras
