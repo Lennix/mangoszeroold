@@ -3609,7 +3609,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 					for (ThreatList::const_iterator i = tList.begin();i != tList.end(); ++i){
 						if (Unit* pUnit = Unit::GetUnit((*m_caster), (*i)->getUnitGuid()))
 						{
-							if(pUnit->HasAura(24321))
+							if(pUnit->HasAura(25198))
 								pUnit->CastSpell(m_caster,24323,true);
 							else
 								pUnit->CastSpell(m_caster,24322,true); // Auf Hakkar
