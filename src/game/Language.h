@@ -87,7 +87,9 @@ enum MangosStrings
     //LANG_RA_BUSY                      = 60, not used
     LANG_RA_USER                        = 61,
     LANG_RA_PASS                        = 62,
-    // Room for more level 0              63-99 not used
+    LANG_GM_ACCEPTS_WHISPER             = 63,
+    LANG_GM_NO_WHISPER                  = 64,
+    // Room for more level 0              65-99 not used
 
     // level 1 chat
     LANG_GLOBAL_NOTIFY                  = 100,
@@ -254,7 +256,7 @@ enum MangosStrings
     LANG_COMMAND_TARGETOBJNOTFOUND      = 266,
     LANG_COMMAND_GOOBJNOTFOUND          = 267,
     LANG_COMMAND_GOCREATNOTFOUND        = 268,
-    LANG_COMMAND_GOCREATMULTIPLE        = 269,
+    //                                    269, not used
     LANG_COMMAND_DELCREATMESSAGE        = 270,
     LANG_COMMAND_CREATUREMOVED          = 271,
     LANG_COMMAND_CREATUREATSAMEMAP      = 272,
@@ -868,7 +870,16 @@ enum MangosStrings
     LANG_CHARACTERS_LIST_LINE_CONSOLE   = 1140,
     LANG_CHARACTERS_LIST_LINE_CHAT      = 1141,
     LANG_ACCOUNT_LIST_LINE_CHAT         = 1142,
-    // Room for more level 3              1143-1199 not used
+    LANG_NPC_GO_INFO_GAME_EVENT_S       = 1143,
+    LANG_NPC_GO_INFO_GAME_EVENT_D       = 1144,
+    LANG_NPC_GO_INFO_POOL               = 1145,
+    LANG_NPC_GO_INFO_TOP_POOL           = 1146,
+    LANG_NPC_GO_INFO_POOL_GAME_EVENT_S  = 1147,
+    LANG_NPC_GO_INFO_POOL_GAME_EVENT_D  = 1148,
+    LANG_NPC_GO_INFO_POOL_STRING        = 1149,
+    LANG_NPC_GO_INFO_EVENT_STRING       = 1150,
+    LANG_NPC_GO_INFO_POOL_EVENT_STRING  = 1151,
+    // Room for more level 3              1152-1199 not used
 
     // Debug commands
     LANG_CINEMATIC_NOT_EXIST            = 1200,

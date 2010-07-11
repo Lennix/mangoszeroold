@@ -1101,7 +1101,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool SatisfyQuestExclusiveGroup( Quest const* qInfo, bool msg ) const;
         bool SatisfyQuestNextChain( Quest const* qInfo, bool msg ) const;
         bool SatisfyQuestPrevChain( Quest const* qInfo, bool msg ) const;
-        bool GiveQuestSourceItem( Quest const *pQuest );
+        bool CanGiveQuestSourceItem( Quest const *pQuest, ItemPosCountVec* dest = NULL) const;
+        void GiveQuestSourceItem( Quest const *pQuest );
         bool TakeQuestSourceItem( uint32 quest_id, bool msg );
         bool GetQuestRewardStatus( uint32 quest_id ) const;
         QuestStatus GetQuestStatus( uint32 quest_id ) const;
@@ -1555,6 +1556,8 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void SetMovement(PlayerMovementType pType);
 
+		void SetCharmed(bool apply, uint64 castGUID, uint32 spellID);
+
         void JoinedChannel(Channel *c);
         void LeftChannel(Channel *c);
         void CleanupChannels();
@@ -1563,7 +1566,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void UpdateDefense();
         void UpdateWeaponSkill (WeaponAttackType attType);
-        void UpdateCombatSkills(Unit *pVictim, WeaponAttackType attType, MeleeHitOutcome outcome, bool defence);
+        void UpdateCombatSkills(Unit *pVictim, WeaponAttackType attType, bool defence);
 
         void SetSkill(uint16 id, uint16 currVal, uint16 maxVal, uint16 step = 0);
         uint16 GetMaxSkillValue(uint32 skill) const;        // max + perm. bonus + temp bonus
@@ -1958,6 +1961,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendRaidInfo();
         void SendSavedInstances();
         static void ConvertInstancesToGroup(Player *player, Group *group = NULL, uint64 player_guid = 0);
+        InstanceSave* GetBoundInstanceSaveForSelfOrGroup(uint32 mapid);
 
         /*********************************************************/
         /***                   GROUP SYSTEM                    ***/

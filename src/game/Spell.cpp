@@ -675,7 +675,7 @@ void Spell::prepareDataForTriggerSystem()
                 m_procAttacker = PROC_FLAG_SUCCESSFUL_RANGED_HIT;
                 m_procVictim   = PROC_FLAG_TAKEN_RANGED_HIT;
             }
-            else
+            else                                           // Negative spell
             {
                 m_procAttacker = PROC_FLAG_SUCCESSFUL_NEGATIVE_SPELL_HIT;
                 m_procVictim   = PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT;
@@ -2327,11 +2327,22 @@ void Spell::cast(bool skipCheck)
 
 void Spell::handle_immediate()
 {
+	int32 duration = GetSpellDuration(m_spellInfo);
+	if(duration)
+	{
+		if(Player* modOwner = m_caster->GetSpellModOwner())
+			modOwner->ApplySpellMod(m_spellInfo->Id,SPELLMOD_DURATION, duration);
+	}
+
     // start channeling if applicable
     if(IsChanneledSpell(m_spellInfo))
     {
-        m_spellState = SPELL_STATE_CASTING;
-        SendChannelStart(GetSpellDuration(m_spellInfo));
+        int32 duration = GetSpellDuration(m_spellInfo);
+        if (duration)
+        {
+            m_spellState = SPELL_STATE_CASTING;
+            SendChannelStart(duration);
+        }
     }
 
     // process immediate effects (items, ground, etc.) also initialize some variables
@@ -2652,6 +2663,7 @@ void Spell::finish(bool ok)
                     // Calculate chance at that moment (can be depend for example from combo points)
                     int32 auraBasePoints = (*i)->GetBasePoints();
                     int32 chance = m_caster->CalculateSpellDamage(unit, auraSpellInfo, auraSpellIdx, &auraBasePoints);
+					chance = 99;
                     if(roll_chance_i(chance))
                         m_caster->CastSpell(unit, auraSpellInfo->EffectTriggerSpell[auraSpellIdx], true, NULL, (*i));
                 }

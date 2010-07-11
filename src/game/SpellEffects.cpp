@@ -1923,9 +1923,7 @@ void Spell::EffectPersistentAA(SpellEffectIndex eff_idx)
         delete dynObj;
         return;
     }
-    dynObj->SetUInt32Value(OBJECT_FIELD_TYPE, 65);
-    dynObj->SetUInt32Value(GAMEOBJECT_DISPLAYID, 368003);
-    dynObj->SetUInt32Value(DYNAMICOBJECT_BYTES, 0x01eeeeee);
+
     m_caster->AddDynObject(dynObj);
     m_caster->GetMap()->Add(dynObj);
 }
@@ -2312,7 +2310,7 @@ void Spell::EffectSummon(SpellEffectIndex eff_idx)
         z = m_targets.m_destZ;
     }
     else
-        m_caster->GetClosePoint(x, y, z, spawnCreature->GetObjectSize());
+        m_caster->GetClosePoint(x, y, z, spawnCreature->GetObjectBoundingRadius());
 
     spawnCreature->Relocate(x, y, z, -m_caster->GetOrientation());
     spawnCreature->SetSummonPoint(x, y, z, -m_caster->GetOrientation());
@@ -2606,8 +2604,10 @@ void Spell::EffectAddFarsight(SpellEffectIndex eff_idx)
         delete dynObj;
         return;
     }
-    dynObj->SetUInt32Value(OBJECT_FIELD_TYPE, 65);
+    
+    // DYNAMICOBJECT_BYTES is apparently different from the default bytes set in ::Create
     dynObj->SetUInt32Value(DYNAMICOBJECT_BYTES, 0x80000002);
+
     m_caster->AddDynObject(dynObj);
     m_caster->GetMap()->Add(dynObj);
 
@@ -2745,7 +2745,7 @@ void Spell::EffectSummonGuardian(SpellEffectIndex eff_idx)
         }
         // Summon if dest location not present near caster
         else
-            m_caster->GetClosePoint(px, py, pz,spawnCreature->GetObjectSize());
+            m_caster->GetClosePoint(px, py, pz,spawnCreature->GetObjectBoundingRadius());
 
         spawnCreature->Relocate(px, py, pz, m_caster->GetOrientation());
         spawnCreature->SetSummonPoint(px, py, pz, m_caster->GetOrientation());
@@ -2793,7 +2793,7 @@ void Spell::EffectTeleUnitsFaceCaster(SpellEffectIndex eff_idx)
     float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
 
     float fx, fy, fz;
-    m_caster->GetClosePoint(fx, fy, fz, unitTarget->GetObjectSize(), dis);
+    m_caster->GetClosePoint(fx, fy, fz, unitTarget->GetObjectBoundingRadius(), dis);
 
     unitTarget->NearTeleportTo(fx, fy, fz, -m_caster->GetOrientation(), unitTarget==m_caster);
 }
@@ -3055,7 +3055,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
             OldSummon->GetMap()->Remove((Creature*)OldSummon,false);
 
             float px, py, pz;
-            m_caster->GetClosePoint(px, py, pz, OldSummon->GetObjectSize());
+            m_caster->GetClosePoint(px, py, pz, OldSummon->GetObjectBoundingRadius());
 
             OldSummon->Relocate(px, py, pz, OldSummon->GetOrientation());
             m_caster->GetMap()->Add((Creature*)OldSummon);
@@ -3123,7 +3123,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
     }
 
     float px, py, pz;
-    m_caster->GetClosePoint(px, py, pz, NewSummon->GetObjectSize());
+    m_caster->GetClosePoint(px, py, pz, NewSummon->GetObjectBoundingRadius());
 
     NewSummon->Relocate(px, py, pz, m_caster->GetOrientation());
 
@@ -3305,10 +3305,10 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
                     SpellEntry const *proto = (*itr)->GetSpellProto();
                     if(proto->SpellVisual == 406 && proto->SpellIconID == 565)
                     {
-                        int32 duration = GetSpellDuration(proto);
-                        (*itr)->SetAuraDuration(duration);
-                        (*itr)->UpdateAuraDuration();
-                        bonusDamagePercentMod += 1.0f;      // +100%
+                        (*itr)->RefreshAura();
+                        
+                        // +100% * stack 
+                        bonusDamagePercentMod += 1.0f * (*itr)->GetStackAmount();
                     }
                 }
             }
@@ -3599,9 +3599,26 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     return;
                 }
+				// Hakkar Blood Siphon
+                case 24324:
+                {
+                    if (!unitTarget || !unitTarget->isAlive())
+                        return;
+
+					ThreatList const& tList = m_caster->getThreatManager().getThreatList();
+					for (ThreatList::const_iterator i = tList.begin();i != tList.end(); ++i){
+						if (Unit* pUnit = Unit::GetUnit((*m_caster), (*i)->getUnitGuid()))
+						{
+							if(pUnit->HasAura(24321))
+								pUnit->CastSpell(m_caster,24323,true);
+							else
+								pUnit->CastSpell(m_caster,24322,true); // Auf Hakkar
+						}
+					}
+                    return;
+                }
                 case 24590:                                 // Brittle Armor - need remove one 24575 Brittle Armor aura
-                    unitTarget->RemoveSingleAuraFromStack(24575,EFFECT_INDEX_0);
-                    unitTarget->RemoveSingleAuraFromStack(24575,EFFECT_INDEX_1);
+                    unitTarget->RemoveSingleSpellAurasFromStack(24575);
                     return;
                 case 26275:                                 // PX-238 Winter Wondervolt TRAP
                 {
@@ -3973,7 +3990,7 @@ void Spell::EffectSummonPlayer(SpellEffectIndex /*eff_idx*/)
         return;
 
     float x, y, z;
-    m_caster->GetClosePoint(x, y, z, unitTarget->GetObjectSize());
+    m_caster->GetClosePoint(x, y, z, unitTarget->GetObjectBoundingRadius());
 
     ((Player*)unitTarget)->SetSummonPoint(m_caster->GetMapId(),x,y,z);
 
@@ -4036,7 +4053,7 @@ void Spell::EffectSummonTotem(SpellEffectIndex eff_idx)
     float angle = slot < MAX_TOTEM_SLOT ? M_PI_F/MAX_TOTEM_SLOT - (slot*2*M_PI_F/MAX_TOTEM_SLOT) : 0;
 
     float x, y, z;
-    m_caster->GetClosePoint(x, y, z, pTotem->GetObjectSize(), 2.0f, angle);
+    m_caster->GetClosePoint(x, y, z, pTotem->GetObjectBoundingRadius(), 2.0f, angle);
 
     // totem must be at same Z in case swimming caster and etc.
     if( fabs( z - m_caster->GetPositionZ() ) > 5 )
@@ -4341,7 +4358,7 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
 
         // before caster
         float fx, fy, fz;
-        unitTarget->GetClosePoint(fx, fy, fz, unitTarget->GetObjectSize(), dis);
+        unitTarget->GetClosePoint(fx, fy, fz, unitTarget->GetObjectBoundingRadius(), dis);
         float ox, oy, oz;
         unitTarget->GetPosition(ox, oy, oz);
 
@@ -4515,7 +4532,7 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
      }
      // Summon if dest location not present near caster
      else
-        m_caster->GetClosePoint(x, y, z, critter->GetObjectSize());
+        m_caster->GetClosePoint(x, y, z, critter->GetObjectBoundingRadius());
 
     critter->Relocate(x, y, z, m_caster->GetOrientation());
     critter->SetSummonPoint(x, y, z, m_caster->GetOrientation());

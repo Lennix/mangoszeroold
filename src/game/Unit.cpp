@@ -769,8 +769,9 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
                         // the reset time is set but not added to the scheduler
                         // until the players leave the instance
                         time_t resettime = cVictim->GetRespawnTimeEx() + 2 * HOUR;
-                        if(InstanceSave *save = sInstanceSaveMgr.GetInstanceSave(cVictim->GetInstanceId()))
-                            if(save->GetResetTime() < resettime) save->SetResetTime(resettime);
+                        if (InstanceSave *save = m->GetInstanceSave())
+                            if (save->GetResetTime() < resettime)
+                                save->SetResetTime(resettime);
                     }
                 }
             }
@@ -1250,10 +1251,7 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabilityLoss)
         {
             SpellEntry const *spellInfo = (*itr).second->GetSpellProto();
             if( spellInfo->AttributesEx3 & 0x40000 && spellInfo->SpellFamilyName == SPELLFAMILY_PALADIN && ((*itr).second->GetCasterGUID() == GetGUID()))
-            {
-                (*itr).second->SetAuraDuration((*itr).second->GetAuraMaxDuration());
-                (*itr).second->UpdateAuraDuration();
-            }
+                (*itr).second->RefreshAura();
         }
     }
     // Call default DealDamage
@@ -1595,10 +1593,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
         {
             SpellEntry const *spellInfo = (*itr).second->GetSpellProto();
             if( spellInfo->AttributesEx3 & 0x40000 && spellInfo->SpellFamilyName == SPELLFAMILY_PALADIN && ((*itr).second->GetCasterGUID() == GetGUID()))
-            {
-                (*itr).second->SetAuraDuration((*itr).second->GetAuraMaxDuration());
-                (*itr).second->UpdateAuraDuration();
-            }
+                (*itr).second->RefreshAura();
         }
     }
 
@@ -3260,53 +3255,52 @@ bool Unit::AddAura(Aura *Aur)
         // passive and persistent auras can stack with themselves any number of times
         if (!Aur->IsPassive() && !Aur->IsPersistent())
         {
-            // replace aura if next will > spell StackAmount
-            if(aurSpellInfo->StackAmount)
+            for(AuraMap::iterator i2 = m_Auras.lower_bound(spair); i2 != m_Auras.upper_bound(spair); ++i2)
             {
-                if(m_Auras.count(spair) >= aurSpellInfo->StackAmount)
-                    RemoveAura(i,AURA_REMOVE_BY_STACK);
-            }
-            // if StackAmount==0 not allow auras from same caster
-            else
-            {
-                for(AuraMap::iterator i2 = m_Auras.lower_bound(spair); i2 != m_Auras.upper_bound(spair); ++i2)
+                Aura* aur2 = i2->second;
+                if(aur2->GetCasterGUID()==Aur->GetCasterGUID())
                 {
-                    Aura* aur2 = i2->second;
-                    if(aur2->GetCasterGUID()==Aur->GetCasterGUID())
+                    // Aura can stack on self -> Stack it;
+                    if(aurSpellInfo->StackAmount)
                     {
-                        // Check for coexisting Weapon-proced Auras
-                        if (Aur->isWeaponBuffCoexistableWith(aur2))
-                            continue;
+                        // can be created with >1 stack by some spell mods
+                        aur2->modStackAmount(Aur->GetStackAmount());
+                        delete Aur;
+                        return false;
+                    }
 
+                    // Check for coexisting Weapon-proced Auras
+                    if (Aur->isWeaponBuffCoexistableWith(aur2))
+                        continue;
+
+                    // can be only single (this check done at _each_ aura add
+                    RemoveAura(i2,AURA_REMOVE_BY_STACK);
+                    break;
+                }
+
+                bool stop = false;
+                switch(aurName)
+                {
+                    // DoT/HoT/etc
+                    case SPELL_AURA_PERIODIC_DAMAGE:    // allow stack
+                    case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
+                    case SPELL_AURA_PERIODIC_LEECH:
+                    case SPELL_AURA_PERIODIC_HEAL:
+                    case SPELL_AURA_OBS_MOD_HEALTH:
+                    case SPELL_AURA_PERIODIC_MANA_LEECH:
+                    case SPELL_AURA_OBS_MOD_MANA:
+                    case SPELL_AURA_POWER_BURN_MANA:
+                        break;
+                    case SPELL_AURA_PERIODIC_ENERGIZE:  // all or self or clear non-stackable
+                    default:                            // not allow
                         // can be only single (this check done at _each_ aura add
                         RemoveAura(i2,AURA_REMOVE_BY_STACK);
-                        break;
-                    }
-
-                    bool stop = false;
-                    switch(aurName)
-                    {
-                        // DoT/HoT/etc
-                        case SPELL_AURA_PERIODIC_DAMAGE:    // allow stack
-                        case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
-                        case SPELL_AURA_PERIODIC_LEECH:
-                        case SPELL_AURA_PERIODIC_HEAL:
-                        case SPELL_AURA_OBS_MOD_HEALTH:
-                        case SPELL_AURA_PERIODIC_MANA_LEECH:
-                        case SPELL_AURA_OBS_MOD_MANA:
-                        case SPELL_AURA_POWER_BURN_MANA:
-                            break;
-                        case SPELL_AURA_PERIODIC_ENERGIZE:  // all or self or clear non-stackable
-                        default:                            // not allow
-                            // can be only single (this check done at _each_ aura add
-                            RemoveAura(i2,AURA_REMOVE_BY_STACK);
-                            stop = true;
-                            break;
-                    }
-
-                    if(stop)
+                        stop = true;
                         break;
                 }
+
+                if(stop)
+                    break;
             }
         }
     }
@@ -3700,11 +3694,23 @@ void Unit::RemoveAurasWithDispelType( DispelType type )
     }
 }
 
+void Unit::RemoveSingleAuraFromStack(AuraMap::iterator &i, AuraRemoveMode mode)
+{
+    if (i->second->modStackAmount(-1))
+        RemoveAura(i,mode);
+}
+
 void Unit::RemoveSingleAuraFromStack(uint32 spellId, SpellEffectIndex effindex, AuraRemoveMode mode)
 {
     AuraMap::iterator iter = m_Auras.find(spellEffectPair(spellId, effindex));
     if(iter != m_Auras.end())
-        RemoveAura(iter,mode);
+        RemoveSingleAuraFromStack(iter,mode);
+}
+
+void Unit::RemoveSingleSpellAurasFromStack(uint32 spellId, AuraRemoveMode mode)
+{
+    for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+        RemoveSingleAuraFromStack(spellId, SpellEffectIndex(i), mode);
 }
 
 void Unit::RemoveSingleSpellAurasByCasterSpell(uint32 spellId, uint64 casterGUID, AuraRemoveMode mode)
@@ -3721,7 +3727,7 @@ void Unit::RemoveSingleAuraByCasterSpell(uint32 spellId, SpellEffectIndex effind
         Aura *aur = iter->second;
         if (aur->GetId() == spellId && aur->GetCasterGUID() == casterGUID)
         {
-            RemoveAura(iter,mode);
+            RemoveSingleAuraFromStack(iter,mode);
             break;
         }
     }
@@ -4404,15 +4410,14 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     if (!procSpell || procSpell->Id == 24659)
                         return false;
                     // Need remove one 24659 aura
-                    RemoveSingleAuraFromStack(24659, EFFECT_INDEX_0);
-                    RemoveSingleAuraFromStack(24659, EFFECT_INDEX_1);
+                    RemoveSingleSpellAurasFromStack(24659);
                     return true;
                 }
                 // Restless Strength
                 case 24661:
                 {
                     // Need remove one 24662 aura
-                    RemoveSingleAuraFromStack(24662, EFFECT_INDEX_0);
+                    RemoveSingleSpellAurasFromStack(24662);
                     return true;
                 }
                 // Adaptive Warding (Frostfire Regalia set)
@@ -8168,6 +8173,8 @@ int32 Unit::CalculateSpellDuration(SpellEntry const* spellProto, SpellEffectInde
     else
         duration = minduration;
 
+	sMod.getSpellDuration(spellProto,effect_index,duration);
+
     return duration;
 }
 
@@ -9061,7 +9068,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
             if (procExtra&(PROC_EX_NORMAL_HIT|PROC_EX_MISS|PROC_EX_RESIST))
             {
                 if (pTarget->GetTypeId() != TYPEID_PLAYER && pTarget->GetCreatureType() != CREATURE_TYPE_CRITTER)
-                    ((Player*)this)->UpdateCombatSkills(pTarget, attType, MELEE_HIT_MISS, isVictim);
+                    ((Player*)this)->UpdateCombatSkills(pTarget, attType, isVictim);
             }
             // Update defence if player is victim and parry/dodge/block
             if (isVictim && procExtra&(PROC_EX_DODGE|PROC_EX_PARRY|PROC_EX_BLOCK))
@@ -9546,6 +9553,8 @@ void Unit::SetDisplayId(uint32 modelId)
 {
     SetUInt32Value(UNIT_FIELD_DISPLAYID, modelId);
 
+    UpdateModelData();
+
     if(GetTypeId() == TYPEID_UNIT && ((Creature*)this)->isPet())
     {
         Pet *pet = ((Pet*)this);
@@ -9554,6 +9563,21 @@ void Unit::SetDisplayId(uint32 modelId)
         Unit *owner = GetOwner();
         if(owner && (owner->GetTypeId() == TYPEID_PLAYER) && ((Player*)owner)->GetGroup())
             ((Player*)owner)->SetGroupUpdateFlag(GROUP_UPDATE_FLAG_PET_MODEL_ID);
+    }
+}
+
+void Unit::UpdateModelData()
+{
+    if (CreatureModelInfo const* modelInfo = sObjectMgr.GetCreatureModelInfo(GetDisplayId()))
+    {
+        // we expect values in database to be relative to scale = 1.0
+        SetFloatValue(UNIT_FIELD_BOUNDINGRADIUS, GetObjectScale() * modelInfo->bounding_radius);
+
+        // never actually update combat_reach for player, it's always the same. Below player case is for initialization
+        if (GetTypeId() == TYPEID_PLAYER)
+            SetFloatValue(UNIT_FIELD_COMBATREACH, 1.5f);
+        else
+            SetFloatValue(UNIT_FIELD_COMBATREACH, GetObjectScale() * modelInfo->combat_reach);
     }
 }
 

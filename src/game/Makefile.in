@@ -85,7 +85,7 @@ am_libmangosgame_a_OBJECTS = Mod.$(OBJEXT) SpellMod.$(OBJEXT) \
 	AuctionHouseMgr.$(OBJEXT) Bag.$(OBJEXT) BattleGround.$(OBJEXT) \
 	BattleGroundAB.$(OBJEXT) BattleGroundAV.$(OBJEXT) \
 	BattleGroundWS.$(OBJEXT) BattleGroundHandler.$(OBJEXT) \
-	BattleGroundMgr.$(OBJEXT) Channel.$(OBJEXT) \
+	BattleGroundMgr.$(OBJEXT) Camera.$(OBJEXT) Channel.$(OBJEXT) \
 	ChannelHandler.$(OBJEXT) ChannelMgr.$(OBJEXT) \
 	CharacterDatabaseCleaner.$(OBJEXT) CharacterHandler.$(OBJEXT) \
 	Chat.$(OBJEXT) ChatHandler.$(OBJEXT) CombatHandler.$(OBJEXT) \
@@ -344,6 +344,8 @@ libmangosgame_a_SOURCES = \
 	BattleGroundHandler.cpp \
 	BattleGroundMgr.cpp \
 	BattleGroundMgr.h \
+	Camera.cpp \
+	Camera.h \
 	Cell.h \
 	CellImpl.h \
 	Channel.cpp \
@@ -633,6 +635,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BattleGroundHandler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BattleGroundMgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BattleGroundWS.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Camera.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ChannelHandler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ChannelMgr.Po@am__quote@
