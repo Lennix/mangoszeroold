@@ -848,6 +848,9 @@ void Aura::_AddAura()
     //*****************************************************
     if (!secondaura)
     {
+		if (m_spellProto->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED && !m_target->IsSitState())
+			m_target->SetStandState(PLAYER_STATE_SIT);
+
         // Update Seals information
         if( IsSealSpell(GetSpellProto()) )
             m_target->ModifyAuraState(AURA_STATE_JUDGEMENT, true);
