@@ -445,10 +445,7 @@ Player::Player (WorldSession *session): Unit(), m_reputationMgr(this), m_mover(t
     m_groupUpdateMask = 0;
     m_auraUpdateMask = 0;
 
-    m_rank_points = 0.0f;
-    m_stored_honor = 0;
-    m_stored_honorableKills = 0;
-    m_stored_dishonorableKills = 0;
+    ClearHonorInfo();
 
     duel = NULL;
 
@@ -712,7 +709,7 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
     }
 
     // original spells
-    learnDefaultSpells(true);
+    learnDefaultSpells();
 
     // original action bar
     for (PlayerCreateInfoActions::const_iterator action_itr = info->action.begin(); action_itr != info->action.end(); ++action_itr)
@@ -2738,13 +2735,13 @@ void Player::AddNewMailDeliverTime(time_t deliver_time)
     }
 }
 
-bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading, bool disabled)
+bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool disabled)
 {
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell_id);
     if (!spellInfo)
     {
         // do character spell book cleanup (all characters)
-        if(loading && !learning)                            // spell load case
+        if(!IsInWorld() && !learning)                       // spell load case
         {
             sLog.outError("Player::addSpell: Non-existed in SpellStore spell #%u request, deleting for all characters in `character_spell`.",spell_id);
             CharacterDatabase.PExecute("DELETE FROM character_spell WHERE spell = '%u'",spell_id);
@@ -2758,7 +2755,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
     if(!SpellMgr::IsSpellValid(spellInfo,this,false))
     {
         // do character spell book cleanup (all characters)
-        if(loading && !learning)                            // spell load case
+        if(!IsInWorld() && !learning)                       // spell load case
         {
             sLog.outError("Player::addSpell: Broken spell #%u learning not allowed, deleting for all characters in `character_spell`.",spell_id);
             CharacterDatabase.PExecute("DELETE FROM character_spell WHERE spell = '%u'",spell_id);
@@ -2781,8 +2778,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
         {
             itr->second.active = active;
 
-            // loading && !learning == explicitly load from DB and then exist in it already and set correctly
-            if(loading && !learning)
+            // !IsInWorld() && !learning == explicitly load from DB and then exist in it already and set correctly
+            if(!IsInWorld() && !learning)
                 itr->second.state = PLAYERSPELL_UNCHANGED;
             else if(itr->second.state != PLAYERSPELL_NEW)
                 itr->second.state = PLAYERSPELL_CHANGED;
@@ -2820,7 +2817,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
             default:                                        // known not saved yet spell (new or modified)
             {
                 // can be in case spell loading but learned at some previous spell loading
-                if(loading && !learning)
+                if(!IsInWorld() && !learning)
                     itr->second.state = PLAYERSPELL_UNCHANGED;
 
                 return false;
@@ -2851,8 +2848,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
         // non talent spell: learn low ranks (recursive call)
         else if(uint32 prev_spell = sSpellMgr.GetPrevSpellInChain(spell_id))
         {
-            if(loading)                                     // at spells loading, no output, but allow save
-                addSpell(prev_spell,active,true,loading,disabled);
+            if(!IsInWorld())                                // at spells loading, no output, but allow save
+                addSpell(prev_spell,active,true,disabled);
             else                                            // at normal learning
                 learnSpell(prev_spell);
         }
@@ -2877,7 +2874,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
                     {
                         if(sSpellMgr.IsHighRankOfSpell(spell_id,itr2->first))
                         {
-                            if(!loading)                    // not send spell (re-/over-)learn packets at loading
+                            if(IsInWorld())                 // not send spell (re-/over-)learn packets at loading
                             {
                                 WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
                                 data << uint16(itr2->first);
@@ -2892,7 +2889,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
                         }
                         else if(sSpellMgr.IsHighRankOfSpell(itr2->first,spell_id))
                         {
-                            if(!loading)                    // not send spell (re-/over-)learn packets at loading
+                            if(IsInWorld())                 // not send spell (re-/over-)learn packets at loading
                             {
                                 WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
                                 data << uint16(spell_id);
@@ -2941,21 +2938,23 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
     // also cast passive spells (including all talents without SPELL_EFFECT_LEARN_SPELL) with additional checks
     else if (IsPassiveSpell(spellInfo))
     {
-        // if spell doesn't require a stance or the player is in the required stance
-        if( ( !spellInfo->Stances &&
-            spell_id != 5420 && spell_id != 5419 && spell_id != 7376 &&
-            spell_id != 7381 && spell_id != 21156 && spell_id != 21009 &&
-            spell_id != 21178 && spell_id != 33948 && spell_id != 40121 ) ||
-            m_form != 0 && (spellInfo->Stances & (1<<(m_form-1))) ||
-            (spell_id ==  5420 && m_form == FORM_TREE) ||
-            (spell_id ==  5419 && m_form == FORM_TRAVEL) ||
-            (spell_id ==  7376 && m_form == FORM_DEFENSIVESTANCE) ||
-            (spell_id ==  7381 && m_form == FORM_BERSERKERSTANCE) ||
-            (spell_id == 21156 && m_form == FORM_BATTLESTANCE)||
-            (spell_id == 21178 && (m_form == FORM_BEAR || m_form == FORM_DIREBEAR) ) )
-            //Check CasterAuraStates
-            if (!spellInfo->CasterAuraState || HasAuraState(AuraState(spellInfo->CasterAuraState)))
-                CastSpell(this, spell_id, true);
+        bool need_cast =  false;
+
+        switch(spell_id)
+        {
+            // some spells not have stance data expected cast at form change or present
+            case  5420: need_cast = (m_form == FORM_TREE);            break;
+            case  5419: need_cast = (m_form == FORM_TRAVEL);          break;
+            case  7376: need_cast = (m_form == FORM_DEFENSIVESTANCE); break;
+            case  7381: need_cast = (m_form == FORM_BERSERKERSTANCE); break;
+            case 21156: need_cast = (m_form == FORM_BATTLESTANCE);    break;
+            case 21178: need_cast = (m_form == FORM_BEAR || m_form == FORM_DIREBEAR); break;
+            // another spells have proper stance data
+            default: need_cast = !spellInfo->Stances || m_form != 0 && (spellInfo->Stances & (1<<(m_form-1))); break;
+        }
+                                                            //Check CasterAuraStates
+        if (need_cast && (!spellInfo->CasterAuraState || HasAuraState(AuraState(spellInfo->CasterAuraState))))
+            CastSpell(this, spell_id, true);
     }
     else if (IsSpellHaveEffect(spellInfo,SPELL_EFFECT_SKILL_STEP))
     {
@@ -3028,8 +3027,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool loading,
     {
         if (!itr2->second.autoLearned)
         {
-            if (loading || !itr2->second.active)            // at spells loading, no output, but allow save
-                addSpell(itr2->second.spell,itr2->second.active,true,loading);
+            if(!IsInWorld() || !itr2->second.active)        // at spells loading, no output, but allow save
+                addSpell(itr2->second.spell,itr2->second.active,true,false);
             else                                            // at normal learning
                 learnSpell(itr2->second.spell);
         }
@@ -3046,7 +3045,7 @@ void Player::learnSpell(uint32 spell_id)
     bool disabled = (itr != m_spells.end()) ? itr->second.disabled : false;
     bool active = disabled ? itr->second.active : true;
 
-    bool learning = addSpell(spell_id,active);
+    bool learning = addSpell(spell_id,active,true,false);
 
     // learn all disabled higher ranks (recursive)
     SpellChainMapNext const& nextMap = sSpellMgr.GetSpellChainNext();
@@ -3057,8 +3056,8 @@ void Player::learnSpell(uint32 spell_id)
             learnSpell(i->second);
     }
 
-    // prevent duplicated entires in spell book
-    if(!learning)
+    // prevent duplicated entires in spell book, also not send if not in world (loading)
+    if(!learning || !IsInWorld ())
         return;
 
     WorldPacket data(SMSG_LEARNED_SPELL, 4);
@@ -5859,16 +5858,20 @@ void Player::ResetHonor()
 {
     //it will delete all honor permanently
     CharacterDatabase.PExecute("DELETE FROM character_honor_cp WHERE guid = '%u'",GetGUIDLow());
+    ClearHonorInfo();
+    UpdateHonor();
+}
+
+// set all honor info to default
+void Player::ClearHonorInfo()
+{
     m_honorCP.clear();
     SetHonorStoredKills(0,true);
     SetHonorStoredKills(0,false);
     SetStoredHonor(0);
     SetHonorLastWeekStandingPos(0);
-    HonorRankInfo prk;
-    prk.rank = 0;
-    prk.visualRank = 0;
-    SetHonorHighestRankInfo(prk);
-    UpdateHonor();
+    MaNGOS::Honor::InitRankInfo(m_honor_rank);
+    MaNGOS::Honor::InitRankInfo(m_highest_rank);
 }
 
 //How many times Player kill pVictim... ( toDate shouldn't be > lastWeekBegin )
@@ -13652,6 +13655,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     // after spell load
     InitTalentForLevel();
+    learnDefaultSpells();
 
     // after spell load, learn rewarded spell if need also
     _LoadQuestStatus(holder->GetResult(PLAYER_LOGIN_QUERY_LOADQUESTSTATUS));
@@ -14352,7 +14356,7 @@ void Player::_LoadSpells(QueryResult *result)
 
             uint32 spell_id = fields[0].GetUInt32();
 
-            addSpell(spell_id, fields[1].GetBool(), false, true, fields[2].GetBool());
+            addSpell(spell_id, fields[1].GetBool(), false, fields[2].GetBool());
         }
         while( result->NextRow() );
 
@@ -17242,6 +17246,9 @@ void Player::SendInstanceResetWarning(uint32 mapid, uint32 time)
 
 void Player::ApplyEquipCooldown( Item * pItem )
 {
+    if (pItem->HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_NO_EQUIP_COOLDOWN))
+        return;
+
     for(int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
     {
         _Spell const& spellData = pItem->GetProto()->Spells[i];
@@ -17280,7 +17287,7 @@ void Player::resetSpells()
     learnQuestRewardedSpells();
 }
 
-void Player::learnDefaultSpells(bool loading)
+void Player::learnDefaultSpells()
 {
     // learn default race/class spells
     PlayerInfo const *info = sObjectMgr.GetPlayerInfo(getRace(),getClass());
@@ -17288,8 +17295,8 @@ void Player::learnDefaultSpells(bool loading)
     {
         uint32 tspell = *itr;
         DEBUG_LOG("PLAYER (Class: %u Race: %u): Adding initial spell, id = %u",uint32(getClass()),uint32(getRace()), tspell);
-        if(loading)                                         // will send in INITIAL_SPELLS in list anyway
-            addSpell(tspell,true);
+        if(!IsInWorld())                                    // will send in INITIAL_SPELLS in list anyway at map add
+            addSpell(tspell,true,true,false);
         else                                                // but send in normal spell in game learn case
             learnSpell(tspell);
     }
