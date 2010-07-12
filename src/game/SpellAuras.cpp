@@ -758,9 +758,9 @@ void Aura::_AddAura()
     //        break;
     //}
 
-    // register aura
-    if (getDiminishGroup() != DIMINISHING_NONE )
-        m_target->ApplyDiminishingAura(getDiminishGroup(),true);
+    //// register aura
+    //if (getdiminishgroup() != diminishing_none )
+    //    m_target->applydiminishingaura(getdiminishgroup(),true);
 
     Unit* caster = GetCaster();
 
