@@ -20,6 +20,7 @@
 #ifndef MANGOSSERVER_GUILD_H
 #define MANGOSSERVER_GUILD_H
 
+#include "Common.h"
 #include "Item.h"
 
 class Item;
@@ -160,6 +161,14 @@ struct GuildEventLogEntry
 
 struct MemberSlot
 {
+    void SetMemberStats(Player* player);
+    void UpdateLogoutTime();
+    void SetPNOTE(std::string pnote);
+    void SetOFFNOTE(std::string offnote);
+    void ChangeRank(uint32 newRank);
+
+    ObjectGuid guid;
+    uint32 accountId;
     std::string Name;
     uint32 RankId;
     uint8 Level;
@@ -190,51 +199,53 @@ class Guild
         void CreateDefaultGuildRanks(int locale_idx);
         void Disband();
 
-        typedef std::map<uint32, MemberSlot> MemberList;
+        typedef UNORDERED_MAP<uint32, MemberSlot> MemberList;
         typedef std::vector<RankInfo> RankList;
 
         uint32 GetId(){ return m_Id; }
-        const uint64& GetLeader(){ return m_LeaderGuid; }
-        std::string GetName(){ return m_Name; }
-        std::string GetMOTD(){ return MOTD; }
-        std::string GetGINFO(){ return GINFO; }
+        ObjectGuid GetLeaderGuid() const { return m_LeaderGuid; }
+        std::string const& GetName() const { return m_Name; }
+        std::string const& GetMOTD() const { return MOTD; }
+        std::string const& GetGINFO() const { return GINFO; }
 
-        uint32 GetCreatedYear(){ return m_CreatedYear; }
-        uint32 GetCreatedMonth(){ return m_CreatedMonth; }
-        uint32 GetCreatedDay(){ return m_CreatedDay; }
+        uint32 GetCreatedYear() const { return m_CreatedYear; }
+        uint32 GetCreatedMonth() const { return m_CreatedMonth; }
+        uint32 GetCreatedDay() const { return m_CreatedDay; }
 
-        uint32 GetEmblemStyle(){ return m_EmblemStyle; }
-        uint32 GetEmblemColor(){ return m_EmblemColor; }
-        uint32 GetBorderStyle(){ return m_BorderStyle; }
-        uint32 GetBorderColor(){ return m_BorderColor; }
-        uint32 GetBackgroundColor(){ return m_BackgroundColor; }
+        uint32 GetEmblemStyle() const { return m_EmblemStyle; }
+        uint32 GetEmblemColor() const { return m_EmblemColor; }
+        uint32 GetBorderStyle() const { return m_BorderStyle; }
+        uint32 GetBorderColor() const { return m_BorderColor; }
+        uint32 GetBackgroundColor() const { return m_BackgroundColor; }
 
-        void SetLeader(uint64 guid);
-        bool AddMember(uint64 plGuid, uint32 plRank);
-        void ChangeRank(uint64 guid, uint32 newRank);
-        void DelMember(uint64 guid, bool isDisbanding = false);
+        void SetLeader(ObjectGuid guid);
+        bool AddMember(ObjectGuid plGuid, uint32 plRank);
+        void DelMember(ObjectGuid guid, bool isDisbanding = false);
         //lowest rank is the count of ranks - 1 (the highest rank_id in table)
         uint32 GetLowestRank() const { return m_Ranks.size() - 1; }
 
         void SetMOTD(std::string motd);
         void SetGINFO(std::string ginfo);
-        void SetPNOTE(uint64 guid, std::string pnote);
-        void SetOFFNOTE(uint64 guid, std::string offnote);
         void SetEmblem(uint32 emblemStyle, uint32 emblemColor, uint32 borderStyle, uint32 borderColor, uint32 backgroundColor);
 
         uint32 GetMemberSize() const { return members.size(); }
+        uint32 GetAccountsNumber();
 
-        bool LoadGuildFromDB(uint32 GuildId);
-        bool LoadRanksFromDB(uint32 GuildId);
-        bool LoadMembersFromDB(uint32 GuildId);
-
-        void SetMemberStats(uint64 guid);
+        bool LoadGuildFromDB(QueryResult *guildDataResult);
+        bool CheckGuildStructure();
+        bool LoadRanksFromDB(QueryResult *guildRanksResult);
+        bool LoadMembersFromDB(QueryResult *guildMembersResult);
 
         void BroadcastToGuild(WorldSession *session, const std::string& msg, uint32 language = LANG_UNIVERSAL);
         void BroadcastToOfficers(WorldSession *session, const std::string& msg, uint32 language = LANG_UNIVERSAL);
         void BroadcastPacketToRank(WorldPacket *packet, uint32 rankId);
         void BroadcastPacket(WorldPacket *packet);
-        void BroadcastEvent(GuildEvents event, uint64 guid, uint8 strCount, std::string str1, std::string str2, std::string str3);
+
+        void BroadcastEvent(GuildEvents event, ObjectGuid guid, char const* str1 = NULL, char const* str2 = NULL, char const* str3 = NULL);
+        void BroadcastEvent(GuildEvents event, char const* str1 = NULL, char const* str2 = NULL, char const* str3 = NULL)
+        {
+            BroadcastEvent(event, ObjectGuid(), str1, str2, str3);
+        }
 
         template<class Do>
         void BroadcastWorker(Do& _do, Player* except = NULL)
@@ -257,41 +268,42 @@ class Guild
         {
             return ((GetRankRights(rankId) & right) != GR_RIGHT_EMPTY) ? true : false;
         }
-        int32 GetRank(uint32 LowGuid);
-        bool IsMember(uint32 LowGuid)
+
+        int32 GetRank(ObjectGuid guid)
         {
-            return (members.find(LowGuid) != members.end());
+            MemberSlot* slot = GetMemberSlot(guid);
+            return slot ? slot->RankId : -1;
         }
-        MemberSlot* GetMemberSlot(const std::string& name, uint64& guid)
+
+        MemberSlot* GetMemberSlot(ObjectGuid guid)
+        {
+            MemberList::iterator itr = members.find(guid.GetCounter());
+            return itr != members.end() ? &itr->second : NULL;
+        }
+
+        MemberSlot* GetMemberSlot(const std::string& name)
         {
             for(MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
-            {
                 if(itr->second.Name == name)
-                {
-                    guid = itr->first;
                     return &itr->second;
-                }
-            }
+
             return NULL;
         }
 
         void Roster(WorldSession *session = NULL);          // NULL = broadcast
         void Query(WorldSession *session);
 
-        void   UpdateLogoutTime(uint64 guid);
         // Guild EventLog
         void   LoadGuildEventLogFromDB();
-        void   UnloadGuildEventLog();
         void   DisplayGuildEventLog(WorldSession *session);
-        void   LogGuildEvent(uint8 EventType, uint32 PlayerGuid1, uint32 PlayerGuid2, uint8 NewRank);
+        void   LogGuildEvent(uint8 EventType, ObjectGuid playerGuid1, ObjectGuid playerGuid2 = ObjectGuid(), uint8 newRank = 0);
 
-        void   IncOnlineMemberCount() { ++m_OnlineMembers; }
     protected:
         void AddRank(const std::string& name,uint32 rights);
 
         uint32 m_Id;
         std::string m_Name;
-        uint64 m_LeaderGuid;
+        ObjectGuid m_LeaderGuid;
         std::string MOTD;
         std::string GINFO;
         uint32 m_CreatedYear;
@@ -303,6 +315,7 @@ class Guild
         uint32 m_BorderStyle;
         uint32 m_BorderColor;
         uint32 m_BackgroundColor;
+        uint32 m_accountsNumber;                            // 0 used as marker for need lazy calculation at request
 
         RankList m_Ranks;
 
@@ -314,7 +327,7 @@ class Guild
 
         uint32 m_GuildEventLogNextGuid;
 
-        bool m_EventLogLoaded;
-        uint32 m_OnlineMembers;
+    private:
+        void UpdateAccountsNumber() { m_accountsNumber = 0;}// mark for lazy calculation at request in GetAccountsNumber
 };
 #endif

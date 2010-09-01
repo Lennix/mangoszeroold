@@ -26,6 +26,7 @@
 #include "Language.h"
 #include "Log.h"
 #include "MapManager.h"
+#include "BattleGroundMgr.h"
 #include "Policies/SingletonImp.h"
 
 INSTANTIATE_SINGLETON_1(GameEventMgr);
@@ -110,7 +111,7 @@ void GameEventMgr::LoadFromDB()
         mGameEvent.resize(max_event_id+1);
     }
 
-    QueryResult *result = WorldDatabase.Query("SELECT entry,UNIX_TIMESTAMP(start_time),UNIX_TIMESTAMP(end_time),occurence,length,description FROM game_event");
+    QueryResult *result = WorldDatabase.Query("SELECT entry,UNIX_TIMESTAMP(start_time),UNIX_TIMESTAMP(end_time),occurence,length,holiday,description FROM game_event");
     if( !result )
     {
         mGameEvent.clear();
@@ -144,6 +145,7 @@ void GameEventMgr::LoadFromDB()
             pGameEvent.end          = time_t(endtime);
             pGameEvent.occurence    = fields[3].GetUInt32();
             pGameEvent.length       = fields[4].GetUInt32();
+            pGameEvent.holiday_id   = HolidayIds(fields[5].GetUInt32());
 
             if(pGameEvent.length==0)                            // length>0 is validity check
             {
@@ -151,7 +153,7 @@ void GameEventMgr::LoadFromDB()
                 continue;
             }
 
-            pGameEvent.description  = fields[5].GetCppString();
+            pGameEvent.description  = fields[6].GetCppString();
 
         } while( result->NextRow() );
         delete result;
@@ -591,7 +593,7 @@ void GameEventMgr::GameEventSpawn(int16 event_id)
             sObjectMgr.AddGameobjectToGrid(*itr, data);
 
             // Spawn if necessary (loaded grids only)
-            // this base map checked as non-instanced and then only existed
+            // this base map checked as non-instanced and then only existing
             Map* map = const_cast<Map*>(sMapMgr.CreateBaseMap(data->mapid));
             // We use current coords to unspawn, not spawn coords since creature can have changed grid
             if(!map->Instanceable() && map->IsLoaded(data->posX, data->posY))
@@ -748,7 +750,7 @@ void GameEventMgr::ChangeEquipOrModel(int16 event_id, bool activate)
             if (data2 && activate)
             {
                 CreatureInfo const *cinfo = ObjectMgr::GetCreatureTemplate(data2->id);
-                uint32 display_id = sObjectMgr.ChooseDisplayId(0,cinfo,data2);
+                uint32 display_id = Creature::ChooseDisplayId(cinfo,data2);
                 CreatureModelInfo const *minfo = sObjectMgr.GetCreatureModelRandomGender(display_id);
                 if (minfo)
                     display_id = minfo->modelid;
@@ -765,12 +767,12 @@ void GameEventMgr::ChangeEquipOrModel(int16 event_id, bool activate)
         CreatureData& data2 = sObjectMgr.NewOrExistCreatureData(itr->first);
         if (activate)
         {
-            data2.displayid = itr->second.modelid;
+            data2.modelid_override = itr->second.modelid;
             data2.equipmentId = itr->second.equipment_id;
         }
         else
         {
-            data2.displayid = itr->second.modelid_prev;
+            data2.modelid_override = itr->second.modelid_prev;
             data2.equipmentId = itr->second.equipement_id_prev;
         }
     }
@@ -838,4 +840,19 @@ int16 GameEventMgr::GetGameEventId<Pool>(uint32 guid_or_poolid)
 GameEventMgr::GameEventMgr()
 {
     m_IsGameEventsInit = false;
+}
+
+MANGOS_DLL_SPEC bool IsHolidayActive( HolidayIds id )
+{
+    if (id == HOLIDAY_NONE)
+        return false;
+
+    GameEventMgr::GameEventDataMap const& events = sGameEventMgr.GetEventMap();
+    GameEventMgr::ActiveEvents const& ae = sGameEventMgr.GetActiveEventList();
+
+    for(GameEventMgr::ActiveEvents::const_iterator itr = ae.begin(); itr != ae.end(); ++itr)
+        if(events[*itr].holiday_id==id)
+            return true;
+
+    return false;
 }

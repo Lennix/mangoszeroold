@@ -25,7 +25,7 @@
 #include "ace/Thread_Mutex.h"
 #include <list>
 #include <map>
-#include "Utilities/UnorderedMap.h"
+#include "Utilities/UnorderedMapSet.h"
 #include "Database/DatabaseEnv.h"
 
 struct InstanceTemplate;
@@ -53,14 +53,14 @@ class InstanceSave
            or when the instance is reset */
         ~InstanceSave();
 
-        uint8 GetPlayerCount() { return m_playerList.size(); }
-        uint8 GetGroupCount() { return m_groupList.size(); }
+        uint8 GetPlayerCount() const { return m_playerList.size(); }
+        uint8 GetGroupCount() const { return m_groupList.size(); }
 
         /* A map corresponding to the InstanceId/MapId does not always exist.
         InstanceSave objects may be created on player logon but the maps are
         created and loaded only when a player actually enters the instance. */
-        uint32 GetInstanceId() { return m_instanceid; }
-        uint32 GetMapId() { return m_mapid; }
+        uint32 GetInstanceId() const { return m_instanceid; }
+        uint32 GetMapId() const { return m_mapid; }
 
         /* Saved when the instance is generated for the first time */
         void SaveToDB();
@@ -69,12 +69,12 @@ class InstanceSave
 
         /* for normal instances this corresponds to max(creature respawn time) + X hours
            for raid instances this caches the global respawn time for the map */
-        time_t GetResetTime() { return m_resetTime; }
+        time_t GetResetTime() const { return m_resetTime; }
         void SetResetTime(time_t resetTime) { m_resetTime = resetTime; }
-        time_t GetResetTimeForDB();
+        time_t GetResetTimeForDB() const;
 
-        InstanceTemplate const* GetTemplate();
-        MapEntry const* GetMapEntry();
+        InstanceTemplate const* GetTemplate() const;
+        MapEntry const* GetMapEntry() const;
 
         /* online players bound to the instance (perm/solo)
            does not include the members of the group unless they have permanent saves */
@@ -87,11 +87,8 @@ class InstanceSave
         /* instances cannot be reset (except at the global reset time)
            if there are players permanently bound to it
            this is cached for the case when those players are offline */
-        bool CanReset() { return m_canReset; }
+        bool CanReset() const { return m_canReset; }
         void SetCanReset(bool canReset) { m_canReset = canReset; }
-
-        /* currently it is possible to omit this information from this structure
-           but that would depend on a lot of things that can easily change in future */
 
         void SetUsedByMapState(bool state)
         {
@@ -117,15 +114,29 @@ class InstanceSave
         bool m_usedByMap;                                   // true when instance map loaded
 };
 
+enum ResetEventType
+{
+    RESET_EVENT_DUNGEON      = 0,                           // no fixed reset time
+    RESET_EVENT_INFORM_1     = 1,                           // raid/heroic warnings
+    RESET_EVENT_INFORM_2     = 2,
+    RESET_EVENT_INFORM_3     = 3,
+    RESET_EVENT_INFORM_LAST  = 4,
+};
+
+#define MAX_RESET_EVENT_TYPE   5
+
 /* resetTime is a global propery of each (raid/heroic) map
     all instances of that map reset at the same time */
 struct InstanceResetEvent
 {
-    uint8 type;
-    uint16 mapid;
-    uint16 instanceId;
-    InstanceResetEvent(uint8 t = 0, uint16 m = 0, uint16 i = 0) : type(t), mapid(m), instanceId(i) {}
-    bool operator == (const InstanceResetEvent& e) { return e.instanceId == instanceId; }
+    ResetEventType type   :8;                               // if RESET_EVENT_DUNGEON then InstanceID == 0 and applied to all instances for map)
+    uint16 mapid;                                           // used with mapid used as for select reset for global cooldown instances (instanceid==0 for event)
+    uint32 instanceId;                                      // used for select reset for normal dungeons
+
+    InstanceResetEvent() : type(RESET_EVENT_DUNGEON), mapid(0), instanceId(0) {}
+    InstanceResetEvent(ResetEventType t, uint32 _mapid, uint32 _instanceid)
+        : type(t), mapid(_mapid), instanceId(_instanceid) {}
+    bool operator == (const InstanceResetEvent& e) { return e.mapid == mapid && e.instanceId == instanceId; }
 };
 
 class InstanceSaveManager;
@@ -139,6 +150,8 @@ class InstanceResetScheduler
     public:                                                 // accessors
         time_t GetResetTimeFor(uint32 mapid) { return m_resetTimeByMapId[mapid]; }
 
+        static uint32 GetMaxResetTimeFor(InstanceTemplate const* temp);
+
     public:                                                 // modifiers
         void ScheduleReset(bool add, time_t time, InstanceResetEvent event);
 
@@ -147,8 +160,7 @@ class InstanceResetScheduler
     private:                                                // fields
         InstanceSaveManager& m_InstanceSaves;
 
-
-        // fast lookup for reset times (always use existed functions for access/set)
+        // fast lookup for reset times (always use existing functions for access/set)
         typedef std::vector<time_t /*resetTime*/> ResetTimeVector;
         ResetTimeVector m_resetTimeByMapId;
 

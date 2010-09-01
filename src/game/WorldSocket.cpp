@@ -551,7 +551,7 @@ int WorldSocket::ProcessIncoming (WorldPacket* new_pct)
 
     if (opcode >= NUM_MSG_TYPES)
     {
-        sLog.outError( "SESSION: received non-existed opcode 0x%.4X", opcode);
+        sLog.outError( "SESSION: received nonexistent opcode 0x%.4X", opcode);
         return -1;
     }
 
@@ -733,6 +733,9 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
 
     id = fields[0].GetUInt32 ();
     security = fields[1].GetUInt16 ();
+    if(security > SEC_ADMINISTRATOR)                        // prevent invalid security settings in DB
+        security = SEC_ADMINISTRATOR;
+
     K.SetHexStr (fields[2].GetString ());
 
     time_t mutetime = time_t (fields[7].GetUInt64 ());

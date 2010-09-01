@@ -27,7 +27,6 @@
 #include "Player.h"
 #include "World.h"
 #include "ObjectMgr.h"
-#include "ObjectGuid.h"
 #include "WorldSession.h"
 #include "Auth/BigNumber.h"
 #include "Auth/Sha1.h"
@@ -279,7 +278,7 @@ void WorldSession::HandleLogoutRequestOpcode( WorldPacket & /*recv_data*/ )
     }
 
     //instant logout in taverns/cities or on taxi or for admins, gm's, mod's if its enabled in mangosd.conf
-    if (GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || GetPlayer()->isInFlight() ||
+    if (GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || GetPlayer()->IsTaxiFlying() ||
         GetSecurity() >= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_INSTANT_LOGOUT))
     {
         LogoutPlayer(true);
@@ -449,7 +448,8 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult *result, uint32 acc
     if(!result)
         return;
 
-    uint64 friendGuid = MAKE_NEW_GUID((*result)[0].GetUInt32(), 0, HIGHGUID_PLAYER);
+    uint32 friendLowGuid = (*result)[0].GetUInt32();
+    ObjectGuid friendGuid = ObjectGuid(HIGHGUID_PLAYER, friendLowGuid);
     uint32 team = Player::TeamForRace((*result)[1].GetUInt8());
 
     delete result;
@@ -459,13 +459,13 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult *result, uint32 acc
         return;
 
     FriendsResult friendResult = FRIEND_NOT_FOUND;
-    if(friendGuid)
+    if (!friendGuid.IsEmpty())
     {
-        if(friendGuid==session->GetPlayer()->GetGUID())
+        if (friendGuid == session->GetPlayer()->GetObjectGuid())
             friendResult = FRIEND_SELF;
         else if(session->GetPlayer()->GetTeam() != team && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND) && session->GetSecurity() < SEC_MODERATOR)
             friendResult = FRIEND_ENEMY;
-        else if(session->GetPlayer()->GetSocial()->HasFriend(GUID_LOPART(friendGuid)))
+        else if(session->GetPlayer()->GetSocial()->HasFriend(friendLowGuid))
             friendResult = FRIEND_ALREADY;
         else
         {
@@ -475,7 +475,7 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult *result, uint32 acc
             else
                 friendResult = FRIEND_ADDED_OFFLINE;
 
-            if(!session->GetPlayer()->GetSocial()->AddToSocialList(GUID_LOPART(friendGuid), false))
+            if(!session->GetPlayer()->GetSocial()->AddToSocialList(friendLowGuid, false))
             {
                 friendResult = FRIEND_LIST_FULL;
                 DEBUG_LOG( "WORLD: %s's friend list is full.", session->GetPlayer()->GetName());
@@ -483,7 +483,7 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult *result, uint32 acc
         }
     }
 
-    sSocialMgr.SendFriendStatus(session->GetPlayer(), friendResult, GUID_LOPART(friendGuid), false);
+    sSocialMgr.SendFriendStatus(session->GetPlayer(), friendResult, friendLowGuid, false);
 
     DEBUG_LOG( "WORLD: Sent (SMSG_FRIEND_STATUS)" );
 }
@@ -527,7 +527,8 @@ void WorldSession::HandleAddIgnoreOpcodeCallBack(QueryResult *result, uint32 acc
     if(!result)
         return;
 
-    uint64 IgnoreGuid = MAKE_NEW_GUID((*result)[0].GetUInt32(), 0, HIGHGUID_PLAYER);
+    uint32 ignoreLowGuid = (*result)[0].GetUInt32();
+    ObjectGuid ignoreGuid = ObjectGuid(HIGHGUID_PLAYER, ignoreLowGuid);
 
     delete result;
 
@@ -536,23 +537,23 @@ void WorldSession::HandleAddIgnoreOpcodeCallBack(QueryResult *result, uint32 acc
         return;
 
     FriendsResult ignoreResult = FRIEND_IGNORE_NOT_FOUND;
-    if(IgnoreGuid)
+    if (!ignoreGuid.IsEmpty())
     {
-        if(IgnoreGuid==session->GetPlayer()->GetGUID())              //not add yourself
+        if (ignoreGuid == session->GetPlayer()->GetObjectGuid())
             ignoreResult = FRIEND_IGNORE_SELF;
-        else if( session->GetPlayer()->GetSocial()->HasIgnore(GUID_LOPART(IgnoreGuid)) )
+        else if (session->GetPlayer()->GetSocial()->HasIgnore(ignoreLowGuid))
             ignoreResult = FRIEND_IGNORE_ALREADY;
         else
         {
             ignoreResult = FRIEND_IGNORE_ADDED;
 
             // ignore list full
-            if(!session->GetPlayer()->GetSocial()->AddToSocialList(GUID_LOPART(IgnoreGuid), true))
+            if(!session->GetPlayer()->GetSocial()->AddToSocialList(ignoreLowGuid, true))
                 ignoreResult = FRIEND_IGNORE_FULL;
         }
     }
 
-    sSocialMgr.SendFriendStatus(session->GetPlayer(), ignoreResult, GUID_LOPART(IgnoreGuid), false);
+    sSocialMgr.SendFriendStatus(session->GetPlayer(), ignoreResult, ignoreLowGuid, false);
 
     DEBUG_LOG( "WORLD: Sent (SMSG_FRIEND_STATUS)" );
 }
@@ -662,7 +663,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket & recv_data)
     recv_data >> Trigger_ID;
     DEBUG_LOG("Trigger ID: %u", Trigger_ID);
 
-    if(GetPlayer()->isInFlight())
+    if(GetPlayer()->IsTaxiFlying())
     {
         DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore Area Trigger ID: %u", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow(), Trigger_ID);
         return;
@@ -701,10 +702,11 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket & recv_data)
     }
 
     // enter to tavern, not overwrite city rest
-    if(sObjectMgr.IsTavernAreaTrigger(Trigger_ID) && pl->GetRestType() != REST_TYPE_IN_CITY)
+    if(sObjectMgr.IsTavernAreaTrigger(Trigger_ID))
     {
         // set resting flag we are in the inn
-        pl->SetRestType(REST_TYPE_IN_TAVERN, Trigger_ID);
+        if (pl->GetRestType() != REST_TYPE_IN_CITY)
+            pl->SetRestType(REST_TYPE_IN_TAVERN, Trigger_ID);
         return;
     }
 
@@ -987,7 +989,7 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
         SendPacket(&data);
     }
     else
-        DEBUG_LOG("Player %u not found!", guid);
+        DEBUG_LOG("Player %u not found!", GUID_LOPART(guid));
 }
 
 void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
@@ -1012,7 +1014,7 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
 
     //DEBUG_LOG("Received opcode CMSG_WORLD_TELEPORT");
 
-    if(GetPlayer()->isInFlight())
+    if(GetPlayer()->IsTaxiFlying())
     {
         DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore worldport command.",GetPlayer()->GetName(),GetPlayer()->GetGUIDLow());
         return;
@@ -1110,9 +1112,9 @@ void WorldSession::HandleResetInstancesOpcode( WorldPacket & /*recv_data*/ )
 {
     DEBUG_LOG("WORLD: CMSG_RESET_INSTANCES");
 
-    if(Group *pGroup = _player->GetGroup())
+    if (Group *pGroup = _player->GetGroup())
     {
-        if(pGroup->IsLeader(_player->GetGUID()))
+        if (pGroup->IsLeader(_player->GetObjectGuid()))
             pGroup->ResetInstances(INSTANCE_RESET_ALL, _player);
     }
     else
@@ -1130,7 +1132,7 @@ void WorldSession::HandleCancelMountAuraOpcode( WorldPacket & /*recv_data*/ )
         return;
     }
 
-    if(_player->isInFlight())                               // not blizz like; no any messages on blizz
+    if(_player->IsTaxiFlying())                             // not blizz like; no any messages on blizz
     {
         ChatHandler(this).SendSysMessage(LANG_YOU_IN_FLIGHT);
         return;

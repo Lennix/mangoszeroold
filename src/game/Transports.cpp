@@ -28,6 +28,7 @@
 #include "WorldPacket.h"
 #include "DBCStores.h"
 #include "ProgressBar.h"
+#include "ScriptCalls.h"
 
 void MapManager::LoadTransports()
 {
@@ -481,7 +482,7 @@ bool Transport::RemovePassenger(Player* passenger)
     return true;
 }
 
-void Transport::Update(time_t /*p_time*/)
+void Transport::Update(uint32 /*p_time*/)
 {
     if (m_WayPoints.size() <= 1)
         return;

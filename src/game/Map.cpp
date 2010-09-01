@@ -831,7 +831,7 @@ Map::PlayerRelocation(Player *player, float x, float y, float z, float orientati
         DEBUG_FILTER_LOG(LOG_FILTER_PLAYER_MOVES, "Player %s relocation grid[%u,%u]cell[%u,%u]->grid[%u,%u]cell[%u,%u]", player->GetName(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
 
         // update player position for group at taxi flight
-        if(player->GetGroup() && player->isInFlight())
+        if(player->GetGroup() && player->IsTaxiFlying())
             player->SetGroupUpdateFlag(GROUP_UPDATE_FLAG_POSITION);
 
         NGridType* oldGrid = getNGrid(old_cell.GridX(), old_cell.GridY());
@@ -2183,15 +2183,16 @@ bool InstanceMap::Add(Player *player)
                     InstanceGroupBind *groupBind = pGroup->GetBoundInstance(GetId());
                     if(playerBind)
                     {
-                        sLog.outError("InstanceMap::Add: player %s(%d) is being put in instance %d,%d,%d,%d,%d but he is in group %d and is bound to instance %d,%d,%d,%d,%d!",
-                            player->GetName(), player->GetGUIDLow(), playerBind->save->GetMapId(), playerBind->save->GetInstanceId(),
+                        sLog.outError("InstanceMap::Add: %s is being put in instance %d,%d,%d,%d,%d but he is in group (Id: %d) and is bound to instance %d,%d,%d,%d,%d!",
+                            player->GetObjectGuid().GetString().c_str(), playerBind->save->GetMapId(), playerBind->save->GetInstanceId(),
                             playerBind->save->GetPlayerCount(), playerBind->save->GetGroupCount(),
-                            playerBind->save->CanReset(), GUID_LOPART(pGroup->GetLeaderGUID()),
+                            playerBind->save->CanReset(), pGroup->GetId(),
                             playerBind->save->GetMapId(), playerBind->save->GetInstanceId(),
                             playerBind->save->GetPlayerCount(), playerBind->save->GetGroupCount(), playerBind->save->CanReset());
 
                         if(groupBind)
-                            sLog.outError("InstanceMap::Add: the group is bound to instance %d,%d,%d,%d,%d",
+                            sLog.outError("InstanceMap::Add: the group (Id: %d) is bound to instance %d,%d,%d,%d,%d",
+                                pGroup->GetId(),
                                 groupBind->save->GetMapId(), groupBind->save->GetInstanceId(),
                                 groupBind->save->GetPlayerCount(), groupBind->save->GetGroupCount(), groupBind->save->CanReset());
 
@@ -2205,10 +2206,10 @@ bool InstanceMap::Add(Player *player)
                         // cannot jump to a different instance without resetting it
                         if (groupBind->save != GetInstanceSave())
                         {
-                            sLog.outError("InstanceMap::Add: player %s(%d) is being put in instance %d,%d but he is in group %d which is bound to instance %d,%d!",
-                                player->GetName(), player->GetGUIDLow(), GetInstanceSave()->GetMapId(),
+                            sLog.outError("InstanceMap::Add: %s is being put in instance %d,%d but he is in group (Id: %d) which is bound to instance %d,%d!",
+                                player->GetObjectGuid().GetString().c_str(), GetInstanceSave()->GetMapId(),
                                 GetInstanceSave()->GetInstanceId(),
-                                GUID_LOPART(pGroup->GetLeaderGUID()), groupBind->save->GetMapId(),
+                                pGroup->GetId(), groupBind->save->GetMapId(),
                                 groupBind->save->GetInstanceId());
 
                             if(GetInstanceSave())
@@ -2277,10 +2278,16 @@ void InstanceMap::Update(const uint32& t_diff)
 void InstanceMap::Remove(Player *player, bool remove)
 {
     DETAIL_LOG("MAP: Removing player '%s' from instance '%u' of map '%s' before relocating to other map", player->GetName(), GetInstanceId(), GetMapName());
+
     //if last player set unload timer
     if(!m_unloadTimer && m_mapRefManager.getSize() == 1)
         m_unloadTimer = m_unloadWhenEmpty ? MIN_UNLOAD_DELAY : std::max(sWorld.getConfig(CONFIG_UINT32_INSTANCE_UNLOAD_DELAY), (uint32)MIN_UNLOAD_DELAY);
+
+    if (i_data)
+        i_data->OnPlayerLeave(player);
+
     Map::Remove(player, remove);
+
     // for normal instances schedule the reset after all players have left
     SetResetSchedule(true);
 }
@@ -2366,7 +2373,7 @@ bool InstanceMap::Reset(uint8 method)
 
 void InstanceMap::PermBindAllPlayers(Player *player)
 {
-    if(!IsDungeon())
+    if (!IsDungeon())
         return;
 
     Group *group = player->GetGroup();
@@ -2377,7 +2384,7 @@ void InstanceMap::PermBindAllPlayers(Player *player)
         // players inside an instance cannot be bound to other instances
         // some players may already be permanently bound, in this case nothing happens
         InstancePlayerBind *bind = plr->GetBoundInstance(GetId());
-        if(!bind || !bind->perm)
+        if (!bind || !bind->perm)
         {
             plr->BindToInstance(GetInstanceSave(), true);
             WorldPacket data(SMSG_INSTANCE_SAVE_CREATED, 4);
@@ -2386,7 +2393,7 @@ void InstanceMap::PermBindAllPlayers(Player *player)
         }
 
         // if the leader is not in the instance the group will not get a perm bind
-        if(group && group->GetLeaderGUID() == plr->GetGUID())
+        if (group && group->GetLeaderGuid() == plr->GetObjectGuid())
             group->BindToInstance(GetInstanceSave(), true);
     }
 }
@@ -2421,7 +2428,7 @@ void InstanceMap::SetResetSchedule(bool on)
     // the reset time is only scheduled when there are no payers inside
     // it is assumed that the reset time will rarely (if ever) change while the reset is scheduled
     if(IsDungeon() && !HavePlayers() && !IsRaid())
-        sInstanceSaveMgr.GetScheduler().ScheduleReset(on, GetInstanceSave()->GetResetTime(), InstanceResetEvent(0, GetId(), GetInstanceId()));
+        sInstanceSaveMgr.GetScheduler().ScheduleReset(on, GetInstanceSave()->GetResetTime(), InstanceResetEvent(RESET_EVENT_DUNGEON, GetId(), GetInstanceId()));
 }
 
 uint32 InstanceMap::GetMaxPlayers() const
@@ -2869,7 +2876,7 @@ void Map::ScriptsProcess()
                 }
                 else
                 {
-                    pSource->KilledMonsterCredit(step.script->datalong, 0);
+                    pSource->KilledMonsterCredit(step.script->datalong);
                 }
 
                 break;
@@ -3318,27 +3325,59 @@ void Map::ScriptsProcess()
     }
 }
 
+/**
+ * Function return player that in world at CURRENT map
+ *
+ * Note: This is function preferred if you sure that need player only placed at specific map
+ *       This is not true for some spell cast targeting and most packet handlers
+ *
+ * @param guid must be player guid (HIGHGUID_PLAYER)
+ */
+Player* Map::GetPlayer(ObjectGuid guid)
+{
+    Player* plr = ObjectAccessor::FindPlayer(guid);         // return only in world players
+    return plr && plr->GetMap() == this ? plr : NULL;
+}
+
+/**
+ * Function return creature (non-pet and then most summoned by spell creatures) that in world at CURRENT map 
+ *
+ * @param guid must be creature guid (HIGHGUID_UNIT)
+ */
 Creature* Map::GetCreature(ObjectGuid guid)
 {
     return m_objectsStore.find<Creature>(guid.GetRawValue(), (Creature*)NULL);
 }
 
+/**
+ * Function return pet that in world at CURRENT map 
+ *
+ * @param guid must be pet guid (HIGHGUID_PET)
+ */
 Pet* Map::GetPet(ObjectGuid guid)
 {
     return m_objectsStore.find<Pet>(guid.GetRawValue(), (Pet*)NULL);
 }
 
+/**
+ * Function return corpse that at CURRENT map
+ *
+ * Note: corpse can be NOT IN WORLD, so can't be used corspe->GetMap() without pre-check corpse->isInWorld()
+ *
+ * @param guid must be corpse guid (HIGHGUID_CORPSE)
+ */
 Corpse* Map::GetCorpse(ObjectGuid guid)
 {
     Corpse * ret = ObjectAccessor::GetCorpseInMap(guid,GetId());
-    if (!ret)
-        return NULL;
-    if (ret->GetInstanceId() != GetInstanceId())
-        return NULL;
-    return ret;
+    return ret && ret->GetInstanceId() == GetInstanceId() ? ret : NULL;
 }
 
-Creature* Map::GetCreatureOrPet(ObjectGuid guid)
+/**
+ * Function return non-player unit object that in world at CURRENT map, so creature, or pet
+ *
+ * @param guid must be non-player unit guid (HIGHGUID_PET HIGHGUID_UNIT)
+ */
+Creature* Map::GetAnyTypeCreature(ObjectGuid guid)
 {
     switch(guid.GetHigh())
     {
@@ -3350,26 +3389,60 @@ Creature* Map::GetCreatureOrPet(ObjectGuid guid)
     return NULL;
 }
 
+/**
+ * Function return gameobject that in world at CURRENT map
+ *
+ * @param guid must be gameobject guid (HIGHGUID_GAMEOBJECT)
+ */
 GameObject* Map::GetGameObject(ObjectGuid guid)
 {
     return m_objectsStore.find<GameObject>(guid.GetRawValue(), (GameObject*)NULL);
 }
 
+/**
+ * Function return dynamic object that in world at CURRENT map
+ *
+ * @param guid must be dynamic object guid (HIGHGUID_DYNAMICOBJECT)
+ */
 DynamicObject* Map::GetDynamicObject(ObjectGuid guid)
 {
     return m_objectsStore.find<DynamicObject>(guid.GetRawValue(), (DynamicObject*)NULL);
 }
 
+/**
+ * Function return unit in world at CURRENT map
+ *
+ * Note: in case player guid not always expected need player at current map only.
+ *       For example in spell casting can be expected any in world player targeting in some cases
+ *
+ * @param guid must be unit guid (HIGHGUID_PLAYER HIGHGUID_PET HIGHGUID_UNIT)
+ */
+Unit* Map::GetUnit(ObjectGuid guid)
+{
+    if (guid.IsPlayer())
+        return GetPlayer(guid);
+
+    return GetAnyTypeCreature(guid);
+}
+
+/**
+ * Function return world object in world at CURRENT map, so any except transports
+ */
 WorldObject* Map::GetWorldObject(ObjectGuid guid)
 {
     switch(guid.GetHigh())
     {
-        case HIGHGUID_PLAYER:       return ObjectAccessor::FindPlayer(guid);
+        case HIGHGUID_PLAYER:       return GetPlayer(guid);
         case HIGHGUID_GAMEOBJECT:   return GetGameObject(guid);
         case HIGHGUID_UNIT:         return GetCreature(guid);
         case HIGHGUID_PET:          return GetPet(guid);
         case HIGHGUID_DYNAMICOBJECT:return GetDynamicObject(guid);
-        case HIGHGUID_CORPSE:       return GetCorpse(guid);
+        case HIGHGUID_CORPSE:
+        {
+            // corpse special case, it can be not in world
+            Corpse* corpse = GetCorpse(guid);
+            return corpse && corpse->IsInWorld() ? corpse : NULL;
+        }
         case HIGHGUID_MO_TRANSPORT:
         case HIGHGUID_TRANSPORT:
         default:                    break;

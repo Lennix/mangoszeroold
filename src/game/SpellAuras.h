@@ -22,15 +22,6 @@
 #include "SpellAuraDefines.h"
 #include "DBCEnums.h"
 
-struct DamageManaShield
-{
-    uint32 m_spellId;
-    uint32 m_modType;
-    int32 m_schoolType;
-    uint32 m_totalAbsorb;
-    uint32 m_currAbsorb;
-};
-
 struct Modifier
 {
     AuraType m_auraname;
@@ -112,6 +103,7 @@ class MANGOS_DLL_SPEC Aura
         void HandleAuraModRegenInterrupt(bool Apply, bool Real);
         void HandleHaste(bool Apply, bool Real);
         void HandlePeriodicTriggerSpell(bool Apply, bool Real);
+        void HandlePeriodicTriggerSpellWithValue(bool apply, bool Real);
         void HandlePeriodicEnergize(bool Apply, bool Real);
         void HandleAuraModResistanceExclusive(bool Apply, bool Real);
         void HandleAuraSafeFall(bool Apply, bool Real);
@@ -149,6 +141,7 @@ class MANGOS_DLL_SPEC Aura
         void HandleAuraModScale(bool Apply, bool Real);
 		void HandlePeriodicHealthFunnel(bool apply, bool Real);
         void HandlePeriodicManaLeech(bool Apply, bool Real);
+        void HandlePeriodicHealthFunnel(bool apply, bool Real);
         void HandleModCastingSpeed(bool Apply, bool Real);
         void HandleAuraMounted(bool Apply, bool Real);
         void HandleWaterBreathing(bool Apply, bool Real);
@@ -227,9 +220,10 @@ class MANGOS_DLL_SPEC Aura
         Unit* GetCaster() const;
         Unit* GetTarget() const { return m_target; }
         void SetTarget(Unit* target) { m_target = target; }
-        void SetLoadedState(uint64 caster_guid,int32 damage,int32 maxduration,int32 duration,int32 charges)
+        void SetLoadedState(uint64 caster_guid, ObjectGuid item_guid, int32 damage, int32 maxduration, int32 duration, int32 charges)
         {
             m_caster_guid = caster_guid;
+            m_castItemGuid = item_guid.GetRawValue();
             m_modifier.m_amount = damage;
             m_maxduration = maxduration;
             m_duration = duration;
@@ -283,13 +277,14 @@ class MANGOS_DLL_SPEC Aura
         bool IsPermanent() const { return m_permanent; }
         bool IsAreaAura() const { return m_isAreaAura; }
         bool IsPeriodic() const { return m_isPeriodic; }
-        bool IsTrigger() const { return m_isTrigger; }
         bool IsPassive() const { return m_isPassive; }
         bool IsPersistent() const { return m_isPersistent; }
         bool IsDeathPersistent() const { return m_isDeathPersist; }
         bool IsRemovedOnShapeLost() const { return m_isRemovedOnShapeLost; }
         bool IsInUse() const { return m_in_use;}
         bool IsDeleted() const { return m_deleted;}
+
+        void SetDeleted() { m_deleted = true; }
 
         void SetInUse(bool state)
         {
@@ -367,7 +362,6 @@ class MANGOS_DLL_SPEC Aura
         bool m_positive:1;
         bool m_permanent:1;
         bool m_isPeriodic:1;
-        bool m_isTrigger:1;
         bool m_isAreaAura:1;
         bool m_isPassive:1;
         bool m_isPersistent:1;

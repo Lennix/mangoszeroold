@@ -22,16 +22,9 @@
 #define MAX_AURAS 56
 #define MAX_POSITIVE_AURAS 32
 
-enum AURA_FLAGS
+enum AuraFlags
 {
     AFLAG_MASK              = 0x09
-};
-
-//m_schoolAbsorb
-enum DAMAGE_ABSORB_TYPE
-{
-    ALL_DAMAGE_ABSORB       = -2,
-    ONLY_MAGIC_ABSORB       = -1,
 };
 
 enum AuraType
@@ -82,9 +75,9 @@ enum AuraType
     SPELL_AURA_PROC_TRIGGER_DAMAGE = 43,
     SPELL_AURA_TRACK_CREATURES = 44,
     SPELL_AURA_TRACK_RESOURCES = 45,
-    SPELL_AURA_MOD_PARRY_SKILL = 46,
+    SPELL_AURA_46 = 46,                               // Ignore all Gear test spells
     SPELL_AURA_MOD_PARRY_PERCENT = 47,
-    SPELL_AURA_MOD_DODGE_SKILL = 48,
+    SPELL_AURA_48 = 48,                               // One periodic spell
     SPELL_AURA_MOD_DODGE_PERCENT = 49,
     SPELL_AURA_MOD_BLOCK_SKILL = 50,
     SPELL_AURA_MOD_BLOCK_PERCENT = 51,
@@ -101,7 +94,7 @@ enum AuraType
     SPELL_AURA_PERIODIC_HEALTH_FUNNEL = 62,
     SPELL_AURA_PERIODIC_MANA_FUNNEL = 63,
     SPELL_AURA_PERIODIC_MANA_LEECH = 64,
-    SPELL_AURA_MOD_CASTING_SPEED = 65,
+    SPELL_AURA_MOD_CASTING_SPEED_NOT_STACK = 65,
     SPELL_AURA_FEIGN_DEATH = 66,
     SPELL_AURA_MOD_DISARM = 67,
     SPELL_AURA_MOD_STALKED = 68,

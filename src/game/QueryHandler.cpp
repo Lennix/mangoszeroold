@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
- * Copyright (C) 2009-2010 MaNGOSZero <http://github.com/mangoszero/mangoszero/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +72,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult *result, uint32
     }
 
     Field *fields = result->Fetch();
-    uint32 guid      = fields[0].GetUInt32();
+    uint32 lowguid      = fields[0].GetUInt32();
     std::string name = fields[1].GetCppString();
     uint8 pRace = 0, pGender = 0, pClass = 0;
     if(name == "")
@@ -87,7 +86,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult *result, uint32
 
                                                             // guess size
     WorldPacket data( SMSG_NAME_QUERY_RESPONSE, (8+1+4+4+4+10) );
-    data << MAKE_NEW_GUID(guid, 0, HIGHGUID_PLAYER);
+    data << ObjectGuid(HIGHGUID_PLAYER, lowguid);
     data << name;
     data << uint8(0);                                       // realm name for cross realm BG usage
     data << uint32(pRace);                                  // race
@@ -129,7 +128,7 @@ void WorldSession::HandleCreatureQueryOpcode( WorldPacket & recv_data )
     recv_data >> entry;
     recv_data >> guid;
 
-    Creature *unit = _player->GetMap()->GetCreatureOrPet(guid);
+    Creature *unit = _player->GetMap()->GetAnyTypeCreature(guid);
 
     //if (unit == NULL)
     //    sLog.outDebug( "WORLD: HandleCreatureQueryOpcode - (%u) NO SUCH UNIT! (GUID: %u, ENTRY: %u)", uint32(GUID_LOPART(guid)), guid, entry );
@@ -174,9 +173,9 @@ void WorldSession::HandleCreatureQueryOpcode( WorldPacket & recv_data )
         if (unit)
             data << unit->GetUInt32Value(UNIT_FIELD_DISPLAYID); //DisplayID      wdbFeild13
         else
-            data << uint32(sObjectMgr.ChooseDisplayId(0, ci));  // workaround, way to manage models must be fixed
+            data << uint32(Creature::ChooseDisplayId(ci));  // workaround, way to manage models must be fixed
 
-        data << uint16(ci->civilian);                        //wdbFeild14
+        data << uint16(ci->civilian);                       //wdbFeild14
         SendPacket( &data );
         DEBUG_LOG( "WORLD: Sent SMSG_CREATURE_QUERY_RESPONSE" );
     }
@@ -261,6 +260,7 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket & /*recv_data*/)
     float y = corpse->GetPositionY();
     float z = corpse->GetPositionZ();
     int32 corpsemapid = mapid;
+
     // if corpse at different map
     if(mapid != _player->GetMapId())
     {

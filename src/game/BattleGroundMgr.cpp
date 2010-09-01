@@ -32,8 +32,8 @@
 #include "Chat.h"
 #include "World.h"
 #include "WorldPacket.h"
-#include "ProgressBar.h"
 #include "Language.h"
+#include "GameEventMgr.h"
 
 #include "Policies/SingletonImp.h"
 
@@ -864,9 +864,9 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
 {
     data->Initialize(MSG_PVP_LOG_DATA, (1+4+40*bg->GetPlayerScoresSize()));
 
-    if(bg->GetWinner() == 2)
+    if(bg->GetStatus() != STATUS_WAIT_LEAVE)
     {
-        *data << uint8(0);                                  // bg in progress
+        *data << uint8(0);                                  // bg not ended
     }
     else
     {
@@ -955,7 +955,7 @@ void BattleGroundMgr::BuildPlayerLeftBattleGroundPacket(WorldPacket *data, Playe
 void BattleGroundMgr::BuildPlayerJoinedBattleGroundPacket(WorldPacket *data, Player *plr)
 {
     data->Initialize(SMSG_BATTLEGROUND_PLAYER_JOINED, 8);
-    *data << uint64(plr->GetGUID());
+    *data << plr->GetObjectGuid();
 }
 
 void BattleGroundMgr::InvitePlayer(Player* plr, uint32 bgInstanceGUID, uint32 team)
@@ -1137,7 +1137,7 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
         }
         else
         {
-            sLog.outErrorDb("Table `battleground_template` for id %u have non-existed WorldSafeLocs.dbc id %u in field `AllianceStartLoc`. BG not created.",bgTypeID,start1);
+            sLog.outErrorDb("Table `battleground_template` for id %u have nonexistent WorldSafeLocs.dbc id %u in field `AllianceStartLoc`. BG not created.", bgTypeID, start1);
             continue;
         }
 
@@ -1164,7 +1164,7 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
             name = mapEntry->name[sWorld.GetDefaultDbcLocale()];
         else
         {
-            sLog.outErrorDb("Table `battleground_template` for id %u associated wth non-existed map id %u.",bgTypeID, mapId);
+            sLog.outErrorDb("Table `battleground_template` for id %u associated with nonexistent map id %u.",bgTypeID, mapId);
             continue;
         }
 
@@ -1181,7 +1181,7 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
     sLog.outString( ">> Loaded %u battlegrounds", count );
 }
 
-void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket *data, const uint64& guid, Player* plr, BattleGroundTypeId bgTypeId)
+void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket *data, ObjectGuid guid, Player* plr, BattleGroundTypeId bgTypeId)
 {
     if (!plr)
         return;
@@ -1191,13 +1191,13 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket *data, const uint6
     uint32 mapId = GetBattleGrounMapIdByTypeId(bgTypeId);
 
     data->Initialize(SMSG_BATTLEFIELD_LIST);
-    *data << uint64(guid);                              // battlemaster guid
-    *data << uint32(mapId);                             // battleground id
-    *data << uint8(0x00);                               // unk
+    *data << guid;                                          // battlemaster guid
+    *data << uint32(mapId);                                 // battleground id
+    *data << uint8(0x00);                                   // unk
 
     size_t count_pos = data->wpos();
     uint32 count = 0;
-    *data << uint32(0x00);                              // number of bg instances
+    *data << uint32(0x00);                                  // number of bg instances
 
     for(std::map<uint32, BattleGround*>::iterator itr = m_BattleGrounds.begin(); itr != m_BattleGrounds.end(); ++itr)
     {
@@ -1227,7 +1227,7 @@ void BattleGroundMgr::SendToBattleGround(Player *pl, uint32 instanceId)
     }
     else
     {
-        sLog.outError("player %u trying to port to non-existent bg instance %u",pl->GetGUIDLow(), instanceId);
+        sLog.outError("player %u trying to port to nonexistent bg instance %u",pl->GetGUIDLow(), instanceId);
     }
 }
 
@@ -1257,7 +1257,7 @@ BattleGroundTypeId BattleGroundMgr::BGTemplateId(uint32 bgQueueTypeId)
         case BATTLEGROUND_QUEUE_AV:
             return BATTLEGROUND_AV;
         default:
-            return BattleGroundTypeId(0);                   // used for unknown template (it existed and do nothing)
+            return BattleGroundTypeId(0);                   // used for unknown template (it exist and do nothing)
     }
 }
 
@@ -1306,7 +1306,7 @@ void BattleGroundMgr::LoadBattleMastersEntry()
         uint32 bgTypeId  = fields[1].GetUInt32();
         if (bgTypeId >= MAX_BATTLEGROUND_TYPE_ID)
         {
-            sLog.outErrorDb("Table `battlemaster_entry` contain entry %u for not existed battleground type %u, ignored.",entry,bgTypeId);
+            sLog.outErrorDb("Table `battlemaster_entry` contain entry %u for nonexistent battleground type %u, ignored.",entry,bgTypeId);
             continue;
         }
 
@@ -1318,6 +1318,33 @@ void BattleGroundMgr::LoadBattleMastersEntry()
 
     sLog.outString();
     sLog.outString( ">> Loaded %u battlemaster entries", count );
+}
+
+HolidayIds BattleGroundMgr::BGTypeToWeekendHolidayId(BattleGroundTypeId bgTypeId)
+{
+    switch (bgTypeId)
+    {
+        case BATTLEGROUND_AV: return HOLIDAY_CALL_TO_ARMS_AV;
+        case BATTLEGROUND_WS: return HOLIDAY_CALL_TO_ARMS_WS;
+        case BATTLEGROUND_AB: return HOLIDAY_CALL_TO_ARMS_AB;
+        default: return HOLIDAY_NONE;
+    }
+}
+
+BattleGroundTypeId BattleGroundMgr::WeekendHolidayIdToBGType(HolidayIds holiday)
+{
+    switch (holiday)
+    {
+        case HOLIDAY_CALL_TO_ARMS_AV: return BATTLEGROUND_AV;
+        case HOLIDAY_CALL_TO_ARMS_WS: return BATTLEGROUND_WS;
+        case HOLIDAY_CALL_TO_ARMS_AB: return BATTLEGROUND_AB;
+        default: return BATTLEGROUND_TYPE_NONE;
+    }
+}
+
+bool BattleGroundMgr::IsBGWeekend(BattleGroundTypeId bgTypeId)
+{
+    return IsHolidayActive(BGTypeToWeekendHolidayId(bgTypeId));
 }
 
 void BattleGroundMgr::LoadBattleEventIndexes()
@@ -1397,7 +1424,7 @@ void BattleGroundMgr::LoadBattleEventIndexes()
         // checking for NULL - through right outer join this will mean following:
         if (fields[5].GetUInt32() != dbTableGuidLow)
         {
-            sLog.outErrorDb("BattleGroundEvent: %s with nonexistant guid %u for event: map:%u, event1:%u, event2:%u (\"%s\")",
+            sLog.outErrorDb("BattleGroundEvent: %s with nonexistent guid %u for event: map:%u, event1:%u, event2:%u (\"%s\")",
                 (gameobject) ? "gameobject" : "creature", dbTableGuidLow, map, events.event1, events.event2, description);
             continue;
         }
@@ -1414,7 +1441,7 @@ void BattleGroundMgr::LoadBattleEventIndexes()
             // we have an event which shouldn't exist
             else
             {
-                sLog.outErrorDb("BattleGroundEvent: %s with guid %u is registered, for a nonexistant event: map:%u, event1:%u, event2:%u",
+                sLog.outErrorDb("BattleGroundEvent: %s with guid %u is registered, for a nonexistent event: map:%u, event1:%u, event2:%u",
                     (gameobject) ? "gameobject" : "creature", dbTableGuidLow, map, events.event1, events.event2);
                 continue;
             }

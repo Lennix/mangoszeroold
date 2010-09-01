@@ -470,10 +470,14 @@ void WorldSession::HandlePageQuerySkippedOpcode( WorldPacket & recv_data )
 void WorldSession::HandleSellItemOpcode( WorldPacket & recv_data )
 {
     DEBUG_LOG(  "WORLD: Received CMSG_SELL_ITEM" );
-    uint64 vendorguid, itemguid;
+
+    ObjectGuid vendorGuid;
+    uint64 itemguid;
     uint8 _count;
 
-    recv_data >> vendorguid >> itemguid >> _count;
+    recv_data >> vendorGuid;
+    recv_data >> itemguid;
+    recv_data >> _count;
 
     // prevent possible overflow, as mangos uses uint32 for item count
     uint32 count = _count;
@@ -481,10 +485,10 @@ void WorldSession::HandleSellItemOpcode( WorldPacket & recv_data )
     if(!itemguid)
         return;
 
-    Creature *pCreature = GetPlayer()->GetNPCIfCanInteractWith(vendorguid,UNIT_NPC_FLAG_VENDOR);
+    Creature *pCreature = GetPlayer()->GetNPCIfCanInteractWith(vendorGuid, UNIT_NPC_FLAG_VENDOR);
     if (!pCreature)
     {
-        DEBUG_LOG( "WORLD: HandleSellItemOpcode - Unit (GUID: %u) not found or you can't interact with him.", uint32(GUID_LOPART(vendorguid)) );
+        DEBUG_LOG("WORLD: HandleSellItemOpcode - %s not found or you can't interact with him.", vendorGuid.GetString().c_str());
         _player->SendSellError( SELL_ERR_CANT_FIND_VENDOR, NULL, itemguid, 0);
         return;
     }
@@ -579,15 +583,15 @@ void WorldSession::HandleSellItemOpcode( WorldPacket & recv_data )
 void WorldSession::HandleBuybackItem(WorldPacket & recv_data)
 {
     DEBUG_LOG( "WORLD: Received CMSG_BUYBACK_ITEM" );
-    uint64 vendorguid;
+    ObjectGuid vendorGuid;
     uint32 slot;
 
-    recv_data >> vendorguid >> slot;
+    recv_data >> vendorGuid >> slot;
 
-    Creature *pCreature = GetPlayer()->GetNPCIfCanInteractWith(vendorguid,UNIT_NPC_FLAG_VENDOR);
+    Creature *pCreature = GetPlayer()->GetNPCIfCanInteractWith(vendorGuid, UNIT_NPC_FLAG_VENDOR);
     if (!pCreature)
     {
-        DEBUG_LOG( "WORLD: HandleBuybackItem - Unit (GUID: %u) not found or you can't interact with him.", uint32(GUID_LOPART(vendorguid)) );
+        DEBUG_LOG("WORLD: HandleBuybackItem - %s not found or you can't interact with him.", vendorGuid.GetString().c_str());
         _player->SendSellError( SELL_ERR_CANT_FIND_VENDOR, NULL, 0, 0);
         return;
     }
@@ -707,7 +711,11 @@ void WorldSession::SendListInventory( uint64 vendorguid )
     VendorItemData const* vItems = pCreature->GetVendorItems();
     if(!vItems)
     {
-        _player->SendSellError( SELL_ERR_CANT_FIND_VENDOR, NULL, 0, 0);
+        WorldPacket data( SMSG_LIST_INVENTORY, (8+1+1) );
+        data << uint64(vendorguid);
+        data << uint8(0);                                   // count==0, next will be error code
+        data << uint8(0);                                   // "Vendor has no inventory"
+        SendPacket(&data);
         return;
     }
 
@@ -716,20 +724,33 @@ void WorldSession::SendListInventory( uint64 vendorguid )
 
     WorldPacket data( SMSG_LIST_INVENTORY, (8+1+numitems*7*4) );
     data << uint64(vendorguid);
-    data << uint8(numitems);
+
+    size_t count_pos = data.wpos();
+    data << uint8(count);
 
     float discountMod = _player->GetReputationPriceDiscount(pCreature);
 
     for(int i = 0; i < numitems; ++i )
     {
-        if(VendorItem const* crItem = vItems->GetItem(i))
+        if (VendorItem const* crItem = vItems->GetItem(i))
         {
-            if(ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(crItem->item))
+            if (ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(crItem->item))
             {
-                if(!_player->isGameMaster() && ( ( pProto->AllowableClass & _player->getClassMask()) == 0 && pProto->Bonding == BIND_WHEN_PICKED_UP )  ||
+                if (!_player->isGameMaster())
+                {
+                    // class wrong item skip only for bindable case
+                    if ((pProto->AllowableClass & _player->getClassMask()) == 0 && pProto->Bonding == BIND_WHEN_PICKED_UP)
+                        continue;
+
+                    // race wrong item skip always
+                    if ((pProto->AllowableRace & _player->getRaceMask()) == 0)
+                        continue;
+
                     // when no faction required but rank > 0 will be used faction id from the vendor faction template to compare the rank
-                    (!pProto->RequiredReputationFaction && pProto->RequiredReputationRank > 0 && ReputationRank(pProto->RequiredReputationRank) > _player->GetReputationRank(pCreature->getFactionTemplateEntry()->faction) ))
-                    continue;
+                    if (!pProto->RequiredReputationFaction && pProto->RequiredReputationRank > 0 &&
+                        ReputationRank(pProto->RequiredReputationRank) > _player->GetReputationRank(pCreature->getFactionTemplateEntry()->faction))
+                        continue;
+                }
 
                 ++count;
 
@@ -747,11 +768,15 @@ void WorldSession::SendListInventory( uint64 vendorguid )
         }
     }
 
-    if ( count == 0 || data.size() != 8 + 1 + size_t(count) * 7 * 4 )
+    if (count == 0)
+    {
+        data << uint8(0);                                   // "Vendor has no inventory"
+        SendPacket(&data);
         return;
+    }
 
-    data.put<uint8>(8, count);
-    SendPacket( &data );
+    data.put<uint8>(count_pos, count);
+    SendPacket(&data);
 }
 
 void WorldSession::HandleAutoStoreBagItemOpcode( WorldPacket & recv_data )

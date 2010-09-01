@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `character_db_version`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `character_db_version` (
-  `required_z0510_114_01_characters_saved_variables` bit(1) DEFAULT NULL
+  `required_z0801_s0114_01_characters_character_ticket` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Last applied sql update to DB';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -38,37 +38,34 @@ INSERT INTO `character_db_version` VALUES (NULL);
 UNLOCK TABLES;
 
 --
--- Table structure for table `auctionhouse`
+-- Table structure for table `auction`
 --
 
-DROP TABLE IF EXISTS `auctionhouse`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `auctionhouse` (
-  `id` int(11) unsigned NOT NULL DEFAULT '0',
-  `auctioneerguid` int(11) unsigned NOT NULL DEFAULT '0',
-  `itemguid` int(11) unsigned NOT NULL DEFAULT '0',
-  `item_template` int(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Item Identifier',
-  `itemowner` int(11) unsigned NOT NULL DEFAULT '0',
-  `buyoutprice` int(11) NOT NULL DEFAULT '0',
-  `time` bigint(40) NOT NULL DEFAULT '0',
-  `buyguid` int(11) unsigned NOT NULL DEFAULT '0',
-  `lastbid` int(11) NOT NULL DEFAULT '0',
-  `startbid` int(11) NOT NULL DEFAULT '0',
-  `deposit` int(11) NOT NULL DEFAULT '0',
-  `location` tinyint(3) unsigned NOT NULL DEFAULT '3',
-  PRIMARY KEY (`id`),
+DROP TABLE IF EXISTS `auction`;
+CREATE TABLE `auction` (
+  `id` int(11) unsigned NOT NULL default '0',
+  `houseid` int(11) unsigned NOT NULL default '0',
+  `itemguid` int(11) unsigned NOT NULL default '0',
+  `item_template` int(11) unsigned NOT NULL default '0' COMMENT 'Item Identifier',
+  `itemowner` int(11) unsigned NOT NULL default '0',
+  `buyoutprice` int(11) NOT NULL default '0',
+  `time` bigint(40) NOT NULL default '0',
+  `buyguid` int(11) unsigned NOT NULL default '0',
+  `lastbid` int(11) NOT NULL default '0',
+  `startbid` int(11) NOT NULL default '0',
+  `deposit` int(11) NOT NULL default '0',
+  PRIMARY KEY  (`id`),
   UNIQUE KEY `item_guid` (`itemguid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `auctionhouse`
+-- Dumping data for table `auction`
 --
 
-LOCK TABLES `auctionhouse` WRITE;
-/*!40000 ALTER TABLE `auctionhouse` DISABLE KEYS */;
-/*!40000 ALTER TABLE `auctionhouse` ENABLE KEYS */;
+LOCK TABLES `auction` WRITE;
+/*!40000 ALTER TABLE `auction` DISABLE KEYS */;
+/*!40000 ALTER TABLE `auction` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -200,15 +197,16 @@ DROP TABLE IF EXISTS `character_aura`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `character_aura` (
   `guid` int(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Global Unique Identifier',
-  `caster_guid` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'Full Global Unique Identifier',
-  `spell` int(11) unsigned NOT NULL DEFAULT '0',
-  `effect_index` int(11) unsigned NOT NULL DEFAULT '0',
-  `stackcount` int(11) NOT NULL DEFAULT '1',
-  `amount` int(11) NOT NULL DEFAULT '0',
-  `maxduration` int(11) NOT NULL DEFAULT '0',
-  `remaintime` int(11) NOT NULL DEFAULT '0',
-  `remaincharges` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`guid`,`spell`,`effect_index`)
+  `caster_guid` bigint(20) unsigned NOT NULL default '0' COMMENT 'Full Global Unique Identifier',
+  `item_guid` int(11) unsigned NOT NULL default '0',
+  `spell` int(11) unsigned NOT NULL default '0',
+  `effect_index` int(11) unsigned NOT NULL default '0',
+  `stackcount` int(11) NOT NULL default '1',
+  `amount` int(11) NOT NULL default '0',
+  `maxduration` int(11) NOT NULL default '0',
+  `remaintime` int(11) NOT NULL default '0',
+  `remaincharges` int(11) NOT NULL default '0',
+  PRIMARY KEY  (`guid`,`caster_guid`,`item_guid`,`spell`,`effect_index`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Player System';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -616,8 +614,9 @@ CREATE TABLE `character_ticket` (
   `ticket_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `guid` int(11) unsigned NOT NULL DEFAULT '0',
   `ticket_text` text,
-  `ticket_lastchange` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`ticket_id`)
+  `response_text` text CHARSET utf8 COLLATE utf8_general_ci NULL,
+  `ticket_lastchange` TIMESTAMP ON  UPDATE  CURRENT_TIMESTAMP  NOT  NULL  DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`ticket_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Player System';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1068,16 +1067,17 @@ DROP TABLE IF EXISTS `pet_aura`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pet_aura` (
-  `guid` int(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Global Unique Identifier',
-  `caster_guid` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'Full Global Unique Identifier',
-  `spell` int(11) unsigned NOT NULL DEFAULT '0',
-  `effect_index` int(11) unsigned NOT NULL DEFAULT '0',
-  `stackcount` int(11) NOT NULL DEFAULT '1',
-  `amount` int(11) NOT NULL DEFAULT '0',
-  `maxduration` int(11) NOT NULL DEFAULT '0',
-  `remaintime` int(11) NOT NULL DEFAULT '0',
-  `remaincharges` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`guid`,`spell`,`effect_index`)
+  `guid` int(11) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier',
+  `caster_guid` bigint(20) unsigned NOT NULL default '0' COMMENT 'Full Global Unique Identifier',
+  `item_guid` int(11) unsigned NOT NULL default '0',
+  `spell` int(11) unsigned NOT NULL default '0',
+  `effect_index` int(11) unsigned NOT NULL default '0',
+  `stackcount` int(11) NOT NULL default '1',
+  `amount` int(11) NOT NULL default '0',
+  `maxduration` int(11) NOT NULL default '0',
+  `remaintime` int(11) NOT NULL default '0',
+  `remaincharges` int(11) NOT NULL default '0',
+  PRIMARY KEY  (`guid`,`caster_guid`,`item_guid`,`spell`,`effect_index`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Pet System';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

@@ -42,7 +42,6 @@ LootStore LootTemplates_Gameobject(   "gameobject_loot_template",   "gameobject 
 LootStore LootTemplates_Item(         "item_loot_template",         "item entry",                     true);
 LootStore LootTemplates_Mail(         "mail_loot_template",         "mail template id",               false);
 LootStore LootTemplates_Pickpocketing("pickpocketing_loot_template","creature pickpocket lootid",     true);
-LootStore LootTemplates_QuestMail(    "quest_mail_loot_template",   "quest id (with mail template)",  false);
 LootStore LootTemplates_Reference(    "reference_loot_template",    "reference id",                   false);
 LootStore LootTemplates_Skinning(     "skinning_loot_template",     "creature skinning id",           true);
 
@@ -151,7 +150,7 @@ void LootStore::LoadLootTable()
                 }
             }
             // else is empty - template Id and iter are the same
-            // finally iter refers to already existed or just created <entry, LootTemplate>
+            // finally iter refers to already existing or just created <entry, LootTemplate>
 
             // Adds current row to the template
             tab->second->AddEntry(storeitem);
@@ -334,7 +333,11 @@ LootItem::LootItem(LootStoreItem const& li)
 bool LootItem::AllowedForPlayer(Player const * player) const
 {
     // DB conditions check
-    if ( !sObjectMgr.IsPlayerMeetToCondition(player,conditionId) )
+    if (!sObjectMgr.IsPlayerMeetToCondition(player,conditionId))
+        return false;
+
+    ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(itemid);
+    if (!pProto)
         return false;
 
     if ( needs_quest )
@@ -346,8 +349,7 @@ bool LootItem::AllowedForPlayer(Player const * player) const
     else
     {
         // Not quest only drop (check quest starting items for already accepted non-repeatable quests)
-        ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(itemid);
-        if (pProto && pProto->StartQuest && player->GetQuestStatus(pProto->StartQuest) != QUEST_STATUS_NONE && !player->HasQuestForItem(itemid))
+        if (pProto->StartQuest && player->GetQuestStatus(pProto->StartQuest) != QUEST_STATUS_NONE && !player->HasQuestForItem(itemid))
             return false;
     }
 

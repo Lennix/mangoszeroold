@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
-  `required_z0684_139_01_mangos_mangos_string` bit(1) default NULL
+  `required_z0830_s0148_01_mangos_spell_chain` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -60,29 +60,6 @@ CREATE TABLE `areatrigger_involvedrelation` (
 LOCK TABLES `areatrigger_involvedrelation` WRITE;
 /*!40000 ALTER TABLE `areatrigger_involvedrelation` DISABLE KEYS */;
 /*!40000 ALTER TABLE `areatrigger_involvedrelation` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `areatrigger_scripts`
---
-
-DROP TABLE IF EXISTS `areatrigger_scripts`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `areatrigger_scripts` (
-  `entry` mediumint(8) NOT NULL,
-  `ScriptName` char(64) NOT NULL,
-  PRIMARY KEY (`entry`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `areatrigger_scripts`
---
-
-LOCK TABLES `areatrigger_scripts` WRITE;
-/*!40000 ALTER TABLE `areatrigger_scripts` DISABLE KEYS */;
-/*!40000 ALTER TABLE `areatrigger_scripts` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -460,6 +437,10 @@ INSERT INTO `command` VALUES
 ('additem',3,'Syntax: .additem #itemid/[#itemname]/#shift-click-item-link #itemcount\r\n\r\nAdds the specified number of items of id #itemid (or exact (!) name $itemname in brackets, or link created by shift-click at item in inventory or recipe) to your or selected character inventory. If #itemcount is omitted, only one item will be added.\r\n.'),
 ('additemset',3,'Syntax: .additemset #itemsetid\r\n\r\nAdd items from itemset of id #itemsetid to your or selected character inventory. Will add by one example each item from itemset.'),
 ('announce',1,'Syntax: .announce $MessageToBroadcast\r\n\r\nSend a global message to all players online in chat log.'),
+('auction',3,'Syntax: .auction\r\n\r\nShow your team auction store.'),
+('auction alliance',3,'Syntax: .auction alliance\r\n\r\nShow alliance auction store independent from your team.'),
+('auction goblin',3,'Syntax: .auction goblin\r\n\r\nShow goblin auction store common for all teams.'),
+('auction horde',3,'Syntax: .auction horde\r\n\r\nShow horde auction store independent from your team.'),
 ('aura',3,'Syntax: .aura #spellid\r\n\r\nAdd the aura from spell #spellid to the selected Unit.'),
 ('ban account',3,'Syntax: .ban account $Name $bantime $reason\r\nBan account kick player.\r\n$bantime: negative value leads to permban, otherwise use a timestring like \"4d20h3s\".'),
 ('ban character',3,'Syntax: .ban character $Name $bantime $reason\r\nBan account and kick player.\r\n$bantime: negative value leads to permban, otherwise use a timestring like \"4d20h3s\".'),
@@ -490,12 +471,15 @@ INSERT INTO `command` VALUES
 ('damage',3,'Syntax: .damage $damage_amount [$school [$spellid]]\r\n\r\nApply $damage to target. If not $school and $spellid provided then this flat clean melee damage without any modifiers. If $school provided then damage modified by armor reduction (if school physical), and target absorbing modifiers and result applied as melee damage to target. If spell provided then damage modified and applied as spell damage. $spellid can be shift-link.'),
 ('debug anim',2,'Syntax: .debug anim #emoteid\r\n\r\nPlay emote #emoteid for your character.'),
 ('debug bg',3,'Syntax: .debug bg\r\n\r\nToggle debug mode for battlegrounds. In debug mode GM can start battleground with single player.'),
-('debug getvalue',3,'Syntax: .debug getvalue #field #isInt\r\n\r\nGet the field #field of the selected creature. If no creature is selected, get the content of your field.\r\n\r\nUse a #isInt of value 1 if the expected field content is an integer.'),
+('debug getitemvalue',3,'Syntax: .debug getitemvalue #itemguid #field [int|hex|bit|float]\r\n\r\nGet the field #field of the item #itemguid in your inventroy.\r\n\r\nUse type arg for set output format: int (decimal number), hex (hex value), bit (bitstring), float. By default use integer output.'),
+('debug getvalue',3,'Syntax: .debug getvalue #field [int|hex|bit|float]\r\n\r\nGet the field #field of the selected target. If no target is selected, get the content of your field.\r\n\r\nUse type arg for set output format: int (decimal number), hex (hex value), bit (bitstring), float. By default use integer output.'),
+('debug moditemvalue',3,'Syntax: .debug modvalue #guid #field [int|float| &= | |= | &=~ ] #value\r\n\r\nModify the field #field of the item #itemguid in your inventroy by value #value. \r\n\r\nUse type arg for set mode of modification: int (normal add/subtract #value as decimal number), float (add/subtract #value as float number), &= (bit and, set to 0 all bits in value if it not set to 1 in #value as hex number), |= (bit or, set to 1 all bits in value if it set to 1 in #value as hex number), &=~ (bit and not, set to 0 all bits in value if it set to 1 in #value as hex number). By default expect integer add/subtract.'),
+('debug modvalue',3,'Syntax: .debug modvalue #field [int|float| &= | |= | &=~ ] #value\r\n\r\nModify the field #field of the selected target by value #value. If no target is selected, set the content of your field.\r\n\r\nUse type arg for set mode of modification: int (normal add/subtract #value as decimal number), float (add/subtract #value as float number), &= (bit and, set to 0 all bits in value if it not set to 1 in #value as hex number), |= (bit or, set to 1 all bits in value if it set to 1 in #value as hex number), &=~ (bit and not, set to 0 all bits in value if it set to 1 in #value as hex number). By default expect integer add/subtract.'),
 ('debug play cinematic',1,'Syntax: .debug play cinematic #cinematicid\r\n\r\nPlay cinematic #cinematicid for you. You stay at place while your mind fly.\r\n'),
 ('debug play sound',1,'Syntax: .debug play sound #soundid\r\n\r\nPlay sound with #soundid.\r\nSound will be play only for you. Other players do not hear this.\r\nWarning: client may have more 5000 sounds...'),
-('debug setvalue',3,'Syntax: .debug setvalue #field #value #isInt\r\n\r\nSet the field #field of the selected creature with value #value. If no creature is selected, set the content of your field.\r\n\r\nUse a #isInt of value 1 if #value is an integer.'),
-('debug update',3,'Syntax: .debug update #field #value\r\n\r\nUpdate the field #field of the selected character or creature with value #value.\r\n\r\nIf no #value is provided, display the content of field #field.'),
-('debug Mod32Value',3,'Syntax: .debug Mod32Value #field #value\r\n\r\nAdd #value to field #field of your character.'),
+('debug setitemvalue',3,'Syntax: .debug setitemvalue #guid #field [int|hex|bit|float] #value\r\n\r\nSet the field #field of the item #itemguid in your inventroy to value #value.\r\n\r\nUse type arg for set input format: int (decimal number), hex (hex value), bit (bitstring), float. By default expect integer input format.'),
+('debug setvalue',3,'Syntax: .debug setvalue #field [int|hex|bit|float] #value\r\n\r\nSet the field #field of the selected target to value #value. If no target is selected, set the content of your field.\r\n\r\nUse type arg for set input format: int (decimal number), hex (hex value), bit (bitstring), float. By default expect integer input format.'),
+('debug spellmods',3,'Syntax: .debug spellmods (flat|pct) #spellMaskBitIndex #spellModOp #value\r\n\r\nSet at client side spellmod affect for spell that have bit set with index #spellMaskBitIndex in spell family mask for values dependent from spellmod #spellModOp to #value.'),
 ('delticket',2,'Syntax: .delticket all\r\n        .delticket #num\r\n        .delticket $character_name\r\n\rall to dalete all tickets at server, $character_name to delete ticket of this character, #num to delete ticket #num.'),
 ('demorph',2,'Syntax: .demorph\r\n\r\nDemorph the selected player.'),
 ('die',3,'Syntax: .die\r\n\r\nKill the selected player. If no player is selected, it will kill you.'),
@@ -518,7 +502,7 @@ INSERT INTO `command` VALUES
 ('go grid',1,'Syntax: .go grid #gridX #gridY [#mapId]\r\n\r\nTeleport the gm to center of grid with provided indexes at map #mapId (or current map if it not provided).'),
 ('go object',1,'Syntax: .go object (#gameobject_guid|$gameobject_name|id #gameobject_id)\r\nTeleport your character to gameobject with guid #gameobject_guid, or teleport your character to gameobject with name including as part $gameobject_name substring, or teleport your character to a gameobject that was spawned from the template with this entry #gameobject_id.'),
 ('go taxinode',1,'Syntax: .go taxinode #taxinode\r\n\r\nTeleport player to taxinode coordinates. You can look up zone using .lookup taxinode $namepart'),
-('go trigger',1,'Syntax: .go trigger #trigger_id\r\n\r\nTeleport your character to areatrigger with id #trigger_id. Character will be teleported to trigger target if selected areatrigger is telporting trigger.'),
+('go trigger',1,'Syntax: .go trigger (#trigger_id|$trigger_shift-link|$trigger_target_shift-link) [target]\r\n\r\nTeleport your character to areatrigger with id #trigger_id or trigger id associated with shift-link. If additional arg "target" provided then character will telported to areatrigger target point.'),
 ('go xy',1,'Syntax: .go xy #x #y [#mapid]\r\n\r\nTeleport player to point with (#x,#y) coordinates at ground(water) level at map #mapid or same map if #mapid not provided.'),
 ('go xyz',1,'Syntax: .go xyz #x #y #z [#mapid]\r\n\r\nTeleport player to point with (#x,#y,#z) coordinates at ground(water) level at map #mapid or same map if #mapid not provided.'),
 ('go zonexy',1,'Syntax: .go zonexy #x #y [#zone]\r\n\r\nTeleport player to point with (#x,#y) client coordinates at ground(water) level in zone #zoneid or current zone if #zoneid not provided. You can look up zone using .lookup area $namepart'),
@@ -587,7 +571,6 @@ INSERT INTO `command` VALUES
 ('lookup tele',1,'Syntax: .lookup tele $substring\r\n\r\nSearch and output all .tele command locations with provide $substring in name.'),
 ('maxskill',3,'Syntax: .maxskill\r\nSets all skills of the targeted player to their maximum VALUESfor its current level.'),
 ('modify aspeed',1,'Syntax: .modify aspeed #rate\r\n\r\nModify all speeds -run,swim,run back,swim back- of the selected player to \"normalbase speed for this move type\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
-('modify bit',1,'Syntax: .modify bit #field #bit\r\n\r\nToggle the #bit bit of the #field field for the selected player. If no player is selected, modify your character.'),
 ('modify bwalk',1,'Syntax: .modify bwalk #rate\r\n\r\nModify the speed of the selected player while running backwards to \"normal walk back speed\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
 ('modify drunk',1,'Syntax: .modify drunk #value\r\n Set drunk level to #value (0..100). Value 0 remove drunk state, 100 is max drunked state.'),
 ('modify energy',1,'Syntax: .modify energy #energy\r\n\r\nModify the energy of the selected player. If no player is selected, modify your energy.'),
@@ -604,7 +587,6 @@ INSERT INTO `command` VALUES
 ('modify rep',2,'Syntax: .modify rep #repId (#repvalue | $rankname [#delta])\r\nSets the selected players reputation with faction #repId to #repvalue or to $reprank.\r\nIf the reputation rank name is provided, the resulting reputation will be the lowest reputation for that rank plus the delta amount, if specified.\r\nYou can use \'.pinfo rep\' to list all known reputation ids, or use \'.lookup faction $name\' to locate a specific faction id.'),
 ('modify scale',1,'Syntax: .modify scale #scale\r\n\r\nChange model scale for targeted player (util relogin) or creature (until respawn).'),
 ('modify speed',1,'Syntax: .modify speed #rate\r\n.speed #rate\r\n\r\nModify the running speed of the selected player to \"normal base run speed\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
-('modify spell',1,''),
 ('modify standstate',2,'Syntax: .modify standstate #emoteid\r\n\r\nChange the emote of your character while standing to #emoteid.'),
 ('modify swim',1,'Syntax: .modify swim #rate\r\n\r\nModify the swim speed of the selected player to \"normal swim speed\"*rate. If no player is selected, modify your speed.\r\n\r\n #rate may range from 0.1 to 10.'),
 ('movegens',3,'Syntax: .movegens\r\n  Show movement generators stack for selected creature or player.'),
@@ -691,6 +673,7 @@ INSERT INTO `command` VALUES
 ('server shutdown cancel',3,'Syntax: .server shutdown cancel\r\n\r\nCancel the restart/shutdown timer if any.'),
 ('setskill',3,'Syntax: .setskill #skill #level [#max]\r\n\r\nSet a skill of id #skill with a current skill value of #level and a maximum value of #max (or equal current maximum if not provide) for the selected character. If no character is selected, you learn the skill.'),
 ('showarea',3,'Syntax: .showarea #areaid\r\n\r\nReveal the area of #areaid to the selected character. If no character is selected, reveal this area to you.'),
+('stable',3,'Syntax: .stable\r\n\r\nShow your pet stable.'),
 ('start',0,'Syntax: .start\r\n\r\nTeleport you to the starting area of your character.'),
 ('taxicheat',1,'Syntax: .taxicheat on/off\r\n\r\nTemporary grant access or remove to all taxi routes for the selected character. If no character is selected, hide or reveal all routes to you.\r\n\r\nVisited taxi nodes sill accessible after removing access.'),
 ('tele',1,'Syntax: .tele #location\r\n\r\nTeleport player to a given location.'),
@@ -698,7 +681,10 @@ INSERT INTO `command` VALUES
 ('tele del',3,'Syntax: .tele del $name\r\n\r\nRemove location with name $name for .tele command locations list.'),
 ('tele group',1,'Syntax: .tele group#location\r\n\r\nTeleport a selected player and his group members to a given location.'),
 ('tele name',1,'Syntax: .tele name [#playername] #location\r\n\r\nTeleport the given character to a given location. Character can be offline.'),
-('ticket',2,'Syntax: .ticket on\r\n        .ticket off\r\n        .ticket #num\r\n        .ticket $character_name\r\n\r\non/off for GMs to show or not a new ticket directly, $character_name to show ticket of this character, #num to show ticket #num.'),
+('ticket',2,'Syntax: .ticket on\r\n        .ticket off\r\n        .ticket #num\r\n        .ticket $character_name\r\n        .ticket respond #num $response\r\n        .ticket respond $character_name $response\r\n\r\non/off for GMs to show or not a new ticket directly, $character_name to show ticket of this character, #num to show ticket #num.'),
+('trigger',2,'Syntax: .trigger [#trigger_id|$trigger_shift-link|$trigger_target_shift-link]\r\n\r\nShow detail infor about areatrigger with id #trigger_id or trigger id associated with shift-link. If areatrigger id or shift-link not provided then selected nearest areatrigger at current map.'),
+('trigger active',2,'Syntax: .trigger active\r\n\r\nShow list of areatriggers wiht activation zone including current character position.'),
+('trigger near',2,'Syntax: .trigger near [#distance]\r\n\r\nOutput areatriggers at distance #distance from player. If #distance not provided use 10 as default value.'),
 ('unaura',3,'Syntax: .unaura #spellid\r\n\r\nRemove aura due to spell #spellid from the selected Unit.'),
 ('unban account',3,'Syntax: .unban account $Name\r\nUnban accounts for account name pattern.'),
 ('unban character',3,'Syntax: .unban character $Name\r\nUnban accounts for character name pattern.'),
@@ -708,7 +694,6 @@ INSERT INTO `command` VALUES
 ('waterwalk',2,'Syntax: .waterwalk on/off\r\n\r\nSet on/off waterwalk state for selected player.'),
 ('wchange',3,'Syntax: .wchange #weathertype #status\r\n\r\nSet current weather to #weathertype with an intensity of #status.\r\n\r\n#weathertype can be 1 for rain, 2 for snow, and 3 for sand. #status can be 0 for disabled, and 1 for enabled.'),
 ('whispers',1,'Syntax: .whispers on|off\r\nEnable/disable accepting whispers by GM from players. By default use mangosd.conf setting.'),
-('wp',2,'Using WP Command:\r\nEach Waypoint Command has it\'s own description!'),
 ('wp add',2,'Syntax: .wp add [#creature_guid or Select a Creature]'),
 ('wp export',3,'Syntax: .wp export [#creature_guid or Select a Creature] $filename'),
 ('wp import',3,'Syntax: .wp import $filename'),
@@ -764,7 +749,7 @@ DROP TABLE IF EXISTS `creature_addon`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `creature_addon` (
-  `guid` int(11) NOT NULL DEFAULT '0',
+  `guid` int(10) unsigned NOT NULL default '0',
   `mount` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `bytes0` int(10) unsigned NOT NULL DEFAULT '0',
   `bytes1` int(10) unsigned NOT NULL DEFAULT '0',
@@ -783,114 +768,6 @@ CREATE TABLE `creature_addon` (
 LOCK TABLES `creature_addon` WRITE;
 /*!40000 ALTER TABLE `creature_addon` DISABLE KEYS */;
 /*!40000 ALTER TABLE `creature_addon` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `creature_ai_scripts`
---
-
-DROP TABLE IF EXISTS `creature_ai_scripts`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `creature_ai_scripts` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Identifier',
-  `creature_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Creature Template Identifier',
-  `event_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Event Type',
-  `event_inverse_phase_mask` int(11) NOT NULL DEFAULT '0' COMMENT 'Mask which phases this event will not trigger in',
-  `event_chance` int(3) unsigned NOT NULL DEFAULT '100',
-  `event_flags` int(3) unsigned NOT NULL DEFAULT '0',
-  `event_param1` int(11) NOT NULL DEFAULT '0',
-  `event_param2` int(11) NOT NULL DEFAULT '0',
-  `event_param3` int(11) NOT NULL DEFAULT '0',
-  `event_param4` int(11) NOT NULL DEFAULT '0',
-  `action1_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Action Type',
-  `action1_param1` int(11) NOT NULL DEFAULT '0',
-  `action1_param2` int(11) NOT NULL DEFAULT '0',
-  `action1_param3` int(11) NOT NULL DEFAULT '0',
-  `action2_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Action Type',
-  `action2_param1` int(11) NOT NULL DEFAULT '0',
-  `action2_param2` int(11) NOT NULL DEFAULT '0',
-  `action2_param3` int(11) NOT NULL DEFAULT '0',
-  `action3_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Action Type',
-  `action3_param1` int(11) NOT NULL DEFAULT '0',
-  `action3_param2` int(11) NOT NULL DEFAULT '0',
-  `action3_param3` int(11) NOT NULL DEFAULT '0',
-  `comment` varchar(255) NOT NULL DEFAULT '' COMMENT 'Event Comment',
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='EventAI Scripts';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `creature_ai_scripts`
---
-
-LOCK TABLES `creature_ai_scripts` WRITE;
-/*!40000 ALTER TABLE `creature_ai_scripts` DISABLE KEYS */;
-/*!40000 ALTER TABLE `creature_ai_scripts` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `creature_ai_summons`
---
-
-DROP TABLE IF EXISTS `creature_ai_summons`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `creature_ai_summons` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Location Identifier',
-  `position_x` float NOT NULL DEFAULT '0',
-  `position_y` float NOT NULL DEFAULT '0',
-  `position_z` float NOT NULL DEFAULT '0',
-  `orientation` float NOT NULL DEFAULT '0',
-  `spawntimesecs` int(11) unsigned NOT NULL DEFAULT '120',
-  `comment` varchar(255) NOT NULL DEFAULT '' COMMENT 'Summon Comment',
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='EventAI Summoning Locations';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `creature_ai_summons`
---
-
-LOCK TABLES `creature_ai_summons` WRITE;
-/*!40000 ALTER TABLE `creature_ai_summons` DISABLE KEYS */;
-/*!40000 ALTER TABLE `creature_ai_summons` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `creature_ai_texts`
---
-
-DROP TABLE IF EXISTS `creature_ai_texts`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `creature_ai_texts` (
-  `entry` mediumint(8) NOT NULL,
-  `content_default` text NOT NULL,
-  `content_loc1` text,
-  `content_loc2` text,
-  `content_loc3` text,
-  `content_loc4` text,
-  `content_loc5` text,
-  `content_loc6` text,
-  `content_loc7` text,
-  `content_loc8` text,
-  `sound` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `type` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  `language` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  `emote` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `comment` text,
-  PRIMARY KEY (`entry`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Script Texts';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `creature_ai_texts`
---
-
-LOCK TABLES `creature_ai_texts` WRITE;
-/*!40000 ALTER TABLE `creature_ai_texts` DISABLE KEYS */;
-/*!40000 ALTER TABLE `creature_ai_texts` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1009,11 +886,12 @@ DROP TABLE IF EXISTS `creature_model_info`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `creature_model_info` (
-  `modelid` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `bounding_radius` float NOT NULL DEFAULT '0',
-  `combat_reach` float NOT NULL DEFAULT '0',
-  `gender` tinyint(3) unsigned NOT NULL DEFAULT '2',
-  `modelid_other_gender` mediumint(8) unsigned NOT NULL DEFAULT '0',
+  `modelid` mediumint(8) unsigned NOT NULL default '0',
+  `bounding_radius` float NOT NULL default '0',
+  `combat_reach` float NOT NULL default '0',
+  `gender` tinyint(3) unsigned NOT NULL default '2',
+  `modelid_other_gender` mediumint(8) unsigned NOT NULL default '0',
+  `modelid_other_team` mediumint(8) unsigned NOT NULL default '0',
   PRIMARY KEY (`modelid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Creature System (Model related info)';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1025,23 +903,23 @@ CREATE TABLE `creature_model_info` (
 LOCK TABLES `creature_model_info` WRITE;
 /*!40000 ALTER TABLE `creature_model_info` DISABLE KEYS */;
 INSERT INTO `creature_model_info` VALUES
-(49, 0.3060, 1.5, 0, 50),
-(50, 0.2080, 1.5, 1, 49),
-(51, 0.3720, 1.5, 0, 52),
-(52, 0.2360, 1.5, 1, 51),
-(53, 0.3470, 1.5, 0, 54),
-(54, 0.3470, 1.5, 1, 53),
-(55, 0.3890, 1.5, 0, 56),
-(56, 0.3060, 1.5, 1, 55),
-(57, 0.3830, 1.5, 0, 58),
-(58, 0.3830, 1.5, 1, 57),
-(59, 0.9747, 1.5, 0, 60),
-(60, 0.8725, 1.5, 1, 59),
-(1478, 0.3060, 1.5, 0, 1479),
-(1479, 0.3060, 1.5, 1, 1478),
-(1563, 0.3519, 1.5, 0, 1564),
-(1564, 0.3519, 1.5, 1, 1563),
-(10045, 1.0000, 1.5, 2, 0);
+(49, 0.3060, 1.5, 0, 50, 0),
+(50, 0.2080, 1.5, 1, 49, 0),
+(51, 0.3720, 1.5, 0, 52, 0),
+(52, 0.2360, 1.5, 1, 51, 0),
+(53, 0.3470, 1.5, 0, 54, 0),
+(54, 0.3470, 1.5, 1, 53, 0),
+(55, 0.3890, 1.5, 0, 56, 0),
+(56, 0.3060, 1.5, 1, 55, 0),
+(57, 0.3830, 1.5, 0, 58, 0),
+(58, 0.3830, 1.5, 1, 57, 0),
+(59, 0.9747, 1.5, 0, 60, 0),
+(60, 0.8725, 1.5, 1, 59, 0),
+(1478, 0.3060, 1.5, 0, 1479, 0),
+(1479, 0.3060, 1.5, 1, 1478, 0),
+(1563, 0.3519, 1.5, 0, 1564, 0),
+(1564, 0.3519, 1.5, 1, 1563, 0),
+(10045, 1.0000, 1.5, 2, 0, 0);
 /*!40000 ALTER TABLE `creature_model_info` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1112,6 +990,42 @@ CREATE TABLE `creature_movement_scripts` (
 LOCK TABLES `creature_movement_scripts` WRITE;
 /*!40000 ALTER TABLE `creature_movement_scripts` DISABLE KEYS */;
 /*!40000 ALTER TABLE `creature_movement_scripts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `creature_movement_template`
+--
+
+DROP TABLE IF EXISTS `creature_movement_template`;
+CREATE TABLE `creature_movement_template` (
+  `entry` mediumint(8) unsigned NOT NULL COMMENT 'Creature entry',
+  `point` mediumint(8) unsigned NOT NULL default '0',
+  `position_x` float NOT NULL default '0',
+  `position_y` float NOT NULL default '0',
+  `position_z` float NOT NULL default '0',
+  `waittime` int(10) unsigned NOT NULL default '0',
+  `script_id` mediumint(8) unsigned NOT NULL default '0',
+  `textid1` int(11) NOT NULL default '0',
+  `textid2` int(11) NOT NULL default '0',
+  `textid3` int(11) NOT NULL default '0',
+  `textid4` int(11) NOT NULL default '0',
+  `textid5` int(11) NOT NULL default '0',
+  `emote` mediumint(8) unsigned NOT NULL default '0',
+  `spell` mediumint(8) unsigned NOT NULL default '0',
+  `wpguid` int(11) NOT NULL default '0',
+  `orientation` float NOT NULL default '0',
+  `model1` mediumint(9) NOT NULL default '0',
+  `model2` mediumint(9) NOT NULL default '0',
+  PRIMARY KEY  (`entry`,`point`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Creature waypoint system';
+
+--
+-- Dumping data for table `creature_movement_template`
+--
+
+LOCK TABLES `creature_movement_template` WRITE;
+/*!40000 ALTER TABLE `creature_movement_template` DISABLE KEYS */;
+/*!40000 ALTER TABLE `creature_movement_template` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1201,12 +1115,12 @@ DROP TABLE IF EXISTS `creature_template`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `creature_template` (
-  `entry` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `KillCredit1` int(11) unsigned NOT NULL DEFAULT '0',
-  `KillCredit2` int(11) unsigned NOT NULL DEFAULT '0',
-  `modelid_1` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `modelid_2` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `name` char(100) NOT NULL DEFAULT '0',
+  `entry` mediumint(8) unsigned NOT NULL default '0',
+  `KillCredit1` int(11) unsigned NOT NULL default '0',
+  `KillCredit2` int(11) unsigned NOT NULL default '0',
+  `modelid_1` mediumint(8) unsigned NOT NULL default '0',
+  `modelid_2` mediumint(8) unsigned NOT NULL default '0',
+  `name` char(100) NOT NULL default '0',
   `subname` char(100) DEFAULT NULL,
   `gossip_menu_id` mediumint(8) unsigned NOT NULL default '0',
   `minlevel` tinyint(3) unsigned NOT NULL DEFAULT '1',
@@ -1374,6 +1288,114 @@ LOCK TABLES `disenchant_loot_template` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `creature_ai_scripts`
+--
+
+DROP TABLE IF EXISTS `creature_ai_scripts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `creature_ai_scripts` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Identifier',
+  `creature_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Creature Template Identifier',
+  `event_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Event Type',
+  `event_inverse_phase_mask` int(11) NOT NULL DEFAULT '0' COMMENT 'Mask which phases this event will not trigger in',
+  `event_chance` int(3) unsigned NOT NULL DEFAULT '100',
+  `event_flags` int(3) unsigned NOT NULL DEFAULT '0',
+  `event_param1` int(11) NOT NULL DEFAULT '0',
+  `event_param2` int(11) NOT NULL DEFAULT '0',
+  `event_param3` int(11) NOT NULL DEFAULT '0',
+  `event_param4` int(11) NOT NULL DEFAULT '0',
+  `action1_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Action Type',
+  `action1_param1` int(11) NOT NULL DEFAULT '0',
+  `action1_param2` int(11) NOT NULL DEFAULT '0',
+  `action1_param3` int(11) NOT NULL DEFAULT '0',
+  `action2_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Action Type',
+  `action2_param1` int(11) NOT NULL DEFAULT '0',
+  `action2_param2` int(11) NOT NULL DEFAULT '0',
+  `action2_param3` int(11) NOT NULL DEFAULT '0',
+  `action3_type` tinyint(5) unsigned NOT NULL DEFAULT '0' COMMENT 'Action Type',
+  `action3_param1` int(11) NOT NULL DEFAULT '0',
+  `action3_param2` int(11) NOT NULL DEFAULT '0',
+  `action3_param3` int(11) NOT NULL DEFAULT '0',
+  `comment` varchar(255) NOT NULL DEFAULT '' COMMENT 'Event Comment',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='EventAI Scripts';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `creature_ai_scripts`
+--
+
+LOCK TABLES `creature_ai_scripts` WRITE;
+/*!40000 ALTER TABLE `creature_ai_scripts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `creature_ai_scripts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `creature_ai_summons`
+--
+
+DROP TABLE IF EXISTS `creature_ai_summons`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `creature_ai_summons` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Location Identifier',
+  `position_x` float NOT NULL DEFAULT '0',
+  `position_y` float NOT NULL DEFAULT '0',
+  `position_z` float NOT NULL DEFAULT '0',
+  `orientation` float NOT NULL DEFAULT '0',
+  `spawntimesecs` int(11) unsigned NOT NULL DEFAULT '120',
+  `comment` varchar(255) NOT NULL DEFAULT '' COMMENT 'Summon Comment',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='EventAI Summoning Locations';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `creature_ai_summons`
+--
+
+LOCK TABLES `creature_ai_summons` WRITE;
+/*!40000 ALTER TABLE `creature_ai_summons` DISABLE KEYS */;
+/*!40000 ALTER TABLE `creature_ai_summons` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `creature_ai_texts`
+--
+
+DROP TABLE IF EXISTS `creature_ai_texts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `creature_ai_texts` (
+  `entry` mediumint(8) NOT NULL,
+  `content_default` text NOT NULL,
+  `content_loc1` text,
+  `content_loc2` text,
+  `content_loc3` text,
+  `content_loc4` text,
+  `content_loc5` text,
+  `content_loc6` text,
+  `content_loc7` text,
+  `content_loc8` text,
+  `sound` mediumint(8) unsigned NOT NULL DEFAULT '0',
+  `type` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `language` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `emote` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `comment` text,
+  PRIMARY KEY (`entry`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Script Texts';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `creature_ai_texts`
+--
+
+LOCK TABLES `creature_ai_texts` WRITE;
+/*!40000 ALTER TABLE `creature_ai_texts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `creature_ai_texts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `event_scripts`
 --
 
@@ -1534,6 +1556,7 @@ CREATE TABLE `game_event` (
   `end_time` timestamp NOT NULL default '0000-00-00 00:00:00' COMMENT 'Absolute end date, the event will never start afler',
   `occurence` bigint(20) unsigned NOT NULL default '86400' COMMENT 'Delay in minutes between occurences of the event',
   `length` bigint(20) unsigned NOT NULL default '43200' COMMENT 'Length in minutes of the event',
+  `holiday` mediumint(8) unsigned NOT NULL default '0' COMMENT 'Client side holiday id',
   `description` varchar(255) default NULL COMMENT 'Description of the event displayed in console',
   PRIMARY KEY  (`entry`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -2132,7 +2155,7 @@ CREATE TABLE `instance_template` (
   `ghostEntranceMap` smallint(5) unsigned NOT NULL,
   `ghostEntranceX` float NOT NULL,
   `ghostEntranceY` float NOT NULL,
-  `script` varchar(128) NOT NULL DEFAULT '',
+  `ScriptName` varchar(128) NOT NULL default '',
   PRIMARY KEY (`map`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -3080,8 +3103,8 @@ INSERT INTO `mangos_string` VALUES
 (128,'GUID %i, faction is %i, flags is %i, npcflag is %i, DY flag is %i',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (129,'Wrong faction: %u (not found in factiontemplate.dbc).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (130,'You changed GUID=%i \'s Faction to %i, flags to %i, npcflag to %i, dyflag to %i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(131,'You changed the spellflatid=%i, val= %i, mark =%i to %s.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(132,'%s changed your spellflatid=%i, val= %i, mark =%i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(131,'You changed the %s spellmod %u to value %i for spell with family bit %u for %s.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(132,'%s changed your spellmod %u to value %i for spell with family bit %u.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (133,'%s has access to all taxi nodes now (until logout).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (134,'%s has no more access to all taxi nodes now (only visited accessible).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (135,'%s has given you access to all taxi nodes (until logout).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3264,46 +3287,22 @@ INSERT INTO `mangos_string` VALUES
 (344,'You already have pet.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (347,'TaxiNode ID %u not found!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (348,'Game Object (Entry: %u) have invalid data and can\'t be spawned',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(349,'Private ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(350,'Corporal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(351,'Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(352,'Master Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(353,'Sergeant Major ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(354,'Knight ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(355,'Knight-Lieutenant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(356,'Knight-Captain ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(357,'Knight-Champion ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(358,'Lieutenant Commander ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(359,'Commander ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(360,'Marshal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(361,'Field Marshal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(362,'Grand Marshal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(363,'Scout ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(364,'Grunt ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(365,'Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(366,'Senior Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(367,'First Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(368,'Stone Guard ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(369,'Blood Guard ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(370,'Legionnare ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(371,'Centurion ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(372,'Champion ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(373,'Lieutenant General ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(374,'General ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(375,'Warlord ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(376,'High Warlord ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(377,'Game Master ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(378,'No Rank ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(379,'Dishonored ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(380,'Exiled ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(381,'Outlaw ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(382,'Pariah ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(383,'Player: %s - %s (Rank %u)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(384,'Today: [Honorable Kills: |c0000ff00%u|r] [Dishonorable Kills: |c00ff0000%u|r]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(385,'Yesterday: [Kills: |c0000ff00%u|r] [Honor: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(386,'This Week: [Kills: |c0000ff00%u|r] [Honor: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(387,'Last Week: [Kills: |c0000ff00%u|r] [Honor: %u] [Standing: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(388,'Life Time: [Rank Points: |c0000ff00%f|r] [Honorable Kills: |c0000ff00%u|r] [Dishonorable Kills: |c00ff0000%u|r] [Highest Rank %u: %s]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(357,'Areatrigger %u not has target coordinates',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(358,'No areatriggers found!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(359,'%s|cffffffff|Hareatrigger_target:%u|h[Trigger target %u]|h|r Map %u X:%f Y:%f Z:%f%s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(360,'%s[Trigger target %u] Map %u X:%f Y:%f Z:%f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(361,'|cffffffff|Hareatrigger:%u|h[Trigger %u]|h|r Map %u X:%f Y:%f Z:%f%s%s%s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(362,'[Trigger %u] Map %u X:%f Y:%f Z:%f%s%s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(363,' (Dist %f)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(364,' [Tavern]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(365,' [Quest]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(366,'Explore quest:',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(367,'Required level %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(368,'Required Items:',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(369,'Required quest:',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(373,'Response:\n%s ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(374,'Tickets count: %i\n',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(375,'Player %s not have tickets.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (400,'|cffff0000[System Message]:|rScripts reloaded',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (401,'You change security level of account %s to %i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (402,'%s changed your security level to %i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3415,7 +3414,7 @@ INSERT INTO `mangos_string` VALUES
 (509,'%d - sender: %s (guid: %u account: %u ) receiver: %s (guid: %u account: %u ) %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (510,'%d - owner: %s (guid: %u account: %u ) %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (511,'Wrong link type!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(512,'%d - |cffffffff|Hitem:%d:0:0:0:0:0:0:0|h[%s]|h|r ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(512,'%d - |cffffffff|Hitem:%d:0:0:0:0:0:0:0|h[%s]|h|r %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (513,'%d - |cffffffff|Hquest:%d:%d|h[%s]|h|r %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (514,'%d - |cffffffff|Hcreature_entry:%d|h[%s]|h|r ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (515,'%d%s - |cffffffff|Hcreature:%d|h[%s X:%f Y:%f Z:%f MapId:%d]|h|r ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3445,7 +3444,7 @@ INSERT INTO `mangos_string` VALUES
 (539,'Player selected NPC\nGUID: %u.\nFaction: %u.\nnpcFlags: %u.\nEntry: %u.\nDisplayID: %u (Native: %u).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (540,'Level: %u.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (541,'Health (base): %u. (max): %u. (current): %u.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(542,'Field Flags: %u.\nDynamic Flags: %u.\nFaction Template: %u.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(542,'Unit Flags: %u.\nDynamic Flags: %u.\nFaction Template: %u.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (543,'Loot: %u Pickpocket: %u Skinning: %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (544,'Position: %f %f %f.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (545,'*** Is a vendor!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3465,19 +3464,17 @@ INSERT INTO `mangos_string` VALUES
 (559,'%s reset your level progress.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (560,'The area has been set as explored.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (561,'The area has been set as not explored.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(562,'GUID=%i \'s updateIndex: %i, value:  %i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(563,'You change GUID=%i \'s UpdateIndex: %i value to %i.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(564,'The value index %u is too big to %u(count: %u).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(565,'Set %u uint32 Value:[OPCODE]:%u [VALUE]:%u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(566,'You Set %u Field:%u to uint32 Value: %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(567,'Set %u float Value:[OPCODE]:%u [VALUE]:%f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(568,'You Set %u Field:%i to float Value: %f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(569,'Get %u uint32 Value:[OPCODE]:%u [VALUE]:%u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(570,'The uint32 value of %u in %u is: %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(571,'Get %u float Value:[OPCODE]:%u [VALUE]:%f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(572,'The float of %u value in %u is: %f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(575,'.Mod32Value:[OPCODE]:%u [VALUE]:%i',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(576,'You modified the value of Field:%u to Value: %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(564,'The value index %u is too big to %s (count: %u).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(565,'Set for %s field:%u to uint32 value:%u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(566,'You set for %s field:%u to uint32 value: %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(567,'Set for %s field:%u to to float value:%f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(568,'You set for %s field:%u to float value: %f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(569,'Get %s uint32 value:[FIELD]:%u [VALUE]:%u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(570,'%s has uint32 value:[FIELD]:%u [VALUE]:%u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(571,'Get %s float value:[FIELD]:%u [VALUE]:%f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(572,'%s has float value:[FIELD]:%u [VALUE]:%f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(575,'Modify %s uint32 field:%u to sum with:%i = %u (%i)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(576,'You modify for %s uint32 field:%u to sum with:%i = %u (%i)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (577,'You are now invisible.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (578,'You are now visible.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (579,'Selected player or creature not have victim.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3648,7 +3645,7 @@ INSERT INTO `mangos_string` VALUES
 (1102,'Message sent to %s: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1103,'%d - %s %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1104,'%d - %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1105,'%d - %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1105,'%d - %s %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1106,'%d - %s %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1107,'%d - %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1108,'%d - %s %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3690,7 +3687,56 @@ INSERT INTO `mangos_string` VALUES
 (1149,' (Pool %u)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1150,' (Event %i)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1151,' (Pool %u Event %i)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1200,'You try to view cinemitic %u but it doesn\'t exist.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+(1152,'[usable]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1153,'Get %s bitstr value:[FIELD]:%u [VALUE]:%s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1154,'%s has bitstr value:[FIELD]:%u [VALUE]:%s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1155,'Get %s hex value:[FIELD]:%u [VALUE]:%x',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1156,'%s has hex value:[FIELD]:%u [VALUE]:%x',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1157,'Modify %s hex field:%u %s %x = %x (hex)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1158,'You modify for %s hex field:%u %s %x = %x (hex)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1159,'Modify %s float field:%u to sum with:%f = %f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1160,'You modify for %s float field:%u to sum with:%f = %f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1200,'You try to view cinemitic %u but it doesn\'t exist.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1400,'Private ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1401,'Corporal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1402,'Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1403,'Master Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1404,'Sergeant Major ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1405,'Knight ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1406,'Knight-Lieutenant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1407,'Knight-Captain ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1408,'Knight-Champion ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1409,'Lieutenant Commander ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1410,'Commander ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1411,'Marshal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1412,'Field Marshal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1413,'Grand Marshal ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1414,'Scout ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1415,'Grunt ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1416,'Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1417,'Senior Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1418,'First Sergeant ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1419,'Stone Guard ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1420,'Blood Guard ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1421,'Legionnare ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1422,'Centurion ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1423,'Champion ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1424,'Lieutenant General ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1425,'General ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1426,'Warlord ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1427,'High Warlord ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1428,'Game Master ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1429,'No Rank ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1430,'Dishonored ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1431,'Exiled ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1432,'Outlaw ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1433,'Pariah ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1434,'Player: %s - %s (Rank %u)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1435,'Today: [Honorable Kills: |c0000ff00%u|r] [Dishonorable Kills: |c00ff0000%u|r]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1436,'Yesterday: [Kills: |c0000ff00%u|r] [Honor: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1437,'This Week: [Kills: |c0000ff00%u|r] [Honor: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1438,'Last Week: [Kills: |c0000ff00%u|r] [Honor: %u] [Standing: %u]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1439,'Life Time: [Rank Points: |c0000ff00%f|r] [Honorable Kills: |c0000ff00%u|r] [Dishonorable Kills: |c00ff0000%u|r] [Highest Rank %u: %s]',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `mangos_string` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -7353,14 +7399,15 @@ DROP TABLE IF EXISTS `playercreateinfo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `playercreateinfo` (
-  `race` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  `class` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  `map` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `zone` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `position_x` float NOT NULL DEFAULT '0',
-  `position_y` float NOT NULL DEFAULT '0',
-  `position_z` float NOT NULL DEFAULT '0',
-  PRIMARY KEY (`race`,`class`)
+  `race` tinyint(3) unsigned NOT NULL default '0',
+  `class` tinyint(3) unsigned NOT NULL default '0',
+  `map` smallint(5) unsigned NOT NULL default '0',
+  `zone` mediumint(8) unsigned NOT NULL default '0',
+  `position_x` float NOT NULL default '0',
+  `position_y` float NOT NULL default '0',
+  `position_z` float NOT NULL default '0',
+  `orientation` float NOT NULL default '0',
+  PRIMARY KEY  (`race`,`class`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -7371,46 +7418,46 @@ CREATE TABLE `playercreateinfo` (
 LOCK TABLES `playercreateinfo` WRITE;
 /*!40000 ALTER TABLE `playercreateinfo` DISABLE KEYS */;
 INSERT INTO `playercreateinfo` VALUES
-(1,1,0,12,-8949.95,-132.493,83.5312),
-(1,2,0,12,-8949.95,-132.493,83.5312),
-(1,4,0,12,-8949.95,-132.493,83.5312),
-(1,5,0,12,-8949.95,-132.493,83.5312),
-(1,8,0,12,-8949.95,-132.493,83.5312),
-(1,9,0,12,-8949.95,-132.493,83.5312),
-(2,1,1,14,-618.518,-4251.67,38.718),
-(2,3,1,14,-618.518,-4251.67,38.718),
-(2,4,1,14,-618.518,-4251.67,38.718),
-(2,7,1,14,-618.518,-4251.67,38.718),
-(2,9,1,14,-618.518,-4251.67,38.718),
-(3,1,0,1,-6240.32,331.033,382.758),
-(3,2,0,1,-6240.32,331.033,382.758),
-(3,3,0,1,-6240.32,331.033,382.758),
-(3,4,0,1,-6240.32,331.033,382.758),
-(3,5,0,1,-6240.32,331.033,382.758),
-(4,1,1,141,10311.3,832.463,1326.41),
-(4,3,1,141,10311.3,832.463,1326.41),
-(4,4,1,141,10311.3,832.463,1326.41),
-(4,5,1,141,10311.3,832.463,1326.41),
-(4,11,1,141,10311.3,832.463,1326.41),
-(5,1,0,85,1676.71,1678.31,121.67),
-(5,4,0,85,1676.71,1678.31,121.67),
-(5,5,0,85,1676.71,1678.31,121.67),
-(5,8,0,85,1676.71,1678.31,121.67),
-(5,9,0,85,1676.71,1678.31,121.67),
-(6,1,1,215,-2917.58,-257.98,52.9968),
-(6,3,1,215,-2917.58,-257.98,52.9968),
-(6,7,1,215,-2917.58,-257.98,52.9968),
-(6,11,1,215,-2917.58,-257.98,52.9968),
-(7,1,0,1,-6240.32,331.033,382.758),
-(7,4,0,1,-6240.32,331.033,382.758),
-(7,8,0,1,-6240.32,331.033,382.758),
-(7,9,0,1,-6240.32,331.033,382.758),
-(8,1,1,14,-618.518,-4251.67,38.718),
-(8,3,1,14,-618.518,-4251.67,38.718),
-(8,4,1,14,-618.518,-4251.67,38.718),
-(8,5,1,14,-618.518,-4251.67,38.718),
-(8,7,1,14,-618.518,-4251.67,38.718),
-(8,8,1,14,-618.518,-4251.67,38.718);
+(1,1,0,12,-8949.95,-132.493,83.5312,0),
+(1,2,0,12,-8949.95,-132.493,83.5312,0),
+(1,4,0,12,-8949.95,-132.493,83.5312,0),
+(1,5,0,12,-8949.95,-132.493,83.5312,0),
+(1,8,0,12,-8949.95,-132.493,83.5312,0),
+(1,9,0,12,-8949.95,-132.493,83.5312,0),
+(2,1,1,14,-618.518,-4251.67,38.718,0),
+(2,3,1,14,-618.518,-4251.67,38.718,0),
+(2,4,1,14,-618.518,-4251.67,38.718,0),
+(2,7,1,14,-618.518,-4251.67,38.718,0),
+(2,9,1,14,-618.518,-4251.67,38.718,0),
+(3,1,0,1,-6240.32,331.033,382.758,6.177156),
+(3,2,0,1,-6240.32,331.033,382.758,6.177156),
+(3,3,0,1,-6240.32,331.033,382.758,6.177156),
+(3,4,0,1,-6240.32,331.033,382.758,6.177156),
+(3,5,0,1,-6240.32,331.033,382.758,6.177156),
+(4,1,1,141,10311.3,832.463,1326.41,5.696318),
+(4,3,1,141,10311.3,832.463,1326.41,5.696318),
+(4,4,1,141,10311.3,832.463,1326.41,5.696318),
+(4,5,1,141,10311.3,832.463,1326.41,5.696318),
+(4,11,1,141,10311.3,832.463,1326.41,5.696318),
+(5,1,0,85,1676.71,1678.31,121.67,2.70526),
+(5,4,0,85,1676.71,1678.31,121.67,2.70526),
+(5,5,0,85,1676.71,1678.31,121.67,2.70526),
+(5,8,0,85,1676.71,1678.31,121.67,2.70526),
+(5,9,0,85,1676.71,1678.31,121.67,2.70526),
+(6,1,1,215,-2917.58,-257.98,52.9968,0),
+(6,3,1,215,-2917.58,-257.98,52.9968,0),
+(6,7,1,215,-2917.58,-257.98,52.9968,0),
+(6,11,1,215,-2917.58,-257.98,52.9968,0),
+(7,1,0,1,-6240.32,331.033,382.758,0),
+(7,4,0,1,-6240.32,331.033,382.758,0),
+(7,8,0,1,-6240.32,331.033,382.758,0),
+(7,9,0,1,-6240.32,331.033,382.758,0),
+(8,1,1,14,-618.518,-4251.67,38.718,0),
+(8,3,1,14,-618.518,-4251.67,38.718,0),
+(8,4,1,14,-618.518,-4251.67,38.718,0),
+(8,5,1,14,-618.518,-4251.67,38.718,0),
+(8,7,1,14,-618.518,-4251.67,38.718,0),
+(8,8,1,14,-618.518,-4251.67,38.718,0);
 /*!40000 ALTER TABLE `playercreateinfo` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -9284,8 +9331,8 @@ CREATE TABLE `pool_creature` (
   `pool_entry` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `chance` float unsigned NOT NULL DEFAULT '0',
   `description` varchar(255) NOT NULL,
-  PRIMARY KEY (`pool_entry`,`guid`),
-  KEY `idx_guid` (`guid`)
+  PRIMARY KEY  (`guid`),
+  INDEX `pool_idx` (pool_entry)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -9310,8 +9357,8 @@ CREATE TABLE `pool_gameobject` (
   `pool_entry` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `chance` float unsigned NOT NULL DEFAULT '0',
   `description` varchar(255) NOT NULL,
-  PRIMARY KEY (`guid`,`pool_entry`),
-  KEY `idx_guid` (`guid`)
+  PRIMARY KEY  (`guid`),
+  INDEX `pool_idx` (pool_entry)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -9336,7 +9383,8 @@ CREATE TABLE `pool_pool` (
   `mother_pool` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `chance` float NOT NULL DEFAULT '0',
   `description` varchar(255) NOT NULL,
-  PRIMARY KEY (`pool_id`,`mother_pool`)
+  PRIMARY KEY  (pool_id),
+  INDEX pool_idx (mother_pool)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -9616,6 +9664,59 @@ LOCK TABLES `reference_loot_template` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `reputation_reward_rate`
+--
+
+DROP TABLE IF EXISTS `reputation_reward_rate`;
+CREATE TABLE `reputation_reward_rate` (
+  `faction` mediumint(8) unsigned NOT NULL default '0',
+  `quest_rate` float NOT NULL default '1',
+  `creature_rate` float NOT NULL default '1',
+  `spell_rate` float NOT NULL default '1',
+  PRIMARY KEY  (`faction`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `reputation_reward_rate`
+--
+
+LOCK TABLES `reputation_reward_rate` WRITE;
+/*!40000 ALTER TABLE `reputation_reward_rate` DISABLE KEYS */;
+/*!40000 ALTER TABLE `reputation_reward_rate` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `reputation_spillover_template`
+--
+
+DROP TABLE IF EXISTS `reputation_spillover_template`;
+CREATE TABLE `reputation_spillover_template` (
+  `faction` smallint(6) unsigned NOT NULL default '0' COMMENT 'faction entry',
+  `faction1` smallint(6) unsigned NOT NULL default '0' COMMENT 'faction to give spillover for',
+  `rate_1` float NOT NULL default '0' COMMENT 'the given rep points * rate',
+  `rank_1` tinyint(3) unsigned NOT NULL default '0' COMMENT 'max rank, above this will not give any spillover',
+  `faction2` smallint(6) unsigned NOT NULL default '0',
+  `rate_2` float NOT NULL default '0',
+  `rank_2` tinyint(3) unsigned NOT NULL default '0',
+  `faction3` smallint(6) unsigned NOT NULL default '0',
+  `rate_3` float NOT NULL default '0',
+  `rank_3` tinyint(3) unsigned NOT NULL default '0',
+  `faction4` smallint(6) unsigned NOT NULL default '0',
+  `rate_4` float NOT NULL default '0',
+  `rank_4` tinyint(3) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`faction`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Reputation spillover reputation gain';
+
+--
+-- Dumping data for table `reputation_spillover_template`
+--
+
+LOCK TABLES `reputation_spillover_template` WRITE;
+/*!40000 ALTER TABLE `reputation_spillover_template` DISABLE KEYS */;
+/*!40000 ALTER TABLE `reputation_spillover_template` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `reserved_name`
 --
 
@@ -9635,6 +9736,46 @@ CREATE TABLE `reserved_name` (
 LOCK TABLES `reserved_name` WRITE;
 /*!40000 ALTER TABLE `reserved_name` DISABLE KEYS */;
 /*!40000 ALTER TABLE `reserved_name` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `scripted_areatrigger`
+--
+
+DROP TABLE IF EXISTS `scripted_areatrigger`;
+CREATE TABLE `scripted_areatrigger` (
+  `entry` MEDIUMINT( 8 ) NOT NULL ,
+  `ScriptName` CHAR( 64 ) NOT NULL ,
+  PRIMARY KEY ( `entry` )
+) ENGINE = MYISAM DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `scripted_areatrigger`
+--
+
+LOCK TABLES `scripted_areatrigger` WRITE;
+/*!40000 ALTER TABLE `scripted_areatrigger` DISABLE KEYS */;
+/*!40000 ALTER TABLE `scripted_areatrigger` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `scripted_event_id`
+--
+
+DROP TABLE IF EXISTS `scripted_event_id`;
+CREATE TABLE `scripted_event_id` (
+  `id` mediumint(8) NOT NULL,
+  `ScriptName` char(64) NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Script library scripted events';
+
+--
+-- Dumping data for table `scripted_event_id`
+--
+
+LOCK TABLES `scripted_event_id` WRITE;
+/*!40000 ALTER TABLE `scripted_event_id` DISABLE KEYS */;
+/*!40000 ALTER TABLE `scripted_event_id` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -10057,6 +10198,16 @@ CREATE TABLE `spell_chain` (
 LOCK TABLES `spell_chain` WRITE;
 /*!40000 ALTER TABLE `spell_chain` DISABLE KEYS */;
 INSERT INTO `spell_chain` VALUES
+/*------------------
+--(613)Discipline
+------------------*/
+/*Elune's Grace*/
+(2651,0,2651,1,0),
+(19289,2651,2651,2,0),
+(19291,19289,2651,3,0),
+(19292,19291,2651,4,0),
+(19293,19292,2651,5,0),
+/*not sorted yet*/
 (10,0,10,1,0),
 (17,0,17,1,0),
 (53,0,53,1,0),
@@ -10091,7 +10242,6 @@ INSERT INTO `spell_chain` VALUES
 (453,0,453,1,0),
 (465,0,465,1,0),
 (467,0,467,1,0),
-(469,0,469,1,0),
 (498,0,498,1,0),
 (527,0,527,1,0),
 (529,403,403,2,0),
@@ -10111,7 +10261,6 @@ INSERT INTO `spell_chain` VALUES
 (598,591,585,3,0),
 (600,592,17,3,0),
 (602,7128,588,3,0),
-(603,0,603,1,0),
 (604,0,604,1,0),
 (605,0,605,1,0),
 (633,0,633,1,0),
@@ -10122,7 +10271,6 @@ INSERT INTO `spell_chain` VALUES
 (647,639,635,3,0),
 (686,0,686,1,0),
 (687,0,687,1,0),
-(688,0,688,1,0),
 (689,0,689,1,0),
 (693,0,693,1,0),
 (694,0,694,1,0),
@@ -10163,7 +10311,6 @@ INSERT INTO `spell_chain` VALUES
 (945,905,324,4,0),
 (959,939,331,6,0),
 (970,594,589,3,0),
-(974,0,974,1,0),
 (976,0,976,1,0),
 (980,0,980,1,0),
 (984,598,585,4,0),
@@ -10200,7 +10347,6 @@ INSERT INTO `spell_chain` VALUES
 (1243,0,1243,1,0),
 (1244,1243,1243,2,0),
 (1245,1244,1243,3,0),
-(1329,0,1329,1,0),
 (1430,1058,774,3,0),
 (1449,0,1449,1,0),
 (1454,0,1454,1,0),
@@ -10243,7 +10389,6 @@ INSERT INTO `spell_chain` VALUES
 (1785,1784,1784,2,0),
 (1786,1785,1784,3,0),
 (1787,1786,1784,4,0),
-(1804,0,1804,1,0),
 (1822,0,1822,1,0),
 (1823,1822,1822,2,0),
 (1824,1823,1822,3,0),
@@ -10266,7 +10411,6 @@ INSERT INTO `spell_chain` VALUES
 (2055,2054,2054,2,0),
 (2060,0,2060,1,0),
 (2061,0,2061,1,0),
-(2062,0,2062,1,0),
 (2070,6770,6770,2,0),
 (2090,1430,774,4,0),
 (2091,2090,774,5,0),
@@ -10297,12 +10441,10 @@ INSERT INTO `spell_chain` VALUES
 (2791,1245,1243,4,0),
 (2800,633,633,2,0),
 (2812,0,2812,1,0),
-(2825,0,2825,1,0),
 (2835,0,2835,1,0),
 (2837,2835,2835,2,0),
 (2860,930,421,3,0),
 (2878,0,2878,1,0),
-(2894,0,2894,1,0),
 (2908,0,2908,1,0),
 (2912,0,2912,1,0),
 (2941,1094,348,4,0),
@@ -10342,7 +10484,6 @@ INSERT INTO `spell_chain` VALUES
 (3699,3698,755,3,0),
 (3700,3699,755,4,0),
 (3716,0,3716,1,0),
-(3738,0,3738,1,0),
 (3747,600,17,4,0),
 (3811,3104,2108,3,0),
 (3908,0,3908,1,0),
@@ -10386,7 +10527,6 @@ INSERT INTO `spell_chain` VALUES
 (5232,1126,1126,2,0),
 (5234,6756,1126,4,0),
 (5242,6673,6673,2,0),
-(5277,0,5277,1,0),
 (5308,0,5308,1,0),
 (5394,0,5394,1,0),
 (5484,0,5484,1,0),
@@ -10409,7 +10549,6 @@ INSERT INTO `spell_chain` VALUES
 (5740,0,5740,1,0),
 (5763,0,5763,1,0),
 (5782,0,5782,1,0),
-(5938,0,5938,1,0),
 (6041,943,403,6,0),
 (6060,1004,585,6,0),
 (6063,2055,2054,3,0),
@@ -10454,7 +10593,6 @@ INSERT INTO `spell_chain` VALUES
 (6390,5730,5730,2,0),
 (6391,6390,5730,3,0),
 (6392,6391,5730,4,0),
-(6542,0,6542,1,0),
 (6546,772,772,2,0),
 (6547,6546,772,3,0),
 (6548,6547,772,4,0),
@@ -11320,14 +11458,12 @@ INSERT INTO `spell_chain` VALUES
 (20043,0,20043,1,0),
 (20116,26573,26573,2,0),
 (20162,21082,21082,2,0),
-(20164,0,20164,1,0),
 (20165,0,20165,1,0),
 (20166,0,20166,1,0),
 (20190,20043,20043,2,0),
 (20217,0,20217,1,0),
 (20219,12656,4036,5,0),
 (20222,12656,4036,5,0),
-(20243,0,20243,1,0),
 (20252,0,20252,1,0),
 (20287,21084,21084,2,0),
 (20288,20287,21084,3,0),
@@ -11417,7 +11553,6 @@ INSERT INTO `spell_chain` VALUES
 (22842,0,22842,1,0),
 (22895,22842,22842,2,0),
 (22896,22895,22842,3,0),
-(23028,0,23028,1,0),
 (23099,0,23099,1,0),
 (23109,23099,23099,2,0),
 (23110,23109,23099,3,0),
@@ -11435,12 +11570,10 @@ INSERT INTO `spell_chain` VALUES
 (23992,0,23992,1,0),
 (24132,19386,19386,2,0),
 (24133,24132,19386,3,0),
-(24224,0,24224,1,0),
 (24239,24274,24275,3,0),
 (24248,31018,22568,6,0),
 (24274,24275,24275,2,0),
 (24275,0,24275,1,0),
-(24398,0,24398,1,0),
 (24423,0,24423,1,0),
 (24439,23992,23992,2,0),
 (24444,24439,23992,3,0),
@@ -11495,7 +11628,6 @@ INSERT INTO `spell_chain` VALUES
 (25010,25009,24844,4,0),
 (25011,25010,24844,5,0),
 (25012,25011,24844,6,0),
-(25076,0,25076,1,0),
 (25286,11567,78,9,0),
 (25288,11601,6572,6,0),
 (25289,11551,6673,7,0),
@@ -11531,7 +11663,6 @@ INSERT INTO `spell_chain` VALUES
 (25899,0,25899,1,20914),
 (25916,25782,25782,2,25291),
 (25918,25894,25894,2,25290),
-(26064,0,26064,1,0),
 (26090,0,26090,1,0),
 (26177,7371,7371,2,0),
 (26178,26177,7371,3,0),
@@ -11541,7 +11672,6 @@ INSERT INTO `spell_chain` VALUES
 (26201,26179,7371,5,0),
 (26573,0,26573,1,0),
 (27681,14752,14752,2,0),
-(27683,0,27683,1,0),
 (27685,26201,7371,6,0),
 (27799,15431,15237,4,0),
 (27800,27799,15237,5,0),

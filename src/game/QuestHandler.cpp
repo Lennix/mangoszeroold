@@ -643,8 +643,9 @@ void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket
         if (itr->IsCreatureOrPet())
         {
             // need also pet quests case support
-            Creature *questgiver = GetPlayer()->GetMap()->GetCreatureOrPet(*itr);
-            if(!questgiver || questgiver->IsHostileTo(_player))
+            Creature *questgiver = GetPlayer()->GetMap()->GetAnyTypeCreature(*itr);
+
+            if (!questgiver || questgiver->IsHostileTo(_player))
                 continue;
             if(!questgiver->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER))
                 continue;
@@ -652,7 +653,7 @@ void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket
             if( questStatus > 6 )
                 questStatus = getDialogStatus(_player, questgiver, defstatus);
 
-            data << uint64(questgiver->GetGUID());
+            data << questgiver->GetObjectGuid();
             data << uint8(questStatus);
             ++count;
         }
@@ -667,7 +668,7 @@ void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket
             if( questStatus > 6 )
                 questStatus = getDialogStatus(_player, questgiver, defstatus);
 
-            data << uint64(questgiver->GetGUID());
+            data << questgiver->GetObjectGuid();
             data << uint8(questStatus);
             ++count;
         }

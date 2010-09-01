@@ -149,11 +149,11 @@ void WorldSession::HandleMoveWorldportAckOpcode()
                 {
                     Group *group = new Group;
                     bg->SetBgRaid(team, group);
-                    group->Create(_player->GetGUIDLow(), _player->GetName());
+                    group->Create(_player->GetObjectGuid(), _player->GetName());
                 }
                 else                                        // raid already exist
                 {
-                    bg->GetBgRaid(team)->AddMember(_player->GetGUID(), _player->GetName());
+                    bg->GetBgRaid(team)->AddMember(_player->GetObjectGuid(), _player->GetName());
                 }
             }
         }
@@ -288,7 +288,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     }
 
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
-    if (opcode == MSG_MOVE_FALL_LAND && plMover && !plMover->isInFlight())
+    if (opcode == MSG_MOVE_FALL_LAND && plMover && !plMover->IsTaxiFlying())
         plMover->HandleFall(movementInfo);
 
     if (plMover && (movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) != plMover->IsInWater()))
@@ -444,7 +444,7 @@ void WorldSession::HandleMountSpecialAnimOpcode(WorldPacket& /*recvdata*/)
     //DEBUG_LOG("WORLD: Recvd CMSG_MOUNTSPECIAL_ANIM");
 
     WorldPacket data(SMSG_MOUNTSPECIAL_ANIM, 8);
-    data << uint64(GetPlayer()->GetGUID());
+    data << GetPlayer()->GetObjectGuid();
 
     GetPlayer()->SendMessageToSet(&data, false);
 }

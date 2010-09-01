@@ -45,6 +45,9 @@ ConfVersion=2010062001
 #
 #    BindIP
 #        Bind World Server to IP/hostname
+#        This option is useful for running multiple worldd/realmd instances
+#        on different IP addresses using default ports.
+#        DO NOT CHANGE THIS UNLESS YOU _REALLY_ KNOW WHAT YOU'RE DOING
 #
 ###################################################################################################################
 
@@ -1010,7 +1013,7 @@ GM.LowerSecurity         = 0
 #    Visibility.Distance.Grey.Unit
 #        Visibility grey distance for creatures/players (fast changing objects)
 #        addition to appropriate object type Visibility.Distance.* use in case visibility removing to
-#        object (except corpse around distences) If � is distance and G is grey distance then object
+#        object (except corpse around distances) If D is distance and G is grey distance then object
 #        make visible if distance to it <= D but make non visible if distance > D+G
 #        Default: 1 (yard)
 #
@@ -1039,6 +1042,7 @@ Visibility.Distance.Grey.Object = 10
 #    Rate.Rage.Loss
 #    Rate.Focus
 #    Rate.Loyalty
+#    Rate.Energy (Rogue)
 #        Health and power regeneration and rage income from damage.
 #        Default: 1
 #
@@ -1171,6 +1175,7 @@ Rate.Rage.Income = 1
 Rate.Rage.Loss = 1
 Rate.Focus = 1
 Rate.Loyalty = 1
+Rate.Energy = 1
 Rate.Skill.Discovery = 1
 Rate.Drop.Item.Poor = 1
 Rate.Drop.Item.Normal = 1

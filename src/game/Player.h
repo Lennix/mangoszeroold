@@ -48,6 +48,7 @@ class Creature;
 class PlayerMenu;
 class Transport;
 class UpdateMask;
+class SpellCastTargets;
 class PlayerSocial;
 class InstanceSave;
 class Spell;
@@ -55,7 +56,8 @@ class Item;
 
 typedef std::deque<Mail*> PlayerMails;
 
-#define PLAYER_MAX_SKILLS       127
+#define PLAYER_MAX_SKILLS           127
+#define PLAYER_EXPLORED_ZONES_SIZE  64
 
 // Note: SPELLMOD_* values is aura types in fact
 enum SpellModType
@@ -95,8 +97,9 @@ enum PlayerSpellState
 struct PlayerSpell
 {
     PlayerSpellState state : 8;
-    bool active            : 1;
-    bool disabled          : 1;
+    bool active            : 1;                             // show in spellbook
+    bool dependent         : 1;                             // learned as result another spell learn, skill grow, quest reward, etc
+    bool disabled          : 1;                             // first rank has been learned in result talent learn but currently talent unlearned, save max learned ranks
 };
 
 typedef UNORDERED_MAP<uint32, PlayerSpell> PlayerSpellMap;
@@ -246,6 +249,7 @@ struct PlayerInfo
     float positionX;
     float positionY;
     float positionZ;
+    float orientation;
     uint16 displayId_m;
     uint16 displayId_f;
     PlayerCreateInfoItems item;
@@ -428,6 +432,8 @@ enum PlayerExtraFlags
     PLAYER_EXTRA_TAXICHEAT          = 0x0008,
     PLAYER_EXTRA_GM_INVISIBLE       = 0x0010,
     PLAYER_EXTRA_GM_CHAT            = 0x0020,               // Show GM badge in chat messages
+    PLAYER_EXTRA_AUCTION_NEUTRAL    = 0x0040,
+    PLAYER_EXTRA_AUCTION_ENEMY      = 0x0080,               // overwrite PLAYER_EXTRA_AUCTION_NEUTRAL
 
     // other states
     PLAYER_EXTRA_PVP_DEATH          = 0x0100                // store PvP death status until corpse creating.
@@ -662,6 +668,13 @@ enum PlayerDelayedOperations
     DELAYED_END
 };
 
+enum ReputationSource
+{
+    REPUTATION_SOURCE_KILL,
+    REPUTATION_SOURCE_QUEST,
+    REPUTATION_SOURCE_SPELL
+};
+
 // Player summoning auto-decline time (in secs)
 #define MAX_PLAYER_SUMMON_DELAY                   (2*MINUTE)
 #define MAX_MONEY_AMOUNT                       (0x7FFFFFFF-1)
@@ -870,6 +883,19 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetGMVisible(bool on);
         void SetPvPDeath(bool on) { if(on) m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH; else m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH; }
 
+        // 0 = own auction, -1 = enemy auction, 1 = goblin auction
+        int GetAuctionAccessMode() const { return m_ExtraFlags & PLAYER_EXTRA_AUCTION_ENEMY ? -1 : (m_ExtraFlags & PLAYER_EXTRA_AUCTION_NEUTRAL ? 1 : 0); }
+        void SetAuctionAccessMode(int state)
+        {
+            m_ExtraFlags &= ~ (PLAYER_EXTRA_AUCTION_ENEMY|PLAYER_EXTRA_AUCTION_NEUTRAL);
+
+            if(state < 0)
+                m_ExtraFlags |= PLAYER_EXTRA_AUCTION_ENEMY;
+            else if( state > 0)
+                m_ExtraFlags |= PLAYER_EXTRA_AUCTION_NEUTRAL;
+        }
+
+
         void GiveXP(uint32 xp, Unit* victim);
         void GiveLevel(uint32 level);
 
@@ -965,7 +991,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint8 CanBankItem( uint8 bag, uint8 slot, ItemPosCountVec& dest, Item *pItem, bool swap, bool not_loading = true ) const;
         uint8 CanUseItem( Item *pItem, bool not_loading = true ) const;
         bool HasItemTotemCategory( uint32 TotemCategory ) const;
-        bool CanUseItem( ItemPrototype const *pItem );
+        uint8 CanUseItem( ItemPrototype const *pItem, bool not_loading = true ) const;
         uint8 CanUseAmmo( uint32 item ) const;
         Item* StoreNewItem( ItemPosCountVec const& pos, uint32 item, bool update,int32 randomPropertyId = 0 );
         Item* StoreItem( ItemPosCountVec const& pos, Item *pItem, bool update );
@@ -1011,7 +1037,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         Item* GetItemFromBuyBackSlot( uint32 slot );
         void RemoveItemFromBuyBackSlot( uint32 slot, bool del );
         uint32 GetMaxKeyringSize() const { return KEYRING_SLOT_END-KEYRING_SLOT_START; }
-        void SendEquipError( uint8 msg, Item* pItem, Item *pItem2 ) const;
+        void SendEquipError( uint8 msg, Item* pItem, Item *pItem2 = NULL ) const;
         void SendBuyError( uint8 msg, Creature* pCreature, uint32 item, uint32 param );
         void SendSellError( uint8 msg, Creature* pCreature, uint64 guid, uint32 param );
         void AddWeaponProficiency(uint32 newflag) { m_WeaponProficiency |= newflag; }
@@ -1138,7 +1164,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void ItemAddedQuestCheck( uint32 entry, uint32 count );
         void ItemRemovedQuestCheck( uint32 entry, uint32 count );
         void KilledMonster( CreatureInfo const* cInfo, ObjectGuid guid );
-        void KilledMonsterCredit( uint32 entry, ObjectGuid guid );
+        void KilledMonsterCredit( uint32 entry, ObjectGuid guid = ObjectGuid());
         void CastedCreatureOrGO( uint32 entry, ObjectGuid guid, uint32 spell_id, bool original_caster = true );
         void TalkedToCreature( uint32 entry, ObjectGuid guid );
         void MoneyChanged( uint32 value );
@@ -1179,8 +1205,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         static float  GetFloatValueFromArray(Tokens const& data, uint16 index);
         static uint32 GetUInt32ValueFromDB(uint16 index, uint64 guid);
         static float  GetFloatValueFromDB(uint16 index, uint64 guid);
-        static uint32 GetZoneIdFromDB(uint64 guid);
-        static uint32 GetLevelFromDB(uint64 guid);
+        static uint32 GetZoneIdFromDB(ObjectGuid guid);
+        static uint32 GetLevelFromDB(ObjectGuid guid);
         static bool   LoadPositionFromDB(uint32& mapid, float& x,float& y,float& z,float& o, bool& in_flight, uint64 guid);
 
         /*********************************************************/
@@ -1198,7 +1224,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         static void SetFloatValueInDB(uint16 index, float value, uint64 guid);
         static void SavePositionInDB(uint32 mapid, float x,float y,float z,float o,uint32 zone,uint64 guid);
 
-        static void DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmChars = true, bool deleteFinally = false);
+        static void DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRealmChars = true, bool deleteFinally = false);
         static void DeleteOldCharacters();
         static void DeleteOldCharacters(uint32 keepDays);
 
@@ -1312,12 +1338,13 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool HasActiveSpell(uint32 spell) const;            // show in spellbook
         TrainerSpellState GetTrainerSpellState(TrainerSpell const* trainer_spell) const;
         bool IsSpellFitByClassAndRace( uint32 spell_id ) const;
+        bool IsNeedCastPassiveSpellAtLearn(SpellEntry const* spellInfo) const;
 
         void SendProficiency(uint8 pr1, uint32 pr2);
         void SendInitialSpells();
-        bool addSpell(uint32 spell_id, bool active, bool learning, bool disabled);
-        void learnSpell(uint32 spell_id);
-        void removeSpell(uint32 spell_id, bool disabled = false);
+        bool addSpell(uint32 spell_id, bool active, bool learning, bool dependent, bool disabled);
+        void learnSpell(uint32 spell_id, bool dependent);
+        void removeSpell(uint32 spell_id, bool disabled = false, bool learn_low_rank = true);
         void resetSpells();
         void learnDefaultSpells();
         void learnQuestRewardedSpells();
@@ -1435,19 +1462,19 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool IsInSameGroupWith(Player const* p) const;
         bool IsInSameRaidWith(Player const* p) const { return p==this || (GetGroup() != NULL && GetGroup() == p->GetGroup()); }
         void UninviteFromGroup();
-        static void RemoveFromGroup(Group* group, uint64 guid);
-        void RemoveFromGroup() { RemoveFromGroup(GetGroup(),GetGUID()); }
+        static void RemoveFromGroup(Group* group, ObjectGuid guid);
+        void RemoveFromGroup() { RemoveFromGroup(GetGroup(), GetObjectGuid()); }
         void SendUpdateToOutOfRangeGroupMembers();
 
         void SetInGuild(uint32 GuildId) { SetUInt32Value(PLAYER_GUILDID, GuildId); }
         void SetRank(uint32 rankId){ SetUInt32Value(PLAYER_GUILDRANK, rankId); }
         void SetGuildIdInvited(uint32 GuildId) { m_GuildIdInvited = GuildId; }
         uint32 GetGuildId() { return GetUInt32Value(PLAYER_GUILDID);  }
-        static uint32 GetGuildIdFromDB(uint64 guid);
+        static uint32 GetGuildIdFromDB(ObjectGuid guid);
         uint32 GetRank(){ return GetUInt32Value(PLAYER_GUILDRANK); }
         static uint32 GetRankFromDB(uint64 guid);
         int GetGuildIdInvited() { return m_GuildIdInvited; }
-        static void RemovePetitionsAndSigns(uint64 guid);
+        static void RemovePetitionsAndSigns(ObjectGuid guid);
 
         bool UpdateSkill(uint32 skill_id, uint32 step);
         bool UpdateSkillPro(uint16 SkillId, int32 Chance, uint32 step);
@@ -1577,7 +1604,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         int16 GetSkillPermBonusValue(uint32 skill) const;
         int16 GetSkillTempBonusValue(uint32 skill) const;
         bool HasSkill(uint32 skill) const;
-        void learnSkillRewardedSpells( uint32 id );
+        void learnSkillRewardedSpells(uint32 id, uint32 value);
 
         WorldLocation& GetTeleportDest() { return m_teleport_dest; }
         bool IsBeingTeleported() const { return mSemaphoreTeleport_Near || mSemaphoreTeleport_Far; }
@@ -1607,6 +1634,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         ReputationRank GetReputationRank(uint32 faction_id) const;
         void RewardReputation(Unit *pVictim, float rate);
         void RewardReputation(Quest const *pQuest);
+        int32 CalculateReputationGain(ReputationSource source, int32 rep, int32 faction, uint32 creatureOrQuestLevel = 0, bool noAuraBonus = false);
 
         void UpdateSkillsForLevel();
         void UpdateSkillsToMaxSkillsForLevel();             // for .levelup
@@ -1710,6 +1738,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void ApplyEquipSpell(SpellEntry const* spellInfo, Item* item, bool apply, bool form_change = false);
         void UpdateEquipSpellsAtFormChange();
         void CastItemCombatSpell(Unit* Target, WeaponAttackType attType);
+        void CastItemUseSpell(Item *item,SpellCastTargets const& targets);
 
         void SendInitWorldStates(uint32 zone);
         void SendUpdateWorldState(uint32 Field, uint32 Value);
@@ -1961,7 +1990,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         InstancePlayerBind* BindToInstance(InstanceSave *save, bool permanent, bool load = false);
         void SendRaidInfo();
         void SendSavedInstances();
-        static void ConvertInstancesToGroup(Player *player, Group *group = NULL, uint64 player_guid = 0);
+        static void ConvertInstancesToGroup(Player *player, Group *group = NULL, ObjectGuid player_guid = ObjectGuid());
         InstanceSave* GetBoundInstanceSaveForSelfOrGroup(uint32 mapid);
 
         /*********************************************************/
@@ -2083,7 +2112,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         int32 m_standing_pos;
 
         void outDebugStatsValues() const;
-        bool _removeSpell(uint16 spell_id);
         ObjectGuid m_lootGuid;
 
         uint32 m_team;
@@ -2203,7 +2231,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         Item* _StoreItem( uint16 pos, Item *pItem, uint32 count, bool clone, bool update );
 
         void UpdateKnownCurrencies(uint32 itemId, bool apply);
-        int32 CalculateReputationGain(uint32 creatureOrQuestLevel, int32 rep, int32 faction, bool for_quest);
         void AdjustQuestReqItemCount( Quest const* pQuest, QuestStatusData& questStatusData );
 
         void SetCanDelayTeleport(bool setting) { m_bCanDelayTeleport = setting; }

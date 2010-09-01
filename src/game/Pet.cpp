@@ -79,12 +79,6 @@ m_petModeFlags(PET_MODE_DEFAULT)
         charmInfo->SetReactState(REACT_PASSIVE);
     else if(type == GUARDIAN_PET)                           // always aggressive
         charmInfo->SetReactState(REACT_AGGRESSIVE);
-
-    m_spells.clear();
-    m_Auras.clear();
-    m_CreatureSpellCooldowns.clear();
-    m_CreatureCategoryCooldowns.clear();
-    m_autospells.clear();
 }
 
 Pet::~Pet()
@@ -1328,7 +1322,7 @@ void Pet::_LoadAuras(uint32 timediff)
     for(int i = UNIT_FIELD_AURA; i <= UNIT_FIELD_AURASTATE; ++i)
         SetUInt32Value(i, 0);
 
-    QueryResult *result = CharacterDatabase.PQuery("SELECT caster_guid,spell,effect_index,stackcount,amount,maxduration,remaintime,remaincharges FROM pet_aura WHERE guid = '%u'",m_charmInfo->GetPetNumber());
+    QueryResult *result = CharacterDatabase.PQuery("SELECT caster_guid,item_guid,spell,effect_index,stackcount,amount,maxduration,remaintime,remaincharges FROM pet_aura WHERE guid = '%u'",m_charmInfo->GetPetNumber());
 
     if(result)
     {
@@ -1336,13 +1330,14 @@ void Pet::_LoadAuras(uint32 timediff)
         {
             Field *fields = result->Fetch();
             uint64 caster_guid = fields[0].GetUInt64();
-            uint32 spellid = fields[1].GetUInt32();
-            SpellEffectIndex effindex = SpellEffectIndex(fields[2].GetUInt32());
-            uint32 stackcount= fields[3].GetUInt32();
-            int32 damage     = (int32)fields[4].GetUInt32();
-            int32 maxduration = (int32)fields[5].GetUInt32();
-            int32 remaintime = (int32)fields[6].GetUInt32();
-            int32 remaincharges = (int32)fields[7].GetUInt32();
+            uint32 item_lowguid = fields[1].GetUInt32();
+            uint32 spellid = fields[2].GetUInt32();
+            SpellEffectIndex effindex = SpellEffectIndex(fields[3].GetUInt32());
+            uint32 stackcount= fields[4].GetUInt32();
+            int32 damage     = (int32)fields[5].GetUInt32();
+            int32 maxduration = (int32)fields[6].GetUInt32();
+            int32 remaintime = (int32)fields[7].GetUInt32();
+            int32 remaincharges = (int32)fields[8].GetUInt32();
 
             SpellEntry const* spellproto = sSpellStore.LookupEntry(spellid);
             if(!spellproto)
@@ -1385,7 +1380,7 @@ void Pet::_LoadAuras(uint32 timediff)
 
                 if(!damage)
                     damage = aura->GetModifier()->m_amount;
-                aura->SetLoadedState(caster_guid,damage,maxduration,remaintime,remaincharges);
+                aura->SetLoadedState(caster_guid, ObjectGuid(HIGHGUID_ITEM, item_lowguid), damage, maxduration, remaintime, remaincharges);
                 AddAura(aura);
             }
         }
@@ -1428,9 +1423,9 @@ void Pet::_SaveAuras()
 
                     if (i == 3)
                     {
-                        CharacterDatabase.PExecute("INSERT INTO pet_aura (guid,caster_guid,spell,effect_index,stackcount,amount,maxduration,remaintime,remaincharges) "
-                            "VALUES ('%u', '" UI64FMTD "', '%u', '%u', '%u', '%d', '%d', '%d', '%d')",
-                            m_charmInfo->GetPetNumber(), itr2->second->GetCasterGUID(),(uint32)itr2->second->GetId(), (uint32)itr2->second->GetEffIndex(), stackCounter, itr2->second->GetModifier()->m_amount,int(itr2->second->GetAuraMaxDuration()),int(itr2->second->GetAuraDuration()),int(itr2->second->GetAuraCharges()));
+                        CharacterDatabase.PExecute("INSERT INTO pet_aura (guid, caster_guid, item_guid, spell, effect_index, stackcount, amount, maxduration, remaintime, remaincharges) "
+                            "VALUES ('%u', '" UI64FMTD "', '%u', '%u', '%u', '%u', '%d', '%d', '%d', '%d')",
+                            m_charmInfo->GetPetNumber(), itr2->second->GetCasterGUID(), GUID_LOPART(itr2->second->GetCastItemGUID()), (uint32)itr2->second->GetId(), (uint32)itr2->second->GetEffIndex(), stackCounter, itr2->second->GetModifier()->m_amount,int(itr2->second->GetAuraMaxDuration()), int(itr2->second->GetAuraDuration()), int(itr2->second->GetAuraCharges()));
                     }
                 }
             }
@@ -1456,11 +1451,11 @@ bool Pet::addSpell(uint32 spell_id,ActiveStates active /*= ACT_DECIDE*/, PetSpel
         // do pet spell book cleanup
         if(state == PETSPELL_UNCHANGED)                     // spell load case
         {
-            sLog.outError("Pet::addSpell: Non-existed in SpellStore spell #%u request, deleting for all pets in `pet_spell`.",spell_id);
+            sLog.outError("Pet::addSpell: nonexistent in SpellStore spell #%u request, deleting for all pets in `pet_spell`.",spell_id);
             CharacterDatabase.PExecute("DELETE FROM pet_spell WHERE spell = '%u'",spell_id);
         }
         else
-            sLog.outError("Pet::addSpell: Non-existed in SpellStore spell #%u request.",spell_id);
+            sLog.outError("Pet::addSpell: nonexistent in SpellStore spell #%u request.",spell_id);
 
         return false;
     }
@@ -1644,7 +1639,7 @@ void Pet::InitPetCreateSpells()
                 if(p_owner && !p_owner->HasSpell(learn_spellproto->Id))
                 {
                     if(IsPassiveSpell(petspellid))          //learn passive skills when tamed, not sure if thats right
-                        p_owner->learnSpell(learn_spellproto->Id);
+                        p_owner->learnSpell(learn_spellproto->Id,false);
                     else
                         AddTeachSpell(learn_spellproto->EffectTriggerSpell[0], learn_spellproto->Id);
                 }
@@ -1688,7 +1683,7 @@ void Pet::CheckLearning(uint32 spellid)
 
     if(urand(0, 100) < 10)
     {
-        ((Player*)owner)->learnSpell(itr->second);
+        ((Player*)owner)->learnSpell(itr->second,false);
         m_teachspells.erase(itr);
     }
 }
@@ -1906,7 +1901,7 @@ void Pet::ApplyModeFlags(PetModeFlags mode, bool apply)
         return;
 
     WorldPacket data(SMSG_PET_MODE, 12);
-    data << uint64(GetGUID());
+    data << GetObjectGuid();
     data << uint32(m_petModeFlags);
     ((Player*)owner)->GetSession()->SendPacket(&data);
 }

@@ -58,17 +58,6 @@ void Totem::Summon(Unit* owner)
     DEBUG_LOG("AddObject at Totem.cpp line 49");
     owner->GetMap()->Add((Creature*)this);
 
-    // select totem model in dependent from owner team [-ZERO] not implemented/useful
-    CreatureInfo const *cinfo = GetCreatureInfo();
-    if(owner->GetTypeId() == TYPEID_PLAYER && cinfo)
-    {
-        uint32 display_id = sObjectMgr.ChooseDisplayId(((Player*)owner)->GetTeam(), cinfo);
-        CreatureModelInfo const *minfo = sObjectMgr.GetCreatureModelRandomGender(display_id);
-        if (minfo)
-            display_id = minfo->modelid;
-        SetDisplayId(display_id);
-    }
-
     WorldPacket data(SMSG_GAMEOBJECT_SPAWN_ANIM_OBSOLETE, 8);
     data << GetGUID();
     SendMessageToSet(&data,true);
@@ -161,18 +150,25 @@ void Totem::SetTypeBySummonSpell(SpellEntry const * spellProto)
         m_type = TOTEM_STATUE;                              //Jewelery statue
 }
 
-bool Totem::IsImmunedToSpell(SpellEntry const* spellInfo)
+bool Totem::IsImmunedToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index) const
 {
-    for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    // TODO: possibly all negative auras immune?
+    switch(spellInfo->Effect[index])
     {
-        switch(spellInfo->EffectApplyAuraName[i])
-        {
-            case SPELL_AURA_PERIODIC_DAMAGE:
-            case SPELL_AURA_PERIODIC_LEECH:
-                return true;
-            default:
-                continue;
-        }
+        case SPELL_EFFECT_ATTACK_ME:
+            return true;
+        default:
+            break;
     }
-    return Creature::IsImmunedToSpell(spellInfo);
+    switch(spellInfo->EffectApplyAuraName[index])
+    {
+        case SPELL_AURA_PERIODIC_DAMAGE:
+        case SPELL_AURA_PERIODIC_LEECH:
+        case SPELL_AURA_MOD_FEAR:
+        case SPELL_AURA_TRANSFORM:
+            return true;
+        default:
+            break;
+    }
+    return Creature::IsImmunedToSpellEffect(spellInfo, index);
 }

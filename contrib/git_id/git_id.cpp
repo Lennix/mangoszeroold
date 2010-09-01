@@ -88,6 +88,17 @@ char db_sql_rev_field[NUM_DATABASES][MAX_PATH] = {
     "REVISION_DB_REALMD"
 };
 
+bool db_sql_rev_parent[NUM_DATABASES] = {
+    false,
+    false,
+    true
+};
+
+#define REV_PREFIX "z"
+#define REV_SCAN   REV_PREFIX "%d"
+#define REV_PRINT  REV_PREFIX "%04d"
+#define REV_FORMAT "[" REV_PRINT "]"
+
 bool allow_replace = false;
 bool local = false;
 bool do_fetch = false;
@@ -232,9 +243,9 @@ int get_rev(const char *from_msg)
 {
     // accept only the rev number format, not the sql update format
     char nr_str[256];
-    if(sscanf(from_msg, "[z%[0123456789]]", nr_str) != 1) return 0;
-    // ("[z")+("]")-1
-    if(from_msg[strlen(nr_str)+2] != ']') return 0;
+    if(sscanf(from_msg, "[" REV_PREFIX "%[0123456789]]", nr_str) != 1) return 0;
+    // ("[")+(REV_PREFIX)+("]")-1
+    if(from_msg[strlen(nr_str)+strlen(REV_PREFIX)+2-1] != ']') return 0;
 
     return atoi(nr_str);
 }
@@ -262,7 +273,7 @@ bool find_rev()
         pclose(cmd_pipe);
     }
 
-    if(rev > 0) printf("Found [z%04d].\n", rev);
+    if(rev > 0) printf("Found " REV_FORMAT ".\n", rev);
 
     return rev > 0;
 }
@@ -283,7 +294,9 @@ std::string generateSqlHeader()
     newData << "#ifndef __REVISION_SQL_H__" << std::endl;
     newData << "#define __REVISION_SQL_H__"  << std::endl;
     for(int i = 0; i < NUM_DATABASES; ++i)
+    {
         newData << " #define " << db_sql_rev_field[i] << " \"required_" << last_sql_update[i] << "\"" << std::endl;
+    }
     newData << "#endif // __REVISION_SQL_H__" << std::endl;
     return newData.str();
 }
@@ -366,7 +379,7 @@ bool find_head_msg()
     {
         if(!allow_replace)
         {
-            printf("Last commit on HEAD is [z%04d]. Use -r to replace it with [%z04d].\n", head_rev, rev);
+            printf("Last commit on HEAD is " REV_FORMAT ". Use -r to replace it with " REV_FORMAT ".\n", head_rev, rev);
             return false;
         }
 
@@ -392,7 +405,7 @@ bool amend_commit()
     if( (cmd_pipe = popen( cmd, "w" )) == NULL )
         return false;
 
-    fprintf(cmd_pipe, "[z%04d] %s", rev, head_message);
+    fprintf(cmd_pipe, REV_FORMAT " %s", rev, head_message);
     pclose(cmd_pipe);
     if(use_new_index && putenv(old_index_cmd) != 0) return false;
 
@@ -402,6 +415,7 @@ bool amend_commit()
 struct sql_update_info
 {
     int rev;
+    char parentRev[MAX_BUF];
     int nr;
     int db_idx;
     char db[MAX_BUF];
@@ -413,16 +427,14 @@ bool get_sql_update_info(const char *buffer, sql_update_info &info)
 {
     info.table[0] = '\0';
     int dummy[3];
-    if(sscanf(buffer, "%d_%d_%d", &dummy[0], &dummy[1], &dummy[2]) == 3)
+    char dummyStr[MAX_BUF];
+    if(sscanf(buffer, REV_SCAN "_%[^_]_%d_%d", &dummy[0], &dummyStr, &dummy[1], &dummy[2]) == 4)
         return false;
 
-    if(sscanf(buffer, "%d_%d_%[^_]_%[^.].sql", &info.rev, &info.nr, info.db, info.table) != 4 &&
-        sscanf(buffer, "%d_%d_%[^.].sql", &info.rev, &info.nr, info.db) != 3)
+    if(sscanf(buffer, REV_SCAN "_%[^_]_%d_%[^_]_%[^.].sql", &info.rev, &info.parentRev, &info.nr, info.db, info.table) != 5 &&
+        sscanf(buffer, REV_SCAN "_%[^_]_%d_%[^.].sql", &info.rev, &info.parentRev, &info.nr, info.db) != 3)
     {
-        info.rev = 0;       // this may be set by the first scans, even if they fail
-        if(sscanf(buffer, "%d_%[^_]_%[^.].sql", &info.nr, info.db, info.table) != 3 &&
-            sscanf(buffer, "%d_%[^.].sql", &info.nr, info.db) != 2)
-            return false;
+        return false;
     }
 
     for(info.db_idx = 0; info.db_idx < NUM_DATABASES; info.db_idx++)
@@ -485,7 +497,10 @@ bool find_sql_updates()
             {
                 last_sql_rev[info.db_idx] = info.rev;
                 last_sql_nr[info.db_idx] = info.nr;
-                sscanf(buffer, "%[^.]", last_sql_update[info.db_idx]);
+                if(db_sql_rev_parent[info.db_idx])
+                    snprintf(last_sql_update[info.db_idx], MAX_PATH, "%s_%0*d_%s%s%s", info.parentRev, 2, info.nr, info.db, info.has_table ? "_" : "", info.table);
+                else
+                    sscanf(buffer, "%[^.]", last_sql_update[info.db_idx]);
             }
             new_sql_updates.erase(itr);
         }
@@ -532,50 +547,70 @@ bool convert_sql_updates()
         if(info.db_idx == NUM_DATABASES) return false;
 
         // generating the new name should work for updates with or without a rev
-        char src_file[MAX_PATH], new_name[MAX_PATH], dst_file[MAX_PATH];
+        char src_file[MAX_PATH], new_name[MAX_PATH], new_req_name[MAX_PATH], dst_file[MAX_PATH];
         snprintf(src_file, MAX_PATH, "%s%s/%s", path_prefix, sql_update_dir, itr->c_str());
-        snprintf(new_name, MAX_PATH, "%d_%0*d_%s%s%s", rev, 2, info.nr, info.db, info.has_table ? "_" : "", info.table);
+        snprintf(new_name, MAX_PATH, REV_PRINT "_%s_%0*d_%s%s%s", rev, info.parentRev, 2, info.nr, info.db, info.has_table ? "_" : "", info.table);
         snprintf(dst_file, MAX_PATH, "%s%s/%s.sql", path_prefix, sql_update_dir, new_name);
+
+        if(db_sql_rev_parent[info.db_idx])
+            snprintf(new_req_name, MAX_PATH, "%s_%0*d_%s%s%s", info.parentRev, 2, info.nr, info.db, info.has_table ? "_" : "", info.table);
+        else
+            strncpy(new_req_name, new_name, MAX_PATH);
 
         FILE * fin = fopen( src_file, "r" );
         if(!fin) return false;
-        FILE * fout = fopen( dst_file, "w" );
-        if(!fout) { fclose(fin); return false; }
 
-        // add the update requirements
-        fprintf(fout, "ALTER TABLE %s CHANGE COLUMN required_%s required_%s bit;\n\n",
-            db_version_table[info.db_idx], last_sql_update[info.db_idx], new_name);
+        std::ostringstream out_buff;
 
-        // skip the first one or two lines from the input
-        // if it already contains update requirements
-        if(fgets(buffer, MAX_BUF, fin))
+        // add the update requirements for non-parent-controlled revision sql update
+        if(!db_sql_rev_parent[info.db_idx])
         {
-            char dummy[MAX_BUF];
-            if(sscanf(buffer, "ALTER TABLE %s CHANGE COLUMN required_%s required_%s bit", dummy, dummy, dummy) == 3)
+            // add the update requirements
+            out_buff << "ALTER TABLE " << db_version_table[info.db_idx]
+                     << " CHANGE COLUMN required_" << last_sql_update[info.db_idx]
+                     << " required_" << new_name << " bit;\n\n";
+
+            // skip the first one or two lines from the input
+            // if it already contains update requirements
+            if(fgets(buffer, MAX_BUF, fin))
             {
-                if(fgets(buffer, MAX_BUF, fin) && buffer[0] != '\n')
-                    fputs(buffer, fout);
+                char dummy[MAX_BUF];
+                if(sscanf(buffer, "ALTER TABLE %s CHANGE COLUMN required_%s required_%s bit", dummy, dummy, dummy) == 3)
+                {
+                    if(fgets(buffer, MAX_BUF, fin) && buffer[0] != '\n')
+                        out_buff << buffer;
+                }
+                else
+                    out_buff << buffer;
             }
-            else
-                fputs(buffer, fout);
         }
 
         // copy the rest of the file
-        char c;
-        while( (c = getc(fin)) != EOF )
-            putc(c, fout);
+        while(fgets(buffer, MAX_BUF, fin))
+            out_buff << buffer;
 
         fclose(fin);
+
+        FILE * fout = fopen( dst_file, "w" );
+        if(!fout) { fclose(fin); return false; }
+
+        fprintf(fout, "%s",out_buff.str().c_str());
+
         fclose(fout);
 
         // rename the file in git
         snprintf(cmd, MAX_CMD, "git add %s", dst_file);
         system_switch_index(cmd);
-        snprintf(cmd, MAX_CMD, "git rm --quiet %s", src_file);
-        system_switch_index(cmd);
+
+        // delete src file if it different by name from dst file
+        if(strncmp(src_file,dst_file,MAX_PATH))
+        {
+            snprintf(cmd, MAX_CMD, "git rm --quiet %s", src_file);
+            system_switch_index(cmd);
+        }
 
         // update the last sql update for the current database
-        strncpy(last_sql_update[info.db_idx], new_name, MAX_PATH);
+        strncpy(last_sql_update[info.db_idx], new_req_name, MAX_PATH);
     }
 
     return true;
@@ -607,7 +642,7 @@ bool generate_sql_makefile()
             if(new_sql_updates.find(buffer) != new_sql_updates.end())
             {
                 if(!get_sql_update_info(buffer, info)) return false;
-                snprintf(newname, MAX_PATH, "%d_%0*d_%s%s%s.sql", rev, 2, info.nr, info.db, info.has_table ? "_" : "", info.table);
+                snprintf(newname, MAX_PATH, REV_PRINT "_%s_%0*d_%s%s%s.sql", rev, info.parentRev, 2, info.nr, info.db, info.has_table ? "_" : "", info.table);
                 file_list.insert(newname);
             }
             else
@@ -625,6 +660,7 @@ bool generate_sql_makefile()
 
     fprintf(fout,
         "# Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>\n"
+        "# Copyright (C) 2009-2010 MaNGOSZero <http://github.com/mangoszero/mangoszero/>\n"
         "#\n"
         "# This program is free software; you can redistribute it and/or modify\n"
         "# it under the terms of the GNU General Public License as published by\n"
@@ -719,6 +755,7 @@ bool change_sql_database()
         }
 
         fprintf(fout, "  `required_%s` bit(1) default NULL\n", last_sql_update[i]);
+
         while(fgets(buffer, MAX_BUF, fin))
             fputs(buffer, fout);
 
@@ -855,8 +892,8 @@ int main(int argc, char *argv[])
             local = true;
         else if(strncmp(argv[i], "-f", 2) == 0 || strncmp(argv[i], "--fetch", 7) == 0)
             do_fetch = true;
-        //else if(strncmp(argv[i], "-s", 2) == 0 || strncmp(argv[i], "--sql", 5) == 0)
-        //    do_sql = true;
+        else if(strncmp(argv[i], "-s", 2) == 0 || strncmp(argv[i], "--sql", 5) == 0)
+            do_sql = true;
         else if(strncmp(argv[i], "--branch=", 9) == 0)
             snprintf(remote_branch, MAX_REMOTE, "%s", argv[i] + 9);
         else if(strncmp(argv[i], "-h", 2) == 0 || strncmp(argv[i], "--help", 6) == 0)

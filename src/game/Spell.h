@@ -298,7 +298,7 @@ class Spell
         Spell( Unit* Caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID = ObjectGuid(), Spell** triggeringContainer = NULL );
         ~Spell();
 
-        void prepare(SpellCastTargets * targets, Aura* triggeredByAura = NULL);
+        void prepare(SpellCastTargets const* targets, Aura* triggeredByAura = NULL);
         void cancel();
         void update(uint32 difftime);
         void cast(bool skipCheck = false);
@@ -491,8 +491,6 @@ class Spell
         // Spell target subsystem
         //*****************************************
         // Targets store structures and data
-        uint32 m_countOfHit;
-        uint32 m_countOfMiss;
         struct TargetInfo
         {
             ObjectGuid targetGUID;
@@ -586,7 +584,7 @@ namespace MaNGOS
             for(PlayerMapType::iterator itr=m.begin(); itr != m.end(); ++itr)
             {
                 Player * pPlayer = itr->getSource();
-                if( !pPlayer->isAlive() || pPlayer->isInFlight())
+                if( !pPlayer->isAlive() || pPlayer->IsTaxiFlying())
                     continue;
 
                 if( i_originalCaster->IsFriendlyTo(pPlayer) )

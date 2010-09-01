@@ -110,13 +110,13 @@ void Object::_InitValues()
     m_objectUpdated = false;
 }
 
-void Object::_Create( uint32 guidlow, uint32 entry, HighGuid guidhigh )
+void Object::_Create(uint32 guidlow, uint32 entry, HighGuid guidhigh)
 {
     if(!m_uint32Values)
         _InitValues();
 
-    uint64 guid = MAKE_NEW_GUID(guidlow, entry, guidhigh);
-    SetUInt64Value(OBJECT_FIELD_GUID, guid);
+    ObjectGuid guid = ObjectGuid(guidhigh, entry, guidlow);
+    SetGuidValue(OBJECT_FIELD_GUID, guid);
     SetUInt32Value(OBJECT_FIELD_TYPE, m_objectType);
     m_PackGUID.Set(guid);
 }
@@ -236,7 +236,7 @@ void Object::DestroyForPlayer( Player *target ) const
     ASSERT(target);
 
     WorldPacket data(SMSG_DESTROY_OBJECT, 8);
-    data << uint64(GetGUID());
+    data << GetObjectGuid();
     target->GetSession()->SendPacket( &data );
 }
 
@@ -250,7 +250,7 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint8 updateFlags) const
     {
         if( m_objectTypeId==TYPEID_PLAYER && ((Player*)this)->GetTransport())
         {
-            moveFlags |= 0x02000000;
+            moveFlags |= MOVEFLAG_ONTRANSPORT;
         }
 
         *data << uint32(moveFlags);
@@ -832,7 +832,7 @@ void Object::RemoveByteFlag( uint16 index, uint8 offset, uint8 oldFlag )
 
 bool Object::PrintIndexError(uint32 index, bool set) const
 {
-    sLog.outError("Attempt %s non-existed value field: %u (count: %u) for object typeid: %u type mask: %u",(set ? "set value to" : "get value from"),index,m_valuesCount,GetTypeId(),m_objectType);
+    sLog.outError("Attempt %s nonexistent value field: %u (count: %u) for object typeid: %u type mask: %u",(set ? "set value to" : "get value from"),index,m_valuesCount,GetTypeId(),m_objectType);
 
     // ASSERT must fail after function call
     return false;
@@ -1356,25 +1356,24 @@ void WorldObject::BuildMonsterChat(WorldPacket *data, uint8 msgtype, char const*
 void WorldObject::SendMessageToSet(WorldPacket *data, bool /*bToSelf*/)
 {
     //if object is in world, map for it already created!
-    Map * _map = IsInWorld() ? GetMap() : sMapMgr.FindMap(GetMapId(), GetInstanceId());
-    if(_map)
-        _map->MessageBroadcast(this, data);
+    if (IsInWorld())
+        GetMap()->MessageBroadcast(this, data);
 }
 
 void WorldObject::SendMessageToSetInRange(WorldPacket *data, float dist, bool /*bToSelf*/)
 {
     //if object is in world, map for it already created!
-    if (Map * _map = IsInWorld() ? GetMap() : sMapMgr.FindMap(GetMapId(), GetInstanceId()))
-        _map->MessageDistBroadcast(this, data, dist);
+    if (IsInWorld())
+        GetMap()->MessageDistBroadcast(this, data, dist);
 }
 
 void WorldObject::SendMessageToSetExcept(WorldPacket *data, Player const* skipped_receiver)
 {
     //if object is in world, map for it already created!
-    if (Map * _map = IsInWorld() ? GetMap() : sMapMgr.FindMap(GetMapId(), GetInstanceId()))
+    if (IsInWorld())
     {
         MaNGOS::MessageDelivererExcept notifier(data, skipped_receiver);
-        Cell::VisitWorldObjects(this, notifier, _map->GetVisibilityDistance());
+        Cell::VisitWorldObjects(this, notifier, GetMap()->GetVisibilityDistance());
     }
 }
 
@@ -1648,7 +1647,7 @@ void WorldObject::PlayDistanceSound( uint32 sound_id, Player* target /*= NULL*/ 
 {
     WorldPacket data(SMSG_PLAY_OBJECT_SOUND,4+8);
     data << uint32(sound_id);
-    data << uint64(GetGUID());
+    data << GetObjectGuid();
     if (target)
         target->SendDirectMessage( &data );
     else

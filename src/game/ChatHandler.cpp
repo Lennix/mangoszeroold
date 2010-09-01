@@ -162,7 +162,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if(msg.empty())
                 break;
 
-            if (ChatHandler(this).ParseCommands(msg.c_str()) > 0)
+            if (ChatHandler(this).ParseCommands(msg.c_str()))
                 break;
 
             if (!processChatmessageFurtherAfterSecurityChecks(msg, lang))
@@ -232,7 +232,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if(msg.empty())
                 break;
 
-            if (ChatHandler(this).ParseCommands(msg.c_str()) > 0)
+            if (ChatHandler(this).ParseCommands(msg.c_str()))
                 break;
 
             if (!processChatmessageFurtherAfterSecurityChecks(msg, lang))
@@ -247,7 +247,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
 
             WorldPacket data;
             ChatHandler::FillMessageData(&data, this, CHAT_MSG_PARTY, lang, NULL, 0, msg.c_str(),NULL);
-            group->BroadcastPacket(&data, false, group->GetMemberGroup(GetPlayer()->GetGUID()));
+            group->BroadcastPacket(&data, false, group->GetMemberGroup(GetPlayer()->GetObjectGuid()));
         }
         break;
         case CHAT_MSG_GUILD:
@@ -258,7 +258,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if(msg.empty())
                 break;
 
-            if (ChatHandler(this).ParseCommands(msg.c_str()) > 0)
+            if (ChatHandler(this).ParseCommands(msg.c_str()))
                 break;
 
             if (!processChatmessageFurtherAfterSecurityChecks(msg, lang))
@@ -284,7 +284,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if(msg.empty())
                 break;
 
-            if (ChatHandler(this).ParseCommands(msg.c_str()) > 0)
+            if (ChatHandler(this).ParseCommands(msg.c_str()))
                 break;
 
             if (!processChatmessageFurtherAfterSecurityChecks(msg, lang))
@@ -309,7 +309,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if(msg.empty())
                 break;
 
-            if (ChatHandler(this).ParseCommands(msg.c_str()) > 0)
+            if (ChatHandler(this).ParseCommands(msg.c_str()))
                 break;
 
             if (!processChatmessageFurtherAfterSecurityChecks(msg, lang))
@@ -334,7 +334,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if(msg.empty())
                 break;
 
-            if (ChatHandler(this).ParseCommands(msg.c_str()) > 0)
+            if (ChatHandler(this).ParseCommands(msg.c_str()))
                 break;
 
             if (!processChatmessageFurtherAfterSecurityChecks(msg, lang))
@@ -344,7 +344,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
                 break;
 
             Group *group = GetPlayer()->GetGroup();
-            if(!group || !group->isRaidGroup() || !group->IsLeader(GetPlayer()->GetGUID()))
+            if(!group || !group->isRaidGroup() || !group->IsLeader(GetPlayer()->GetObjectGuid()))
                 return;
 
             WorldPacket data;
@@ -363,7 +363,8 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
                 break;
 
             Group *group = GetPlayer()->GetGroup();
-            if(!group || !group->isRaidGroup() || !(group->IsLeader(GetPlayer()->GetGUID()) || group->IsAssistant(GetPlayer()->GetGUID())))
+            if (!group || !group->isRaidGroup() ||
+                !(group->IsLeader(GetPlayer()->GetObjectGuid()) || group->IsAssistant(GetPlayer()->GetObjectGuid())))
                 return;
 
             WorldPacket data;
@@ -403,7 +404,7 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
                 break;
 
             Group *group = GetPlayer()->GetGroup();
-            if(!group || !group->isRaidGroup() || !group->IsLeader(GetPlayer()->GetGUID()))
+            if (!group || !group->isBGGroup() || !group->IsLeader(GetPlayer()->GetObjectGuid()))
                 return;
 
             WorldPacket data;
@@ -539,9 +540,9 @@ void WorldSession::HandleTextEmoteOpcode( WorldPacket & recv_data )
     if (!em)
         return;
 
-    uint32 emote_anim = em->textid;
+    uint32 emote_id = em->textid;
 
-    switch(emote_anim)
+    switch(emote_id)
     {
         case EMOTE_STATE_SLEEP:
         case EMOTE_STATE_SIT:
@@ -549,7 +550,7 @@ void WorldSession::HandleTextEmoteOpcode( WorldPacket & recv_data )
         case EMOTE_ONESHOT_NONE:
             break;
         default:
-            GetPlayer()->HandleEmoteCommand(emote_anim);
+            GetPlayer()->HandleEmoteCommand(emote_id);
             break;
     }
 
