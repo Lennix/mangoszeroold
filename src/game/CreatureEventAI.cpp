@@ -320,6 +320,17 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
             pHolder.UpdateRepeatTimer(m_creature,event.buffed.repeatMin,event.buffed.repeatMax);
             break;
         }
+        case EVENT_T_MISSING_BUFF:
+        {
+            //Note: checked only aura for effect 0, if need check aura for effect 1/2 then
+            // possible way: pack in event.buffed.amount 2 uint16 (ammount+effectIdx)
+            if(m_creature->GetAuras().count(Unit::spellEffectPair(event.buffed.spellId,EFFECT_INDEX_0)) >= event.buffed.amount)
+                return false;
+
+            //Repeat Timers
+            pHolder.UpdateRepeatTimer(m_creature,event.buffed.repeatMin,event.buffed.repeatMax);
+            break;
+        }
         default:
             sLog.outErrorDb("CreatureEventAI: Creature %u using Event %u has invalid Event Type(%u), missing from ProcessEvent() Switch.", m_creature->GetEntry(), pHolder.Event.event_id, pHolder.Event.event_type);
             break;
