@@ -122,8 +122,8 @@ class ChatHandler
         void CheckIntegrity(ChatCommand *table, ChatCommand *parentCommand);
         ChatCommand* getCommandTable();
 
-	// Heroic Mode
-	bool HandleHeroicCommand(const char* args);
+		// Heroic Mode
+		bool HandleHeroicCommand(char* args);
 
         bool HandleAccountCommand(char* args);
         bool HandleAccountCharactersCommand(char* args);

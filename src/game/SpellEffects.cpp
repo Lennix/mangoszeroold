@@ -3641,7 +3641,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
 					ThreatList const& tList = m_caster->getThreatManager().getThreatList();
 					for (ThreatList::const_iterator i = tList.begin();i != tList.end(); ++i){
-						if (Unit* pUnit = Unit::GetUnit((*m_caster), (*i)->getUnitGuid()))
+						if (Unit* pUnit = m_caster->GetMap()->GetUnit((*i)->getUnitGuid()))
 						{
 							if(pUnit->HasAura(25198))
 								pUnit->CastSpell(m_caster,24323,true);

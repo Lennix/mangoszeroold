@@ -141,7 +141,6 @@ class MANGOS_DLL_SPEC Aura
         void HandleAuraModScale(bool Apply, bool Real);
 		void HandlePeriodicHealthFunnel(bool apply, bool Real);
         void HandlePeriodicManaLeech(bool Apply, bool Real);
-        void HandlePeriodicHealthFunnel(bool apply, bool Real);
         void HandleModCastingSpeed(bool Apply, bool Real);
         void HandleAuraMounted(bool Apply, bool Real);
         void HandleWaterBreathing(bool Apply, bool Real);

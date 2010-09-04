@@ -4056,7 +4056,7 @@ void Player::SetCharmed(bool apply, uint64 casterGUID, uint32 spellID)
 					{
 						ThreatList::const_iterator itr = threatlistOwner.begin();
 						advance(itr,(rand() % (threatlistOwner.size())));
-						if (Unit* pTarget = Unit::GetUnit((*pCaster),(*itr)->getUnitGuid()))
+						if (Unit* pTarget = pCaster->GetMap()->GetUnit((*itr)->getUnitGuid()))
 						{
 							if (pTarget != this && pTarget != pCaster && pTarget->isAlive())
 							{
@@ -4077,7 +4077,7 @@ void Player::SetCharmed(bool apply, uint64 casterGUID, uint32 spellID)
 					{
 						ThreatList::const_iterator itr = threatlist.begin();
 						advance(itr,(rand() % (threatlist.size())));
-						if (Unit* pTarget = Unit::GetUnit((*pCaster),(*itr)->getUnitGuid()))
+						if (Unit* pTarget = pCaster->GetMap()->GetUnit((*itr)->getUnitGuid()))
 						{
 							if (pTarget != this && pTarget != pCaster && pTarget->isAlive())
 							{

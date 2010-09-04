@@ -280,18 +280,12 @@ class MANGOS_DLL_SPEC Group
                 SendUpdate();
         }
 
-<<<<<<< HEAD
-        void SetTargetIcon(uint8 id, uint64 guid);
-		
+        void SetTargetIcon(uint8 id, ObjectGuid targetGuid);
 		// Difficulty
 		uint8 m_difficulty;
 		void SetDifficulty(uint8 difficulty) { m_difficulty = difficulty; };
         uint8 GetDifficulty() { return m_difficulty; }
 
-
-=======
-        void SetTargetIcon(uint8 id, ObjectGuid targetGuid);
->>>>>>> 88844e81a39f92e3bc3e7e5304b23c1eaa02f3f4
         uint16 InInstance();
         bool InCombatToInstance(uint32 instanceId);
         void ResetInstances(uint8 method, Player* SendMsgTo);

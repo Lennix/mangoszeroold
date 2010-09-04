@@ -280,7 +280,7 @@ bool ChatHandler::HandleServerMotdCommand(char* /*args*/)
     return true;
 }
 
-bool ChatHandler::HandleHeroicCommand(const char* /*args*/)
+bool ChatHandler::HandleHeroicCommand(char* /*args*/)
 {
 	if(!m_session)
         return NULL;
@@ -291,7 +291,7 @@ bool ChatHandler::HandleHeroicCommand(const char* /*args*/)
 		return true;
 	}
 
-	if(m_session->GetPlayer()->GetGroup()->GetLeaderGUID() != m_session->GetPlayer()->GetGUID())
+	if(m_session->GetPlayer()->GetGroup()->GetLeaderGuid() != m_session->GetPlayer()->GetGUID())
 	{
 		SendSysMessage("You need to be leader to change heroic mode");
 		return true;

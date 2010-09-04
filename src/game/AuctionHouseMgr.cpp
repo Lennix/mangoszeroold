@@ -725,5 +725,5 @@ void AuctionEntry::SaveToLog() const
     //No SQL injection (no strings)
     CharacterDatabase.PExecute("INSERT INTO auctionhouse_log (id,auctioneerguid,itemguid,item_template,itemowner,buyoutprice,time,buyguid,lastbid,startbid,deposit,location) "
         "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u', '%u')",
-        Id, auctioneer, item_guidlow, item_template, owner, buyout, (uint64)expire_time, bidder, bid, startbid, deposit, GetHouseId());
+        Id, auctionHouseEntry->houseId, item_guidlow, item_template, owner, buyout, (uint64)expire_time, bidder, bid, startbid, deposit, GetHouseId());
 }
