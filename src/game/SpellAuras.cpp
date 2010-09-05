@@ -254,9 +254,9 @@ m_effIndex(eff), m_auraSlot(MAX_AURAS), m_procCharges(0), m_stackAmount(1),
 m_positive(false), m_permanent(false), m_isPeriodic(false), m_isAreaAura(false), m_isPersistent(false), 
 m_isRemovedOnShapeLost(true), m_in_use(false)
 {
-    ASSERT(target);
+    MANGOS_ASSERT(target);
 
-    ASSERT(spellproto && spellproto == sSpellStore.LookupEntry( spellproto->Id ) && "`info` must be pointer to sSpellStore element");
+    MANGOS_ASSERT(spellproto && spellproto == sSpellStore.LookupEntry( spellproto->Id ) && "`info` must be pointer to sSpellStore element");
 
     m_spellProto = spellproto;
 
@@ -344,7 +344,7 @@ Unit *caster, Item* castItem) : Aura(spellproto, eff, currentBasePoints, target,
             break;
         default:
             sLog.outError("Wrong spell effect in AreaAura constructor");
-            ASSERT(false);
+            MANGOS_ASSERT(false);
             break;
     }
 }
@@ -5462,14 +5462,8 @@ void Aura::UnregisterSingleCastAura()
     if (IsSingleTarget())
     {
         if(Unit* caster = GetCaster())
-        {
-            caster->GetSingleCastAuras().remove(this);
-        }
-        else
-        {
-            sLog.outError("Couldn't find the caster of the single target aura (SpellId %u), may crash later!", GetId());
-            //ASSERT(false);
-        }
+            caster->GetSingleCastSpellTargets().erase(Unit::spellEffectPair(GetId(),GetEffIndex()));
+
         m_isSingleTargetAura = false;
     }
 }

@@ -607,9 +607,10 @@ enum SplineFlags
     SPLINEFLAG_WALKMODE       = 0x00000100,
     SPLINEFLAG_FLYING         = 0x00000200,
     // backported flag to preserve compatibility not confirmed by data, but causes no problems
-    SPLINEFLAG_NO_SPLINE      = 0x00000400,               // former: SPLINEFLAG_LEVITATING
-    SPLINEFLAG_UNKNOWN7       = 0x02000000,               // swimming/flying (depends on mob?)
-    SPLINEFLAG_SPLINE         = 0x00002000,               // spline n*(float x,y,z)
+    SPLINEFLAG_NO_SPLINE      = 0x00000400,                 // former: SPLINEFLAG_LEVITATING
+    SPLINEFLAG_FALLING        = 0x00001000,
+    SPLINEFLAG_UNKNOWN7       = 0x02000000,                 // swimming/flying (depends on mob?)
+    SPLINEFLAG_SPLINE         = 0x00002000,                 // spline n*(float x,y,z)
 };
 
 enum SplineType
@@ -967,6 +968,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         typedef std::list<Aura *> AuraList;
         typedef std::list<DiminishingReturn> Diminishing;
         typedef std::set<uint32> ComboPointHolderSet;
+        typedef std::map<spellEffectPair, ObjectGuid> SingleCastSpellTargetMap;
 
         virtual ~Unit ( );
 
@@ -1462,8 +1464,8 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         virtual bool IsVisibleInGridForPlayer(Player* pl) const = 0;
         bool isInvisibleForAlive() const;
 
-        AuraList      & GetSingleCastAuras()       { return m_scAuras; }
-        AuraList const& GetSingleCastAuras() const { return m_scAuras; }
+        SingleCastSpellTargetMap      & GetSingleCastSpellTargets()       { return m_singleCastSpellTargets; }
+        SingleCastSpellTargetMap const& GetSingleCastSpellTargets() const { return m_singleCastSpellTargets; }
         SpellImmuneList m_spellImmune[MAX_SPELL_IMMUNITY];
 
         // Threat related methods
@@ -1643,7 +1645,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         AuraMap::iterator m_AurasUpdateIterator;            // != end() in Unit::m_Auras update and point to next element
         AuraList m_deletedAuras;                            // auras removed while in ApplyModifier and waiting deleted
 
-        AuraList m_scAuras;                                 // casted by unit single per-caster auras
+        SingleCastSpellTargetMap m_singleCastSpellTargets;  // casted by unit single per-caster auras
 
         typedef std::list<uint64> DynObjectGUIDs;
         DynObjectGUIDs m_dynObjGUIDs;
