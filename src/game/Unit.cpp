@@ -9183,9 +9183,13 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
             case SPELL_AURA_DUMMY:
             {
                 DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "ProcDamageAndSpell: casting spell id %u (triggered by %s dummy aura of spell %u)", spellInfo->Id,(isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
-                if (!HandleDummyAuraProc(pTarget, damage, triggeredByAura, procSpell, procFlag, procExtra, cooldown))
-                    continue;
-                break;
+				//Double Check for Nightfall:
+                if (triggeredByAura->GetSpellProto()->Id != 18094 && triggeredByAura->GetSpellProto()->Id != 18095)
+				 {
+                  if (!HandleDummyAuraProc(pTarget, damage, triggeredByAura, procSpell, procFlag, procExtra, cooldown))
+                      continue;
+				  break;
+				 }
             }
             case SPELL_AURA_MOD_HASTE:
             {
@@ -10046,7 +10050,15 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit *pVictim, Aura* aura, SpellEntry con
     if(Player* modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellProto->Id,SPELLMOD_CHANCE_OF_SUCCESS,chance);
 
-    return roll_chance_f(chance);
+	if (roll_chance_f(chance) == true)
+	{
+	  //Special Case: Warlock talent Nightfall
+	  if (aura->GetSpellProto()->Id == 18094 || aura->GetSpellProto()->Id == 18095)   
+	   this->HandleDummyAuraProc(pVictim,0,aura,procSpell,procFlag,procExtra,0);
+      return true;
+	}
+	else
+      return false;
 }
 
 void Unit::RemoveAurasAtMechanicImmunity(uint32 mechMask, uint32 exceptSpellId, bool non_positive /*= false*/)
