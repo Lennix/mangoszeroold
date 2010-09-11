@@ -2497,9 +2497,9 @@ float Unit::MeleeMissChanceCalc(const Unit *pVictim, WeaponAttackType attType) c
             }
         }
         if (isNormal || m_currentSpells[CURRENT_MELEE_SPELL])
-            misschance = 5.0f;
+          misschance = 5.0f;
         else
-            misschance = 24.0f;
+          misschance = 24.0f;
     }
 
     // PvP : PvE melee misschances per leveldif > 2
