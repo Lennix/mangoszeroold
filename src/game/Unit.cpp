@@ -2640,23 +2640,27 @@ float Unit::GetUnitBlockChance() const
 float Unit::GetUnitCriticalChance(WeaponAttackType attackType, const Unit *pVictim) const
 {
     float crit;
+	//custom check for ranged attack, because attackType always returns BASE_ATTACK
+    bool* ranged = new bool;
+	*ranged = ((this->GetDistance(pVictim)) > 6);
 
     if(GetTypeId() == TYPEID_PLAYER)
     {
-        switch(attackType)
+	  if (*ranged == true)
+        crit = GetFloatValue( PLAYER_RANGED_CRIT_PERCENTAGE );
+	  else
+	  {
+	   switch(attackType)
         {
-            case OFF_ATTACK:
-            case BASE_ATTACK:
-                crit = GetFloatValue( PLAYER_CRIT_PERCENTAGE );
-                break;
-            case RANGED_ATTACK:
-                crit = GetFloatValue( PLAYER_RANGED_CRIT_PERCENTAGE );
-                break;
-                // Just for good manner
-            default:
-                crit = 0.0f;
-                break;
+          case OFF_ATTACK:
+          case BASE_ATTACK:
+              crit = GetFloatValue( PLAYER_CRIT_PERCENTAGE );
+              break;
+          default:
+              crit = 0.0f;
+              break;
         }
+	  }
     }
     else
     {
@@ -2665,7 +2669,7 @@ float Unit::GetUnitCriticalChance(WeaponAttackType attackType, const Unit *pVict
     }
 
     // flat aura mods
-    if(attackType == RANGED_ATTACK)
+    if (*ranged == true)
         crit += pVictim->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_RANGED_CRIT_CHANCE);
     else
         crit += pVictim->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_MELEE_CRIT_CHANCE);
@@ -2675,6 +2679,7 @@ float Unit::GetUnitCriticalChance(WeaponAttackType attackType, const Unit *pVict
 
     if (crit < 0.0f)
         crit = 0.0f;
+	delete ranged;
     return crit;
 }
 
