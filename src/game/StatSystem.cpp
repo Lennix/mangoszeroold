@@ -451,12 +451,14 @@ void Player::UpdateCritPercentage(WeaponAttackType attType)
         default:
             return;
     }
-    //Introducing a base crit of 0.15% doesnt have a noticeable effect but might help some addons
-	//like theory craft to work correctly. Crit chance for a lvl 60 with 300/300 weapon skill is blizzlike.
-    float value = GetTotalPercentageModValue(modGroup)+0.15f;
+
+    float value = GetTotalPercentageModValue(modGroup);
+	//5% base crit for ranged:
+	if (attType == RANGED_ATTACK)
+	  value += 5.0f;
     // Modify crit from weapon skill and maximized defense skill of same level victim difference
     value += (int32(GetWeaponSkillValue(attType)) - int32(GetMaxSkillValueForLevel())) * 0.04f;
-    value = value < 0.15f ? 0.15f : value;
+    value = value < 0.0f ? 0.0f : value;
     SetStatFloatValue(index, value);
 }
 
