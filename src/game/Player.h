@@ -807,6 +807,10 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void CleanupsBeforeDelete();
 
+		uint32 m_LavaTimer;
+		void SetLavaTimer(uint32 val) {m_LavaTimer = val;}
+		uint32 GetLavaTimer() {return m_LavaTimer;}
+
         static UpdateMask updateVisualBits;
         static void InitVisibleBits();
 
