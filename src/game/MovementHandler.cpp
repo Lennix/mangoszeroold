@@ -292,8 +292,25 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         plMover->HandleFall(movementInfo);
 
     //lava damage in mc
-    if ((opcode == MSG_MOVE_START_SWIM) && (plMover->GetBaseMap()->GetId() == 409))
-        plMover->DealDamage(plMover,400,NULL,DIRECT_DAMAGE,SPELL_SCHOOL_MASK_FIRE,NULL,false);
+	 if (plMover->GetBaseMap()->GetId() == 409)
+	 {
+	    if (plMover->GetLavaTimer() < 5)
+		{
+		  if ((opcode == MSG_MOVE_START_SWIM) || (plMover->IsInWater()))
+		  {
+           plMover->DealDamage(plMover,400,NULL,DIRECT_DAMAGE,SPELL_SCHOOL_MASK_FIRE,NULL,false);
+	       plMover->SetLavaTimer(3000);
+		  }
+		}
+		else
+		{
+		 //it takes about 3 seconds of movement for the timer to be ready again
+		 if (plMover->GetLavaTimer() > 400)
+          plMover->SetLavaTimer((plMover->GetLavaTimer())-400);
+		 else
+		  plMover->SetLavaTimer(1);
+		}
+	 }
 
     if (plMover && (movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) != plMover->IsInWater()))
     {
