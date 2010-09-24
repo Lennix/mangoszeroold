@@ -3763,12 +3763,14 @@ void Aura::HandlePeriodicLeech(bool apply, bool /*Real*/)
 {
     m_isPeriodic = apply;
 	
-	Unit *caster = GetCaster();
-    if (!caster)
-       return;
+	// Es benutzen noch andere diese Aura
+	// Hakkar "Stun" woanders implementieren
+	//Unit *caster = GetCaster();
+ //   if (!caster)
+ //      return;
 
-	if(caster->GetTypeId() == TYPEID_PLAYER)
-		((Player*)caster)->SetClientControl(caster,!apply);
+	//if(caster->GetTypeId() == TYPEID_PLAYER)
+	//	((Player*)caster)->SetClientControl(caster,!apply);
 }
 
 void Aura::HandlePeriodicManaLeech(bool apply, bool /*Real*/)

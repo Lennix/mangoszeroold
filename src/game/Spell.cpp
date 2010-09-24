@@ -2394,13 +2394,6 @@ void Spell::cast(bool skipCheck)
 
 void Spell::handle_immediate()
 {
-	int32 duration = GetSpellDuration(m_spellInfo);
-	if(duration)
-	{
-		if(Player* modOwner = m_caster->GetSpellModOwner())
-			modOwner->ApplySpellMod(m_spellInfo->Id,SPELLMOD_DURATION, duration);
-	}
-
     // start channeling if applicable
     if(IsChanneledSpell(m_spellInfo))
     {
