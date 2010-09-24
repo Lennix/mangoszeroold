@@ -62,7 +62,7 @@ class BattleGroundQueue
         void Update(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id);
 
         GroupQueueInfo * AddGroup(Player * leader, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id);
-        void AddPlayer(Player *plr, GroupQueueInfo *ginfo);
+        void AddPlayer(Player *plr, GroupQueueInfo *ginfo, BattleGroundBracketId bracket_id);
         void RemovePlayer(const uint64& guid, bool decreaseInvitedCount);
         void DecreaseGroupLength(uint32 queueId, uint32 AsGroup);
         void BGEndedRemoveInvites(BattleGround * bg);
@@ -241,7 +241,7 @@ class BattleGroundMgr
         bool isTesting() const { return m_Testing; }
 
         static BattleGroundQueueTypeId BGQueueTypeId(BattleGroundTypeId bgTypeId);
-        static BattleGroundTypeId BGTemplateId(uint32 bgQueueTypeId);
+        static BattleGroundTypeId BGTemplateId(BattleGroundQueueTypeId bgQueueTypeId);
 
         static HolidayIds BGTypeToWeekendHolidayId(BattleGroundTypeId bgTypeId);
         static BattleGroundTypeId WeekendHolidayIdToBGType(HolidayIds holiday);

@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `character_db_version`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `character_db_version` (
-  `required_z0801_s0114_01_characters_character_ticket` bit(1) default NULL
+  `required_z0889_s0224_02_characters_gameobject_respawn` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Last applied sql update to DB';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -144,6 +144,13 @@ CREATE TABLE `characters` (
   `stored_honor_rating` FLOAT NOT NULL DEFAULT '0',
   `stored_dishonorable_kills` INT(11) NOT NULL DEFAULT '0',
   `stored_honorable_kills` INT(11) NOT NULL DEFAULT '0',
+  `bgid` int(10) unsigned NOT NULL default '0',
+  `bgteam` int(10) unsigned NOT NULL default '0',
+  `bgmap` int(10) unsigned NOT NULL default '0',
+  `bgx` float NOT NULL default '0',
+  `bgy` float NOT NULL default '0',
+  `bgz` float NOT NULL default '0',
+  `bgo` float NOT NULL default '0',
   `deleteInfos_Account` int(11) UNSIGNED default NULL,
   `deleteInfos_Name` varchar(12) default NULL,
   `deleteDate` bigint(20) default NULL,
@@ -696,6 +703,50 @@ CREATE TABLE `corpse` (
 LOCK TABLES `corpse` WRITE;
 /*!40000 ALTER TABLE `corpse` DISABLE KEYS */;
 /*!40000 ALTER TABLE `corpse` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `creature_respawn`
+--
+
+DROP TABLE IF EXISTS `creature_respawn`;
+CREATE TABLE `creature_respawn` (
+  `guid` int(10) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier',
+  `respawntime` bigint(20) NOT NULL default '0',
+  `instance` mediumint(8) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`guid`,`instance`),
+  KEY `instance` (`instance`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Grid Loading System';
+
+--
+-- Dumping data for table `creature_respawn`
+--
+
+LOCK TABLES `creature_respawn` WRITE;
+/*!40000 ALTER TABLE `creature_respawn` DISABLE KEYS */;
+/*!40000 ALTER TABLE `creature_respawn` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `gameobject_respawn`
+--
+
+DROP TABLE IF EXISTS `gameobject_respawn`;
+CREATE TABLE `gameobject_respawn` (
+  `guid` int(10) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier',
+  `respawntime` bigint(20) NOT NULL default '0',
+  `instance` mediumint(8) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`guid`,`instance`),
+  KEY `instance` (`instance`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Grid Loading System';
+
+--
+-- Dumping data for table `gameobject_respawn`
+--
+
+LOCK TABLES `gameobject_respawn` WRITE;
+/*!40000 ALTER TABLE `gameobject_respawn` DISABLE KEYS */;
+/*!40000 ALTER TABLE `gameobject_respawn` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

@@ -149,7 +149,15 @@ pkgdata_DATA = \
 	z0803_s0116_01_mangos_creature_movement_template.sql \
 	z0817_xxxxx_01_mangos_game_event.sql \
 	z0830_s0148_01_mangos_spell_chain.sql \
-	z0831_s0150_01_mangos_spell_chain.sql
+	z0831_s0150_01_mangos_spell_chain.sql \
+	z0853_xxxxx_01_mangos_creature_template.sql \
+	z0869_s0190_02_mangos_spell_bonus_data.sql \
+	z0876_s0201_01_characters_characters.sql \
+	z0888_s0221_01_mangos_scripts.sql \
+	z0889_s0224_01_characters_creature_respawn.sql \
+	z0889_s0224_02_characters_gameobject_respawn.sql \
+	z0889_s0224_03_mangos_creature_respawn.sql \
+	z0889_s0224_04_mangos_gameobject_respawn.sql
 
 ## Additional files to include when running 'make dist'
 #  SQL update files, to upgrade database schema from older revisions
@@ -277,4 +285,12 @@ EXTRA_DIST = \
 	z0803_s0116_01_mangos_creature_movement_template.sql \
 	z0817_xxxxx_01_mangos_game_event.sql \
 	z0830_s0148_01_mangos_spell_chain.sql \
-	z0831_s0150_01_mangos_spell_chain.sql
+	z0831_s0150_01_mangos_spell_chain.sql \
+	z0853_xxxxx_01_mangos_creature_template.sql \
+	z0869_s0190_02_mangos_spell_bonus_data.sql \
+	z0876_s0201_01_characters_characters.sql \
+	z0888_s0221_01_mangos_scripts.sql \
+	z0889_s0224_01_characters_creature_respawn.sql \
+	z0889_s0224_02_characters_gameobject_respawn.sql \
+	z0889_s0224_03_mangos_creature_respawn.sql \
+	z0889_s0224_04_mangos_gameobject_respawn.sql

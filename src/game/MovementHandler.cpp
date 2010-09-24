@@ -89,6 +89,27 @@ void WorldSession::HandleMoveWorldportAckOpcode()
         GetPlayer()->TeleportToHomebind();
         return;
     }
+
+    // battleground state prepare (in case join to BG), at relogin/tele player not invited
+    // only add to bg group and object, if the player was invited (else he entered through command)
+    if(_player->InBattleGround())
+    {
+        // cleanup seting if outdated
+        if(!mEntry->IsBattleGround())
+        {
+            // Do next only if found in battleground
+            _player->SetBattleGroundId(0);                          // We're not in BG.
+            // reset destination bg team
+            _player->SetBGTeam(0);
+        }
+        // join to bg case
+        else if(BattleGround *bg = _player->GetBattleGround())
+        {
+            if(_player->IsInvitedForBattleGroundInstance(_player->GetBattleGroundId()))
+                bg->AddPlayer(_player);
+        }
+    }
+
     GetPlayer()->SendInitialPacketsAfterAddToMap();
 
     // flight fast teleport case
@@ -131,34 +152,6 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     if(!mEntry->IsMountAllowed())
         _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
 
-    // battleground state prepare
-    // only add to bg group and object, if the player was invited (else he entered through command)
-    if(_player->InBattleGround() && _player->IsInvitedForBattleGroundInstance(_player->GetBattleGroundId()))
-    {
-        BattleGround *bg = _player->GetBattleGround();
-        if(bg)
-        {
-            bg->AddPlayer(_player);
-            if(bg->GetMapId() == _player->GetMapId())       // we teleported to bg
-            {
-                // get the team this way, because arenas might 'override' the teams.
-                uint32 team = bg->GetPlayerTeam(_player->GetGUID());
-                if(!team)
-                    team = _player->GetTeam();
-                if(!bg->GetBgRaid(team))      // first player joined
-                {
-                    Group *group = new Group;
-                    bg->SetBgRaid(team, group);
-                    group->Create(_player->GetObjectGuid(), _player->GetName());
-                }
-                else                                        // raid already exist
-                {
-                    bg->GetBgRaid(team)->AddMember(_player->GetObjectGuid(), _player->GetName());
-                }
-            }
-        }
-    }
-
     // honorless target
     if(GetPlayer()->pvpInfo.inHostileArea)
         GetPlayer()->CastSpell(GetPlayer(), 2479, true);
@@ -170,7 +163,7 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     GetPlayer()->ProcessDelayedOperations();
 }
 
-void WorldSession::HandleMoveTeleportAck(WorldPacket& recv_data)
+void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("MSG_MOVE_TELEPORT_ACK");
 
@@ -379,7 +372,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     }
 }
 
-void WorldSession::HandleForceSpeedChangeAck(WorldPacket &recv_data)
+void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket &recv_data)
 {
     uint32 opcode = recv_data.GetOpcode();
     DEBUG_LOG("WORLD: Recvd %s (%u, 0x%X) opcode", LookupOpcodeName(opcode), opcode, opcode);
@@ -460,6 +453,30 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket &recv_data)
     }
 }
 
+void WorldSession::HandleMoveNotActiveMoverOpcode(WorldPacket &recv_data)
+{
+    DEBUG_LOG("WORLD: Recvd CMSG_MOVE_NOT_ACTIVE_MOVER");
+    recv_data.hexlike();
+
+    ObjectGuid old_mover_guid;
+    MovementInfo mi;
+
+    recv_data >> old_mover_guid.ReadAsPacked();
+    recv_data >> mi;
+
+    if(_player->GetMover()->GetObjectGuid() == old_mover_guid)
+    {
+        sLog.outError("HandleMoveNotActiveMover: incorrect mover guid: mover is %s and should be %s instead of %s",
+            _player->GetMover()->GetObjectGuid().GetString().c_str(),
+            _player->GetObjectGuid().GetString().c_str(),
+            old_mover_guid.GetString().c_str());
+        recv_data.rpos(recv_data.wpos());                   // prevent warnings spam
+        return;
+    }
+
+    _player->m_movementInfo = mi;
+}
+
 void WorldSession::HandleMountSpecialAnimOpcode(WorldPacket& /*recvdata*/)
 {
     //DEBUG_LOG("WORLD: Recvd CMSG_MOUNTSPECIAL_ANIM");
@@ -510,13 +527,8 @@ void WorldSession::HandleSummonResponseOpcode(WorldPacket& recv_data)
     if(!_player->isAlive() || _player->isInCombat() )
         return;
 
-    uint32 summoner_guid;
-    bool agree;
+    uint64 summoner_guid;
     recv_data >> summoner_guid;
-    recv_data >> agree;
 
-	// If summon is canceled, no response is sent - so we can set agree to true
-	agree = true;
-
-    _player->SummonIfPossible(agree);
+    _player->SummonIfPossible(true);
 }

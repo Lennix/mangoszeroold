@@ -139,16 +139,8 @@ enum BattleGroundQueueTypeId
 
 enum BattleGroundBracketId                                  // bracketId for level ranges
 {
-    BG_BRACKET_ID_FIRST          = 0,
-
-    BG_BRACKET_ID_MAX_LEVEL_19   = 0,
-    BG_BRACKET_ID_MAX_LEVEL_29   = 1,
-    BG_BRACKET_ID_MAX_LEVEL_39   = 2,
-    BG_BRACKET_ID_MAX_LEVEL_49   = 3,
-    BG_BRACKET_ID_MAX_LEVEL_59   = 4,
-    BG_BRACKET_ID_MAX_LEVEL_60   = 5,
-
-    BG_BRACKET_ID_LAST           = 5,
+    BG_BRACKET_ID_FIRST          = 0,                       // brackets start from specific BG min level and each include 10 levels range
+    BG_BRACKET_ID_LAST           = 5,                       // so for start level 10 will be 10-19, 20-29, ...  all greater max bg level included in last bracket
 
     MAX_BATTLEGROUND_BRACKETS    = 6                        // used as one from values, so in enum
 };
@@ -237,10 +229,7 @@ class BattleGround
         {
             return true;
         }
-        void Reset();                                       // resets all common properties for battlegrounds
-        virtual void ResetBGSubclass()                      // must be implemented in BG subclass
-        {
-        }
+        virtual void Reset();                               // resets all common properties for battlegrounds, must be implemented and called in BG subclass
 
         /* Battleground */
         // Get methods:
@@ -398,6 +387,8 @@ class BattleGround
 
         virtual void AddPlayer(Player *plr);                // must be implemented in BG subclass
 
+        void AddOrSetPlayerToCorrectBgGroup(Player *plr, ObjectGuid plr_guid, uint32 team);
+
         virtual void RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPacket);
                                                             // can be extended in in BG subclass
 
@@ -444,6 +435,8 @@ class BattleGround
         // since arenas can be AvA or Hvh, we have to get the "temporary" team of a player
         uint32 GetPlayerTeam(uint64 guid);
         uint32 GetOtherTeam(uint32 teamId){ return (teamId) ? ((teamId == ALLIANCE) ? HORDE : ALLIANCE) : 0; }
+        bool IsPlayerInBattleGround(uint64 guid);
+        void PlayerRelogin(Player* plr);
 
         void SetDeleteThis() {m_SetDeleteThis = true;}
 

@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
-  `required_z0831_s0150_01_mangos_spell_chain` bit(1) default NULL
+  `required_z0889_s0224_04_mangos_gameobject_respawn` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -977,10 +977,14 @@ CREATE TABLE `creature_movement_scripts` (
   `datalong4` int(10) unsigned NOT NULL default '0',
   `data_flags` tinyint(3) unsigned NOT NULL default '0',
   `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
   `x` float NOT NULL default '0',
   `y` float NOT NULL default '0',
   `z` float NOT NULL default '0',
-  `o` float NOT NULL default '0'
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
@@ -1080,31 +1084,6 @@ CREATE TABLE `creature_questrelation` (
 LOCK TABLES `creature_questrelation` WRITE;
 /*!40000 ALTER TABLE `creature_questrelation` DISABLE KEYS */;
 /*!40000 ALTER TABLE `creature_questrelation` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `creature_respawn`
---
-
-DROP TABLE IF EXISTS `creature_respawn`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `creature_respawn` (
-  `guid` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Global Unique Identifier',
-  `respawntime` bigint(20) NOT NULL DEFAULT '0',
-  `instance` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  PRIMARY KEY (`guid`,`instance`),
-  KEY `instance` (`instance`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Grid Loading System';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `creature_respawn`
---
-
-LOCK TABLES `creature_respawn` WRITE;
-/*!40000 ALTER TABLE `creature_respawn` DISABLE KEYS */;
-/*!40000 ALTER TABLE `creature_respawn` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1412,10 +1391,14 @@ CREATE TABLE `event_scripts` (
   `datalong4` int(10) unsigned NOT NULL default '0',
   `data_flags` tinyint(3) unsigned NOT NULL default '0',
   `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
   `x` float NOT NULL default '0',
   `y` float NOT NULL default '0',
   `z` float NOT NULL default '0',
-  `o` float NOT NULL default '0'
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1913,31 +1896,6 @@ LOCK TABLES `gameobject_questrelation` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `gameobject_respawn`
---
-
-DROP TABLE IF EXISTS `gameobject_respawn`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `gameobject_respawn` (
-  `guid` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Global Unique Identifier',
-  `respawntime` bigint(20) NOT NULL DEFAULT '0',
-  `instance` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  PRIMARY KEY (`guid`,`instance`),
-  KEY `instance` (`instance`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Grid Loading System';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `gameobject_respawn`
---
-
-LOCK TABLES `gameobject_respawn` WRITE;
-/*!40000 ALTER TABLE `gameobject_respawn` DISABLE KEYS */;
-/*!40000 ALTER TABLE `gameobject_respawn` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `gameobject_scripts`
 --
 
@@ -1954,10 +1912,14 @@ CREATE TABLE `gameobject_scripts` (
   `datalong4` int(10) unsigned NOT NULL default '0',
   `data_flags` tinyint(3) unsigned NOT NULL default '0',
   `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
   `x` float NOT NULL default '0',
   `y` float NOT NULL default '0',
   `z` float NOT NULL default '0',
-  `o` float NOT NULL default '0'
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -2123,10 +2085,14 @@ CREATE TABLE `gossip_scripts` (
   `datalong4` int(10) unsigned NOT NULL default '0',
   `data_flags` tinyint(3) unsigned NOT NULL default '0',
   `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
   `x` float NOT NULL default '0',
   `y` float NOT NULL default '0',
   `z` float NOT NULL default '0',
-  `o` float NOT NULL default '0'
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
@@ -9438,10 +9404,14 @@ CREATE TABLE `quest_end_scripts` (
   `datalong4` int(10) unsigned NOT NULL default '0',
   `data_flags` tinyint(3) unsigned NOT NULL default '0',
   `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
   `x` float NOT NULL default '0',
   `y` float NOT NULL default '0',
   `z` float NOT NULL default '0',
-  `o` float NOT NULL default '0'
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -9471,10 +9441,14 @@ CREATE TABLE `quest_start_scripts` (
   `datalong4` int(10) unsigned NOT NULL default '0',
   `data_flags` tinyint(3) unsigned NOT NULL default '0',
   `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
   `x` float NOT NULL default '0',
   `y` float NOT NULL default '0',
   `z` float NOT NULL default '0',
-  `o` float NOT NULL default '0'
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -12829,6 +12803,160 @@ INSERT INTO `spell_proc_event` VALUES
 UNLOCK TABLES;
 
 --
+-- Table structure for spell_bonus_data
+--
+DROP TABLE IF EXISTS `spell_bonus_data`;
+CREATE TABLE `spell_bonus_data` (
+  `entry` smallint(5) unsigned NOT NULL,
+  `direct_bonus` float NOT NULL default '0',
+  `dot_bonus` float NOT NULL default '0',
+  `ap_bonus` float NOT NULL default '0',
+  `comments` varchar(255) default NULL,
+  PRIMARY KEY  (`entry`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+LOCK TABLES `spell_bonus_data` WRITE;
+/*!40000 ALTER TABLE `spell_bonus_data` DISABLE KEYS */;
+INSERT INTO `spell_bonus_data` VALUES
+/* Druid */
+(339,   0,      0.1,     0,     'Druid - Entangling Roots'),
+(5185,  1.6104, 0,       0,     'Druid - Healing Touch'),
+(5570,  0,      0.127,   0,     'Druid - Insect Swarm'),
+(8921,  0.1515, 0.13,    0,     'Druid - Moonfire'),
+(8936,  0.539,  0.188,   0,     'Druid - Regrowth'),
+(774,   0,      0.37604, 0,     'Druid - Rejuvenation'),
+(2912,  1,      0,       0,     'Druid - Starfire'),
+(18562, 0,      0,       0,     'Druid - Swiftmend'),
+(5176,  0.5714, 0,       0,     'Druid - Wrath'),
+/* Mage */
+(1449,  0.2128, 0,       0,     'Mage - Arcane Explosion'),
+(7268,  0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 1'),
+(7269,  0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 2'),
+(7270,  0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 3'),
+(8419,  0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 4'),
+(8418,  0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 5'),
+(10273, 0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 6'),
+(10274, 0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 7'),
+(25346, 0.2857, 0,       0,     'Mage - Arcane Missiles Triggered Spell Rank 8'),
+(11113, 0.1357, 0,       0,     'Mage - Blast Wave Rank'),
+(120,   0.1357, 0,       0,     'Mage - Cone of Cold'),
+(2136,  0.4286, 0,       0,     'Mage - Fire Blast'),
+(133,   1,      0,       0,     'Mage - Fire Ball'),
+(2120,  0.2357, 0.122,   0,     'Mage - Flamestrike'),
+(122,   0.193,  0,       0,     'Mage - Frost Nova'),
+(116,   0.8143, 0,       0,     'Mage - Frost Bolt'),
+(11426, 0.8053, 0,       0,     'Mage - Ice Barrier'),
+(1463,  0.8053, 0,       0,     'Mage - Mana Shield'),
+(11366, 1.15,   0.05,    0,     'Mage - Pyroblast'),
+(2948,  0.4286, 0,       0,     'Mage - Scorch'),
+/* Paladin */
+(26573, 0,      0.04,    0.04,  'Paladin - Consecration'),
+(879,   0.15,   0,       0.15,  'Paladin - Exorcism'),
+(19750, 0.4286, 0,       0,     'Paladin - Flash of Light'),
+(635,   0.7143, 0,       0,     'Paladin - Holy Light'),
+(25912, 0.4286, 0,       0,     'Paladin - Holy Shock Triggered Hurt Rank 1'),
+(25911, 0.4286, 0,       0,     'Paladin - Holy Shock Triggered Hurt Rank 2'),
+(25902, 0.4286, 0,       0,     'Paladin - Holy Shock Triggered Hurt Rank 3'),
+(25914, 0.4286, 0,       0,     'Paladin - Holy Shock Triggered Heal Rank 1'),
+(25913, 0.4286, 0,       0,     'Paladin - Holy Shock Triggered Heal Rank 2'),
+(25903, 0.4286, 0,       0,     'Paladin - Holy Shock Triggered Heal Rank 3'),
+(24275, 0.15,   0,       0.15,  'Paladin - Hammer of Wrath'),
+(20925, 0.09,   0,       0.056, 'Paladin - Holy Shield'),
+(2812,  0.07,   0,       0.07,  'Paladin - Holy Wrath'),
+(20424, 0.25,   0,       0.16,  'Paladin - Seal of Command Proc'),
+(20167, 0.25,   0,       0.16,  'Paladin - Seal of Light Proc'),
+(25742, 0.07,   0,       0.039, 'Paladin - Seal of Righteousness Dummy Proc'),
+/* Priest */
+(13908, 0.8068, 0,       0,     'Priest - Desperate Prayer'),
+(2944,  0.1849, 0,       0,     'Priest - Devouring Plague'),
+(379,   0,      0,       0,     'Shaman - Earth Shield Triggered'),
+(2061,  0.8068, 0,       0,     'Priest - Flash Heal'),
+(2060,  1.6135, 0,       0,     'Priest - Greater Heal'),
+(14914, 0.5711, 0.024,   0,     'Priest - Holy Fire'),
+(15237, 0.1606, 0,       0,     'Priest - Holy Nova Damage'),
+(23455, 0.3035, 0,       0,     'Priest - Holy Nova Heal Rank 1'),
+(23458, 0.3035, 0,       0,     'Priest - Holy Nova Heal Rank 2'),
+(23459, 0.3035, 0,       0,     'Priest - Holy Nova Heal Rank 3'),
+(27803, 0.3035, 0,       0,     'Priest - Holy Nova Heal Rank 4'),
+(27804, 0.3035, 0,       0,     'Priest - Holy Nova Heal Rank 5'),
+(27805, 0.3035, 0,       0,     'Priest - Holy Nova Heal Rank 6'),
+(8129,  0,      0,       0,     'Priest - Mana Burn'),
+(8092,  0.4296, 0,       0,     'Priest - Mind Blast'),
+(15407, 0.257,  0,       0,     'Priest - Mind Flay'),
+(17,    0.8068, 0,       0,     'Priest - Power Word: Shield'),
+(596,   0.8086, 0,       0,     'Priest - Prayer of Healing'),
+(139,   0,      0.376,   0,     'Priest - Renew'),
+(589,   0,      0.1829,  0,     'Priest - Shadow Word: Pain'),
+(585,   0.714,  0,       0,     'Priest - Smite'),
+/* Shaman */
+(1064,  1.34,   0,       0,     'Shaman - Chain Heal'),
+(421,   0.57,   0,       0,     'Shaman - Chain Lightning'),
+(974,   0.4762, 0,       0,     'Shaman - Earth Shield'),
+(8042,  0.3858, 0,       0,     'Shaman - Earth Shock'),
+(8443,  0.2142, 0,       0,     'Shaman - Fire Nova Totem Casted by Totem Rank 1'),
+(8504,  0.2142, 0,       0,     'Shaman - Fire Nova Totem Casted by Totem Rank 2'),
+(8505,  0.2142, 0,       0,     'Shaman - Fire Nova Totem Casted by Totem Rank 3'),
+(11310, 0.2142, 0,       0,     'Shaman - Fire Nova Totem Casted by Totem Rank 4'),
+(11311, 0.2142, 0,       0,     'Shaman - Fire Nova Totem Casted by Totem Rank 5'),
+(8050,  0.2142, 0.1,     0,     'Shaman - Flame Shock'),
+(8026,  0.1,    0,       0,     'Shaman - Flametongue Weapon Proc Rank 1'),
+(8028,  0.1,    0,       0,     'Shaman - Flametongue Weapon Proc Rank 2'),
+(8029,  0.1,    0,       0,     'Shaman - Flametongue Weapon Proc Rank 3'),
+(10445, 0.1,    0,       0,     'Shaman - Flametongue Weapon Proc Rank 4'),
+(16343, 0.1,    0,       0,     'Shaman - Flametongue Weapon Proc Rank 5'),
+(16344, 0.1,    0,       0,     'Shaman - Flametongue Weapon Proc Rank 6'),
+(8056,  0.3858, 0,       0,     'Shaman - Frost Shock'),
+(8034,  0.1,    0,       0,     'Shaman - Frostbrand Attack Rank 1'),
+(8037,  0.1,    0,       0,     'Shaman - Frostbrand Attack Rank 2'),
+(10458, 0.1,    0,       0,     'Shaman - Frostbrand Attack Rank 3'),
+(16352, 0.1,    0,       0,     'Shaman - Frostbrand Attack Rank 4'),
+(16353, 0.1,    0,       0,     'Shaman - Frostbrand Attack Rank 5'),
+(331,   1.6106, 0,       0,     'Shaman - Healing Wave'),
+(8004,  0.8082, 0,       0,     'Shaman - Lesser Healing Wave'),
+(403,   0.7143, 0,       0,     'Shaman - Lightning Bolt'),
+(26364, 0.33,   0,       0,     'Shaman - Lightning Shield Proc Rank 1'),
+(26365, 0.33,   0,       0,     'Shaman - Lightning Shield Proc Rank 2'),
+(26366, 0.33,   0,       0,     'Shaman - Lightning Shield Proc Rank 3'),
+(26367, 0.33,   0,       0,     'Shaman - Lightning Shield Proc Rank 4'),
+(26369, 0.33,   0,       0,     'Shaman - Lightning Shield Proc Rank 5'),
+(26370, 0.33,   0,       0,     'Shaman - Lightning Shield Proc Rank 6'),
+(26363, 0.33,   0,       0,     'Shaman - Lightning Shield Proc Rank 7'),
+(8188,  0.1,    0,       0,     'Shaman - Magma Totam Passive Rank 1'),
+(10582, 0.1,    0,       0,     'Shaman - Magma Totam Passive Rank 2'),
+(10583, 0.1,    0,       0,     'Shaman - Magma Totam Passive Rank 3'),
+(10584, 0.1,    0,       0,     'Shaman - Magma Totam Passive Rank 4'),
+(3606,  0.1667, 0,       0,     'Shaman - Searing Totem Attack Rank 1'),
+(6350,  0.1667, 0,       0,     'Shaman - Searing Totem Attack Rank 2'),
+(6351,  0.1667, 0,       0,     'Shaman - Searing Totem Attack Rank 3'),
+(6352,  0.1667, 0,       0,     'Shaman - Searing Totem Attack Rank 4'),
+(10435, 0.1667, 0,       0,     'Shaman - Searing Totem Attack Rank 5'),
+(10436, 0.1667, 0,       0,     'Shaman - Searing Totem Attack Rank 6'),
+/* Warlock */
+(17962, 0.4286, 0,       0,     'Warlock - Conflagrate'),
+(172,   0,      0.3,     0,     'Warlock - Corruption'),
+(980,   0,      0.1,     0,     'Warlock - Curse of Agony'),
+(603,   0,      2,       0,     'Warlock - Curse of Doom'),
+(18220, 0.96,   0,       0,     'Warlock - Dark Pact'),
+(6789,  0.22,   0,       0,     'Warlock - Death Coil'),
+(689,   0,      0.1428,  0,     'Warlock - Drain Life'),
+(5138,  0,      0,       0,     'Warlock - Drain Mana'),
+(1120,  0,      0.4286,  0,     'Warlock - Drain Soul'),
+(755,   0,      0.4485,  0,     'Warlock - Health Funnel'),
+(1949,  0,      0.0946,  0,     'Warlock - Hellfire'),
+(5857,  0.1428, 0,       0,     'Warlock - Hellfire Effect on Enemy Rank 1'),
+(11681, 0.1428, 0,       0,     'Warlock - Hellfire Effect on Enemy Rank 2'),
+(11682, 0.1428, 0,       0,     'Warlock - Hellfire Effect on Enemy Rank 3'),
+(348,   0.2,    0.2,     0,     'Warlock - Immolate'),
+(5676,  0.4286, 0,       0,     'Warlock - Searing Pain'),
+(686,   0.8571, 0,       0,     'Warlock - Shadow Bolt'),
+(6229,  0.3,    0,       0,     'Warlock - Shadow Ward'),
+(17877, 0.4286, 0,       0,     'Warlock - Shadowburn'),
+(18265, 0,      0.1,     0,     'Warlock - Siphon Life'),
+(6353,  1.15,   0,       0,     'Warlock - Soul Fire');
+/*!40000 ALTER TABLE `spell_bonus_data` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `spell_script_target`
 --
 
@@ -12869,10 +12997,14 @@ CREATE TABLE `spell_scripts` (
   `datalong4` int(10) unsigned NOT NULL default '0',
   `data_flags` tinyint(3) unsigned NOT NULL default '0',
   `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
   `x` float NOT NULL default '0',
   `y` float NOT NULL default '0',
   `z` float NOT NULL default '0',
-  `o` float NOT NULL default '0'
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -13129,4 +13261,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2009-11-05  0:30:08
+-- Dump completed on 2008-03-30 15:34:54
