@@ -285,7 +285,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         plMover->HandleFall(movementInfo);
 
     //lava damage in mc
-	 if (plMover->GetBaseMap()->GetId() == 409)
+	 if (plMover && plMover->GetBaseMap()->GetId() == 409)
 	 {
 	    if (plMover->GetLavaTimer() < 5)
 		{
