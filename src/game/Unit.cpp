@@ -1335,9 +1335,17 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
     damage += CalculateDamage (damageInfo->attackType, false);
     // Add melee damage bonus
     MeleeDamageBonus(damageInfo->target, &damage, damageInfo->attackType);
-    // Calculate armor reduction
-    damageInfo->damage = CalcArmorReducedDamage(damageInfo->target, damage);
-    damageInfo->cleanDamage += damage - damageInfo->damage;
+    // Calculate armor reduction for physical attacks
+	if (damageInfo->damageSchoolMask == SPELL_SCHOOL_MASK_NORMAL)
+	{
+     damageInfo->damage = CalcArmorReducedDamage(damageInfo->target, damage);
+     damageInfo->cleanDamage += damage - damageInfo->damage;
+	}
+	else
+	{
+	 damageInfo->damage = damage;
+	 damageInfo->cleanDamage += damage;
+	}
 
     damageInfo->hitOutCome = RollMeleeOutcomeAgainst(damageInfo->target, damageInfo->attackType);
 
@@ -1346,6 +1354,16 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
     {
         if (damageInfo->hitOutCome == MELEE_HIT_PARRY) damageInfo->hitOutCome = MELEE_HIT_NORMAL;
         if (damageInfo->hitOutCome == MELEE_HIT_DODGE) damageInfo->hitOutCome = MELEE_HIT_MISS;
+    }
+
+    // Disable parry, dodge, crushing, block and miss for non-physical attacks
+    if (damageInfo->damageSchoolMask != SPELL_SCHOOL_MASK_NORMAL)
+    {
+        if (damageInfo->hitOutCome == MELEE_HIT_PARRY) damageInfo->hitOutCome = MELEE_HIT_NORMAL;
+        if (damageInfo->hitOutCome == MELEE_HIT_DODGE) damageInfo->hitOutCome = MELEE_HIT_NORMAL;
+		if (damageInfo->hitOutCome == MELEE_HIT_CRUSHING) damageInfo->hitOutCome = MELEE_HIT_NORMAL;
+		if (damageInfo->hitOutCome == MELEE_HIT_BLOCK) damageInfo->hitOutCome = MELEE_HIT_NORMAL;
+		if (damageInfo->hitOutCome == MELEE_HIT_MISS) damageInfo->hitOutCome = MELEE_HIT_NORMAL;
     }
 
     switch(damageInfo->hitOutCome)
