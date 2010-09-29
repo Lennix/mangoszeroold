@@ -381,7 +381,7 @@ void WorldSession::LogoutPlayer(bool Save)
         {
             if (MemberSlot* slot = guild->GetMemberSlot(_player->GetObjectGuid()))
             {
-                slot->SetMemberStats(_player);
+                //slot->SetMemberStats(_player);
                 slot->UpdateLogoutTime();
             }
 
