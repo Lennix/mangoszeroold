@@ -878,6 +878,10 @@ class MANGOS_DLL_SPEC Player : public Unit
 		bool m_isTrial;
 		bool isTrial() const { return m_isTrial; }
 
+		float m_rates;
+		float GetRates() const { return m_rates; }
+		void SetRates(float rates) { m_rates = rates; }
+
         void SetGameMaster(bool on);
         bool isGMChat() const { return GetSession()->GetSecurity() >= SEC_MODERATOR && (m_ExtraFlags & PLAYER_EXTRA_GM_CHAT); }
         void SetGMChat(bool on) { if(on) m_ExtraFlags |= PLAYER_EXTRA_GM_CHAT; else m_ExtraFlags &= ~PLAYER_EXTRA_GM_CHAT; }

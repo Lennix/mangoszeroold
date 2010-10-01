@@ -685,6 +685,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", NULL },
 
 		{ "heroic",			SEC_PLAYER,			false, &ChatHandler::HandleHeroicCommand,			   "", NULL },
+		{ "rates",			SEC_PLAYER,			false, &ChatHandler::HandleRatesCommand,			   "", NULL },
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };

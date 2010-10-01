@@ -310,3 +310,25 @@ bool ChatHandler::HandleHeroicCommand(char* /*args*/)
 	}
 	return true;
 }
+
+bool ChatHandler::HandleRatesCommand(char* args)
+{
+	if(!*args)
+		PSendSysMessage("Current rates: %f",m_session->GetPlayer()->GetRates());
+	else
+	{
+		float rate = (float)atof(args);
+
+		if(rate < 0.0f || rate > sWorld.getConfig(CONFIG_FLOAT_RATE_XP_KILL))
+		{
+			PSendSysMessage("Please choose rates between 0 and %f", sWorld.getConfig(CONFIG_FLOAT_RATE_XP_KILL));
+			return false;
+		}
+		m_session->GetPlayer()->SetRates(rate);
+
+		PSendSysMessage("Rates changed to %f",rate);
+	}
+
+	return true;
+
+}

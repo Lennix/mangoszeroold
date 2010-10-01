@@ -125,6 +125,9 @@ class ChatHandler
 		// Heroic Mode
 		bool HandleHeroicCommand(char* args);
 
+		// Rates
+		bool HandleRatesCommand(char* args);
+
         bool HandleAccountCommand(char* args);
         bool HandleAccountCharactersCommand(char* args);
         bool HandleAccountCreateCommand(char* args);
