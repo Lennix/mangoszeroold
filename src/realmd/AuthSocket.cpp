@@ -966,7 +966,6 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
 
             for(RealmList::RealmMap::const_iterator  i = sRealmList.begin(); i != sRealmList.end(); ++i)
             {
-				if (_accountSecurityLevel >= i->second.allowedSecurityLevel) {
 					uint8 AmountOfCharacters;
 
 					// No SQL injection. id of realm is controlled by the database.
@@ -1014,7 +1013,6 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
 						pkt << uint8(buildInfo->bugfix_version);
 						pkt << uint16(_build);
 					}
-				}
             }
 
             pkt << uint16(0x0010);
