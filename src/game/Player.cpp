@@ -14927,7 +14927,7 @@ void Player::SaveToDB()
         "trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, "
         "death_expire_time, taxi_path, "
         "honor_highest_rank, honor_standing, stored_honor_rating , stored_dishonorable_kills, stored_honorable_kills, "
-        "bgid, bgteam, bgmap, bgx, bgy, bgz, bgo) VALUES ("
+        "bgid, bgteam, bgmap, bgx, bgy, bgz, bgo, rates) VALUES ("
         << GetGUIDLow() << ", "
         << GetSession()->GetAccountId() << ", '"
         << sql_name << "', "
