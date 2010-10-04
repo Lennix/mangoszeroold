@@ -571,7 +571,7 @@ class MANGOS_DLL_SPEC CreatureEventAI : public CreatureAI
         explicit CreatureEventAI(Creature *c);
         ~CreatureEventAI()
         {
-            m_CreatureEventAIList.clear();
+            CreatureEventAIList.clear();
         }
         void JustRespawned();
         void Reset();
@@ -609,21 +609,18 @@ class MANGOS_DLL_SPEC CreatureEventAI : public CreatureAI
         void DoFindFriendlyMissingBuff(std::list<Creature*>& _list, float range, uint32 spellid);
         void DoFindFriendlyCC(std::list<Creature*>& _list, float range);
 
-    protected:
-        uint32 m_EventUpdateTime;                           //Time between event updates
-        uint32 m_EventDiff;                                 //Time between the last event call
-        bool   m_bEmptyList;
+                                                            //Holder for events (stores enabled, time, and eventid)
+        std::list<CreatureEventAIHolder> CreatureEventAIList;
+        uint32 EventUpdateTime;                             //Time between event updates
+        uint32 EventDiff;                                   //Time between the last event call
+        bool bEmptyList;
 
         //Variables used by Events themselves
-        typedef std::vector<CreatureEventAIHolder> CreatureEventAIList;
-        CreatureEventAIList m_CreatureEventAIList;          //Holder for events (stores enabled, time, and eventid)
-
-        uint8  m_Phase;                                     // Current phase, max 32 phases
-        bool   m_CombatMovementEnabled;                     // If we allow targeted movment gen (movement twoards top threat)
-        bool   m_MeleeEnabled;                              // If we allow melee auto attack
-        float  m_AttackDistance;                            // Distance to attack from
-        float  m_AttackAngle;                               // Angle of attack
-        uint32 m_InvinceabilityHpLevel;                     // Minimal health level allowed at damage apply
+        uint8 Phase;                                        // Current phase, max 32 phases
+        bool CombatMovementEnabled;                         // If we allow targeted movment gen (movement twoards top threat)
+        bool MeleeEnabled;                                  // If we allow melee auto attack
+        float AttackDistance;                               // Distance to attack from
+        float AttackAngle;                                  // Angle of attack
+        uint32 InvinceabilityHpLevel;                       // Minimal health level allowed at damage apply
 };
-
 #endif
