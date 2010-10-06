@@ -676,6 +676,8 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
     m_Played_time[PLAYED_TIME_TOTAL] = 0;
     m_Played_time[PLAYED_TIME_LEVEL] = 0;
 
+	m_rates = 3.0f;
+
     // base stats and related field values
     InitStatsForLevel();
     InitTaxiNodes();
