@@ -9118,11 +9118,21 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
             for(AuraMap::const_iterator itr = lower; itr!= upper; ++itr)
             {
                 // If last charge dropped add spell to remove list
+				// Check for Shadow Vulnerability debuff so it doesnt get consumed by non-shadow spells
+				if ((GetSpellSchoolMask(procSpell) == SPELL_SCHOOL_MASK_SHADOW) || 
+				   (!((triggeredByAura->GetModifier()->m_auraname == SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN) &&
+				   (triggeredByAura->GetModifier()->m_miscvalue == SPELL_SCHOOL_MASK_SHADOW) &&
+				   (triggeredByAura->GetSpellProto()->Id != 15258) &&
+				   (triggeredByAura->GetSpellProto()->Id != 15331) &&
+				   (triggeredByAura->GetSpellProto()->Id != 15332))))
+
+			   {
                 if(itr->second == i->triggeredByAura && triggeredByAura->DropAuraCharge())
                 {
                     removedSpells.push_back(triggeredByAura->GetId());
                     break;
                 }
+		       }
             }
         }
     }
