@@ -5896,7 +5896,7 @@ void Player::UpdateHonor()
                     yesterdayKills++;
                 yesterdayHonor += itr->honorPoints;
             }
-            if ( (itr->date >= thisWeekBegin) && (itr->date <= thisWeekEnd) )
+            if ( (itr->date >= thisWeekBegin) && (itr->date < today) )
             {
                 if (itr->isKill)
                     thisWeekKills++;
@@ -5932,7 +5932,7 @@ void Player::UpdateHonor()
 
     SetRankPoints(rankP);
 
-    //RIGHEST RANK
+    //HIGHEST RANK
     //If the new rank is highest then the old one, then m_highest_rank is updated
     HonorRankInfo prk =  MaNGOS::Honor::CalculateHonorRank(GetRankPoints());
     SetHonorRankInfo(prk);
@@ -6083,13 +6083,13 @@ bool Player::AddHonorCP(float honor,uint8 type,uint32 victim,uint8 victimType)
     CP.victimType = victimType;
     CP.type = type;
 
-    if (type == DISHONORABLE)
-    {
-        // DK penalties are subtracted from your RP score immediately
-        // and are not included in weekly adjustment
-        float RP = GetRankPoints() > CP.honorPoints ? GetRankPoints() - CP.honorPoints : 0; // remove this check to have negative ranks
-        SetStoredHonor(RP);
-    }
+    //if (type == DISHONORABLE)
+    //{
+    //    // DK penalties are subtracted from your RP score immediately
+    //    // and are not included in weekly adjustment
+    //    float RP = GetRankPoints() > CP.honorPoints ? GetRankPoints() - CP.honorPoints : 0; // remove this check to have negative ranks
+    //    SetRankPoints(RP);
+    //}
 
     CP.state  =  HK_NEW;
     CP.isKill =  isKill(victimType);
