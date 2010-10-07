@@ -167,8 +167,12 @@ void BattleGround::Update(uint32 diff)
             if(plr)
                 itr->second.LastOnlineTime = 0;   // update last online time
             else
+			{
+				if(itr->second.LastOnlineTime == diff)
+					RemovePlayer(NULL, itr->first);
                 if(itr->second.LastOnlineTime >= MAX_OFFLINE_TIME)                   // 5 minutes
                     m_RemovedPlayers[itr->first] = 1;       // add to remove list (BG)
+			}
         }
     }
 
