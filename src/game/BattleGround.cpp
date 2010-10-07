@@ -165,9 +165,15 @@ void BattleGround::Update(uint32 diff)
             itr->second.LastOnlineTime += diff;
 
             if(plr)
+			{
+				// Spieler war offline, vorsichtshalber die Flagge removen
+				if(itr->second.LastOnlineTime > diff)
+					RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
                 itr->second.LastOnlineTime = 0;   // update last online time
+			}
             else
 			{
+				// Spieler ist grad als offline erkannt worden, Flagge removen
 				if(itr->second.LastOnlineTime == diff)
 					RemovePlayer(NULL, itr->first);
                 if(itr->second.LastOnlineTime >= MAX_OFFLINE_TIME)                   // 5 minutes
