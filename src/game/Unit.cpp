@@ -3010,7 +3010,7 @@ void Unit::SetInFront(Unit const* target)
     SetOrientation(GetAngle(target));
 }
 
-void Unit::SetFacingTo(float ori)
+void Unit::SetFacingTo(float ori, bool bToSelf /*= false*/)
 {
     // update orientation at server
     SetOrientation(ori);
@@ -3018,7 +3018,7 @@ void Unit::SetFacingTo(float ori)
     // and client
     WorldPacket data;
     BuildHeartBeatMsg(&data);
-    SendMessageToSet(&data, false);
+    SendMessageToSet(&data, bToSelf);
 }
 
 // Consider move this to Creature:: since only creature appear to be able to use this
@@ -5153,12 +5153,17 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                 return false;
             break;                                   // continue normal case
         }
-        // Finish movies that add combo
+        // Finishing moves that add combo points
         case 14189: // Seal Fate (Netherblade set)
         case 14157: // Ruthlessness
         {
-            // Need add combopoint AFTER finish movie (or they dropped in finish phase)
-            break;
+            // Need add combopoint AFTER finishing move (or they get dropped in finish phase)
+            if (Spell* spell = GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            {
+                spell->AddTriggeredSpell(trigger_spell_id);
+                return true;
+            }
+            return false;
         }
         // Shamanistic Rage triggered spell
         case 30824:
@@ -6124,10 +6129,12 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
             coeff = bonus->dot_damage * LvlPenalty * stack;
         else
             coeff = bonus->direct_damage * LvlPenalty * stack;
+
         if (bonus->ap_bonus)
-            DoneTotal += bonus->ap_bonus * GetTotalAttackPowerValue(BASE_ATTACK) * stack;
-        DoneTotal += DoneAdvertisedBenefit * coeff * SpellModSpellDamage;
-        TakenTotal+= TakenAdvertisedBenefit * coeff;
+            DoneTotal += int32(bonus->ap_bonus * GetTotalAttackPowerValue(BASE_ATTACK) * stack);
+
+        DoneTotal  += int32(DoneAdvertisedBenefit * coeff * SpellModSpellDamage);
+        TakenTotal += int32(TakenAdvertisedBenefit * coeff);
     }
     // Default calculation
     else if (DoneAdvertisedBenefit || TakenAdvertisedBenefit)
@@ -6177,8 +6184,8 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
                 break;
             }
         }
-        DoneTotal += DoneAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty * SpellModSpellDamage;
-        TakenTotal+= TakenAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty;
+        DoneTotal += int32(DoneAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty * SpellModSpellDamage);
+        TakenTotal+= int32(TakenAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty);
     }
 
     float tmpDamage = (pdamage + DoneTotal) * DoneTotalMod;
@@ -6478,10 +6485,12 @@ uint32 Unit::SpellHealingBonus(Unit *pVictim, SpellEntry const *spellProto, uint
             coeff = bonus->dot_damage * LvlPenalty * stack;
         else
             coeff = bonus->direct_damage * LvlPenalty * stack;
+
         if (bonus->ap_bonus)
-            DoneTotal += bonus->ap_bonus * GetTotalAttackPowerValue(BASE_ATTACK) * stack;
-        DoneTotal += DoneAdvertisedBenefit * coeff * SpellModSpellDamage;
-        TakenTotal+= TakenAdvertisedBenefit * coeff;
+            DoneTotal += int32(bonus->ap_bonus * GetTotalAttackPowerValue(BASE_ATTACK) * stack);
+
+        DoneTotal  += int32(DoneAdvertisedBenefit * coeff * SpellModSpellDamage);
+        TakenTotal += int32(TakenAdvertisedBenefit * coeff);
     }
     // Default calculation
     else if (DoneAdvertisedBenefit || TakenAdvertisedBenefit)
@@ -6531,8 +6540,8 @@ uint32 Unit::SpellHealingBonus(Unit *pVictim, SpellEntry const *spellProto, uint
                 break;
             }
         }
-        DoneTotal += DoneAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty * SpellModSpellDamage * 1.88f;
-        TakenTotal+= TakenAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty * 1.88f;
+        DoneTotal  += int32(DoneAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty * SpellModSpellDamage * 1.88f);
+        TakenTotal += int32(TakenAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty * 1.88f);
     }
 
     // use float as more appropriate for negative values and percent applying
