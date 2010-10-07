@@ -193,6 +193,14 @@ enum BattleGroundJoinError
     BG_JOIN_ERR_GROUP_NOT_ENOUGH = 9
 };
 
+enum BG_WS_SpellId
+{
+    BG_WS_SPELL_WARSONG_FLAG            = 23333,
+    BG_WS_SPELL_WARSONG_FLAG_DROPPED    = 23334,
+    BG_WS_SPELL_SILVERWING_FLAG         = 23335,
+    BG_WS_SPELL_SILVERWING_FLAG_DROPPED = 23336
+};
+
 class BattleGroundScore
 {
     public:
