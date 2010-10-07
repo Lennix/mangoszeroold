@@ -168,8 +168,11 @@ void BattleGround::Update(uint32 diff)
 			{
 				// Spieler war offline, vorsichtshalber die Flagge removen
 				if(itr->second.LastOnlineTime > diff)
+				{
 					plr->RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
-                itr->second.LastOnlineTime = 0;   // update last online time
+					plr->RemoveAurasDueToSpell(BG_WS_SPELL_SILVERWING_FLAG);
+				}
+				itr->second.LastOnlineTime = 0;   // update last online time
 			}
             else
 			{
