@@ -494,10 +494,6 @@ Player::Player (WorldSession *session): Unit(), m_reputationMgr(this), m_mover(t
     m_ammoDPS = 0.0f;
 
     m_temporaryUnsummonedPetNumber = 0;
-    //cache for UNIT_CREATED_BY_SPELL to allow
-    //returning reagents for temporarily removed pets
-    //when dying/logging out
-    m_oldpetspell = 0;
 
     ////////////////////Rest System/////////////////////
     time_inn_enter=0;
@@ -2879,7 +2875,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         {
             if(TalentEntry const *talentInfo = sTalentStore.LookupEntry( talentPos->talent_id ))
             {
-                for(int i=0; i <5; ++i)
+                for(int i=0; i < MAX_TALENT_RANK; ++i)
                 {
                     // skip learning spell and no rank spell case
                     uint32 rankSpellId = talentInfo->RankID[i];
@@ -3477,7 +3473,7 @@ bool Player::resetTalents(bool no_cost)
         if ((getClassMask() & talentTabInfo->ClassMask) == 0)
             continue;
 
-        for (int j = 0; j < 5; ++j)
+        for (int j = 0; j < MAX_TALENT_RANK; ++j)
         {
             for(PlayerSpellMap::iterator itr = GetSpellMap().begin(); itr != GetSpellMap().end();)
             {
@@ -15793,7 +15789,7 @@ void Player::RemovePet(Pet* pet, PetSaveMode mode, bool returnreagent)
     if (returnreagent && pet && mode != PET_SAVE_AS_CURRENT)
     {
         //returning of reagents only for players, so best done here
-        uint32 spellId = pet ? pet->GetUInt32Value(UNIT_CREATED_BY_SPELL) : m_oldpetspell;
+        uint32 spellId = pet->GetUInt32Value(UNIT_CREATED_BY_SPELL);
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
 
         if(spellInfo)
@@ -18654,7 +18650,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
         if(TalentEntry const *depTalentInfo = sTalentStore.LookupEntry(talentInfo->DependsOn))
         {
             bool hasEnoughRank = false;
-            for (int i = talentInfo->DependsOnRank; i <= 4; i++)
+            for (int i = talentInfo->DependsOnRank; i < MAX_TALENT_RANK; i++)
             {
                 if (depTalentInfo->RankID[i] != 0)
                     if (HasSpell(depTalentInfo->RankID[i]))
@@ -18677,7 +18673,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     if (talentInfo->Row > 0)
     {
         unsigned int numRows = sTalentStore.GetNumRows();
-        for (unsigned int i = 0; i < numRows; i++)          // Loop through all talents.
+        for (unsigned int i = 0; i < numRows; ++i)          // Loop through all talents.
         {
             // Someday, someone needs to revamp
             const TalentEntry *tmpTalent = sTalentStore.LookupEntry(i);
@@ -18685,7 +18681,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
             {
                 if (tmpTalent->TalentTab == tTab)
                 {
-                    for (int j = 0; j <= 4; j++)
+                    for (int j = 0; j < MAX_TALENT_RANK; ++j)
                     {
                         if (tmpTalent->RankID[j] != 0)
                         {
@@ -18701,7 +18697,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     }
 
     // not have required min points spent in talent tree
-    if(spentPoints < (talentInfo->Row * 5))
+    if(spentPoints < (talentInfo->Row * MAX_TALENT_RANK))
         return;
 
     // spell not set in talent.dbc
@@ -18734,10 +18730,7 @@ void Player::UnsummonPetTemporaryIfAny()
         return;
 
     if(!m_temporaryUnsummonedPetNumber && pet->isControlled() && !pet->isTemporarySummoned() )
-    {
         m_temporaryUnsummonedPetNumber = pet->GetCharmInfo()->GetPetNumber();
-        m_oldpetspell = pet->GetUInt32Value(UNIT_CREATED_BY_SPELL);
-    }
 
     RemovePet(pet, PET_SAVE_AS_CURRENT);
 }
