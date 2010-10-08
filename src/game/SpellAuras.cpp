@@ -308,11 +308,10 @@ m_isRemovedOnShapeLost(true), m_in_use(false)
     if(modOwner && m_modifier.periodictime)
         modOwner->ApplySpellMod(GetId(), SPELLMOD_ACTIVATION_TIME, m_modifier.periodictime);
 
-    // Start periodic on next tick or at aura apply
-    if (!(m_spellProto->AttributesEx4 & SPELL_ATTR_EX5_START_PERIODIC_AT_APPLY))
-        m_periodicTimer += m_modifier.periodictime;
-	
-	m_isDeathPersist = IsDeathPersistentSpell(m_spellProto);
+    // Start periodic on next tick
+    m_periodicTimer += m_modifier.periodictime;
+
+    m_isDeathPersist = IsDeathPersistentSpell(m_spellProto);
 
     m_procCharges = m_spellProto->procCharges;
     if(modOwner)
