@@ -1767,7 +1767,21 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
             addhealth += tickheal * tickcount;
         }
         else
-            addhealth = caster->SpellHealingBonus(unitTarget, m_spellInfo, addhealth, HEAL);
+		{
+			// Fix Holy Light and Flash of Light Addheal
+            SpellEntry const* spellInfo = m_spellInfo;
+            switch(m_spellInfo->Id)
+            {
+                case 19968:                                 // Holy Light triggered heal
+                case 19993:                                 // Flash of Light triggered heal
+                {
+                    // stored in unused spell effect basepoints in main spell code
+                    uint32 spellid = m_currentBasePoints[EFFECT_INDEX_1];
+                    spellInfo = sSpellStore.LookupEntry(spellid);
+                }
+            }
+            addhealth = caster->SpellHealingBonus(unitTarget, spellInfo, addhealth, HEAL);
+		}
 
         m_healing+=addhealth;
     }
