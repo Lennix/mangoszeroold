@@ -5644,6 +5644,9 @@ bool Unit::Attack(Unit *victim, bool meleeAttack)
             return false;
     }
 
+	if (hasUnitState(UNIT_STAT_CONFUSED) || hasUnitState(UNIT_STAT_FLEEING))
+	 return false;
+
     // remove SPELL_AURA_MOD_UNATTACKABLE at attack (in case non-interruptible spells stun aura applied also that not let attack)
     if(HasAuraType(SPELL_AURA_MOD_UNATTACKABLE))
         RemoveSpellsCausingAura(SPELL_AURA_MOD_UNATTACKABLE);
@@ -7915,7 +7918,7 @@ bool Unit::SelectHostileTarget()
 
     if (target)
     {
-        if (!hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED))
+        if (!hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED | UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING))
         {
             SetInFront(target);
             ((Creature*)this)->AI()->AttackStart(target);
