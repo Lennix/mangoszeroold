@@ -9275,7 +9275,7 @@ void Unit::SetFeared(bool apply, uint64 const& casterGUID, uint32 spellID, uint3
     else
     {
 		//Check if the unit is still feared
-        if (HasAura(5782) || HasAura(8122) || HasAura(5246))
+		if (HasAuraType(SPELL_AURA_MOD_FEAR) && !HasAuraType(SPELL_AURA_PREVENTS_FLEEING))
 		 return;
 
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
@@ -9315,7 +9315,7 @@ void Unit::SetConfused(bool apply, uint64 const& casterGUID, uint32 spellID)
     else
     {
 		//Check if the unit is still confused
-        if (HasAura(118) || HasAura(28272) || HasAura(28271))
+        if (HasAuraType(SPELL_AURA_MOD_CONFUSE))
 		 return;
 
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
