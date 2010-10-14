@@ -5644,7 +5644,7 @@ bool Unit::Attack(Unit *victim, bool meleeAttack)
             return false;
     }
 
-	if (hasUnitState(UNIT_STAT_CONFUSED) || hasUnitState(UNIT_STAT_FLEEING))
+	if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED) || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING))
 	 return false;
 
     // remove SPELL_AURA_MOD_UNATTACKABLE at attack (in case non-interruptible spells stun aura applied also that not let attack)
@@ -7918,7 +7918,7 @@ bool Unit::SelectHostileTarget()
 
     if (target)
     {
-        if (!hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED | UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING))
+        if (!hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED) && !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED) && !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING) )
         {
             SetInFront(target);
             ((Creature*)this)->AI()->AttackStart(target);
@@ -9274,6 +9274,10 @@ void Unit::SetFeared(bool apply, uint64 const& casterGUID, uint32 spellID, uint3
     }
     else
     {
+		//Check if the unit is still feared
+        if (HasAura(5782) || HasAura(8122) || HasAura(5246))
+		 return;
+
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
 
         GetMotionMaster()->MovementExpired(false);
@@ -9310,6 +9314,10 @@ void Unit::SetConfused(bool apply, uint64 const& casterGUID, uint32 spellID)
     }
     else
     {
+		//Check if the unit is still confused
+        if (HasAura(118) || HasAura(28272) || HasAura(28271))
+		 return;
+
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
         GetMotionMaster()->MovementExpired(false);

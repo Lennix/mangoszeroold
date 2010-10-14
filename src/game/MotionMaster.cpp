@@ -270,7 +270,7 @@ void MotionMaster::MoveChase(Unit* target, float dist, float angle)
     if (!target)
         return;
 
-	if (m_owner->hasUnitState(UNIT_STAT_CONFUSED) || m_owner->hasUnitState(UNIT_STAT_FLEEING))
+	if (m_owner->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED) || m_owner->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING))
 	    return;
 
     DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s chase to %s", m_owner->GetObjectGuid().GetString().c_str(), target->GetObjectGuid().GetString().c_str());
