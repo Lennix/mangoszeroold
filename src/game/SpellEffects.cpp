@@ -2058,13 +2058,8 @@ void Spell::EffectEnergize(SpellEffectIndex eff_idx)
 
 void Spell::SendLoot(uint64 guid, LootType loottype)
 {
-    Player* player = (Player*)m_caster;
-
     if (gameObjTarget)
     {
-        if (Script->GOHello(player, gameObjTarget))
-            return;
-
         switch (gameObjTarget->GetGoType())
         {
             case GAMEOBJECT_TYPE_DOOR:
@@ -2076,18 +2071,7 @@ void Spell::SendLoot(uint64 guid, LootType loottype)
                 return;
 
             case GAMEOBJECT_TYPE_CHEST:
-                // TODO: possible must be moved to loot release (in different from linked triggering)
-                if (gameObjTarget->GetGOInfo()->chest.eventId)
-                {
-                    DEBUG_LOG("Chest ScriptStart id %u for GO %u", gameObjTarget->GetGOInfo()->chest.eventId,gameObjTarget->GetDBTableGUIDLow());
-                    if (!Script->ProcessEventId(gameObjTarget->GetGOInfo()->chest.eventId, player, gameObjTarget, true))
-                        player->GetMap()->ScriptsStart(sEventScripts, gameObjTarget->GetGOInfo()->chest.eventId, player, gameObjTarget);
-                }
-
-                // triggering linked GO
-                if (uint32 trapEntry = gameObjTarget->GetGOInfo()->chest.linkedTrapId)
-                    gameObjTarget->TriggeringLinkedGameObject(trapEntry,m_caster);
-
+                gameObjTarget->Use(m_caster);
                 // Don't return, let loots been taken
                 break;
 
@@ -2125,7 +2109,7 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
         if (goInfo->type == GAMEOBJECT_TYPE_BUTTON && goInfo->button.noDamageImmune ||
             goInfo->type == GAMEOBJECT_TYPE_GOOBER && goInfo->goober.losOK)
         {
-            //CanUseBattleGroundObject() already called in CanCast()
+            //CanUseBattleGroundObject() already called in CheckCast()
             // in battleground check
             if (BattleGround *bg = player->GetBattleGround())
             {
@@ -2137,7 +2121,7 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
         }
         else if (goInfo->type == GAMEOBJECT_TYPE_FLAGSTAND)
         {
-            //CanUseBattleGroundObject() already called in CanCast()
+            //CanUseBattleGroundObject() already called in CheckCast()
             // in battleground check
             if (BattleGround *bg = player->GetBattleGround())
                 return;

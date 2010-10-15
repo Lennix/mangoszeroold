@@ -456,9 +456,6 @@ Player::Player (WorldSession *session): Unit(), m_reputationMgr(this), m_mover(t
         m_Tutorials[ aX ] = 0x00;
     m_TutorialsChanged = false;
 
-    m_regenTimer = 0;
-    m_weaponChangeTimer = 0;
-
     for (int i=0; i<MAX_TIMERS; i++)
         m_MirrorTimer[i] = DISABLED_MIRROR_TIMER;
 
@@ -1146,8 +1143,6 @@ void Player::Update( uint32 p_time )
     UpdateDuelFlag(now);
 
     CheckDuelDistance(now);
-
-    CheckExploreSystem();
 
     // Update items that have just a limited lifetime
     if (now>m_Last_tick)
@@ -4686,9 +4681,7 @@ float Player::GetTotalBaseModValue(BaseModGroup modGroup) const
 
 uint32 Player::GetShieldBlockValue() const
 {
-    BaseModGroup modGroup = SHIELD_BLOCK_VALUE;
-
-    float value = GetTotalBaseModValue(modGroup) + GetStat(STAT_STRENGTH)/20 - 1;
+    float value = (m_auraBaseMod[SHIELD_BLOCK_VALUE][FLAT_MOD] + GetStat(STAT_STRENGTH)/20 - 1)*m_auraBaseMod[SHIELD_BLOCK_VALUE][PCT_MOD];
 
     value = (value < 0) ? 0 : value;
 
