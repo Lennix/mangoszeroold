@@ -9279,7 +9279,12 @@ void Unit::SetFeared(bool apply, uint64 const& casterGUID, uint32 spellID, uint3
     if( apply )
     {
         if (HasAuraType(SPELL_AURA_PREVENTS_FLEEING))
-            return;
+		{
+		 //Remove fear ward
+		 if (HasAura(6346))
+		  RemoveAura(6346, EFFECT_INDEX_0);
+         return;
+		}
 
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
 
