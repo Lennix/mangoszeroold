@@ -2291,9 +2291,9 @@ float Unit::MeleeSpellMissChance(Unit *pVictim, WeaponAttackType attType, int32 
     int32 lchance = pVictim->GetTypeId() == TYPEID_PLAYER ? 5 : 7;
     int32 leveldif = pVictim->getLevelForTarget(this) - getLevelForTarget(pVictim);
     if(leveldif < 3)
-        HitChance = 95 - leveldif;
+        HitChance = 95 - leveldif/2;
     else
-        HitChance = 93 - (leveldif - 2) * lchance;
+        HitChance = 98 - leveldif*2;
 
     // Hit chance depends from victim auras
     if(attType == RANGED_ATTACK)
@@ -2559,10 +2559,8 @@ float Unit::MeleeMissChanceCalc(const Unit *pVictim, WeaponAttackType attType) c
         }
         if (isNormal || m_currentSpells[CURRENT_MELEE_SPELL])
           misschance = 5.0f;
-        else if (attType == OFF_ATTACK)
-          misschance = 24.0f;
-		 else
-		  misschance = 12.0f;
+        else 
+		  misschance = 24.0f;
     }
 
     // PvP : PvE melee misschances per leveldif > 2
@@ -2580,9 +2578,9 @@ float Unit::MeleeMissChanceCalc(const Unit *pVictim, WeaponAttackType attType) c
         m_modHitChance = m_modMeleeHitChance;
 
     if(leveldif < 3)
-        misschance += (leveldif - m_modHitChance);
+        misschance += (leveldif/2 - m_modHitChance);
     else
-        misschance += ((leveldif - 2) * chance - m_modHitChance);
+        misschance += (leveldif*2 - 3.0f - m_modHitChance);
 
     // Modify miss chance by victim auras
     if(attType == RANGED_ATTACK)
