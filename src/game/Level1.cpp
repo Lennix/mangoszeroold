@@ -103,8 +103,8 @@ bool ChatHandler::HandleNpcWhisperCommand(char* args)
     if (!ExtractPlayerTarget(&args, &target))
         return false;
 
-    uint64 guid = m_session->GetPlayer()->GetSelection();
-    if (!guid)
+    ObjectGuid guid = m_session->GetPlayer()->GetSelectionGuid();
+    if (guid.IsEmpty())
         return false;
 
     Creature* pCreature = m_session->GetPlayer()->GetMap()->GetCreature(guid);
@@ -386,7 +386,7 @@ bool ChatHandler::HandleNamegoCommand(char* args)
             }
             // all's well, set bg id
             // when porting out from the bg, it will be reset to 0
-            target->SetBattleGroundId(m_session->GetPlayer()->GetBattleGroundId());
+            target->SetBattleGroundId(m_session->GetPlayer()->GetBattleGroundId(), m_session->GetPlayer()->GetBattleGroundTypeId());
             // remember current position as entry point for return at bg end teleportation
             if (!target->GetMap()->IsBattleGround())
                 target->SetBattleGroundEntryPoint();
@@ -501,7 +501,7 @@ bool ChatHandler::HandleGonameCommand(char* args)
             }
             // all's well, set bg id
             // when porting out from the bg, it will be reset to 0
-            _player->SetBattleGroundId(target->GetBattleGroundId());
+            _player->SetBattleGroundId(target->GetBattleGroundId(), target->GetBattleGroundTypeId());
             // remember current position as entry point for return at bg end teleportation
             if (!_player->GetMap()->IsBattleGround())
                 _player->SetBattleGroundEntryPoint();

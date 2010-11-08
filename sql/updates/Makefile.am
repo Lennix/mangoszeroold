@@ -160,7 +160,12 @@ pkgdata_DATA = \
 	z0889_s0224_04_mangos_gameobject_respawn.sql \
 	z0908_s0251_01_mangos_command.sql \
 	z0919_s0262_01_mangos_spell_bonus_data.sql \
-	z0919_s0298_02_mangos_spell_chain.sql
+	z0919_s0298_02_mangos_spell_chain.sql \
+	z0967_s0263_01_mangos_mangos_string.sql \
+	z0968_s0283_01_mangos_mangos_string.sql \
+	z0977_s0345_01_mangos_mangos_string.sql \
+	z0978_s0346_01_mangos_mangos_string.sql \
+	z0986_s0356_01_mangos_quest_template.sql
 
 ## Additional files to include when running 'make dist'
 #  SQL update files, to upgrade database schema from older revisions
@@ -299,4 +304,9 @@ EXTRA_DIST = \
 	z0889_s0224_04_mangos_gameobject_respawn.sql \
 	z0908_s0251_01_mangos_command.sql \
 	z0919_s0262_01_mangos_spell_bonus_data.sql \
-	z0919_s0298_02_mangos_spell_chain.sql
+	z0919_s0298_02_mangos_spell_chain.sql \
+	z0967_s0263_01_mangos_mangos_string.sql \
+	z0968_s0283_01_mangos_mangos_string.sql \
+	z0977_s0345_01_mangos_mangos_string.sql \
+	z0978_s0346_01_mangos_mangos_string.sql \
+	z0986_s0356_01_mangos_quest_template.sql

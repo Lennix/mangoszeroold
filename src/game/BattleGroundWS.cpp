@@ -23,7 +23,6 @@
 #include "BattleGroundWS.h"
 #include "Creature.h"
 #include "GameObject.h"
-#include "Chat.h"
 #include "ObjectMgr.h"
 #include "BattleGroundMgr.h"
 #include "WorldPacket.h"
@@ -32,6 +31,10 @@
 
 BattleGroundWS::BattleGroundWS()
 {
+    m_StartMessageIds[BG_STARTING_EVENT_FIRST]  = 0;
+    m_StartMessageIds[BG_STARTING_EVENT_SECOND] = LANG_BG_WS_START_ONE_MINUTE;
+    m_StartMessageIds[BG_STARTING_EVENT_THIRD]  = LANG_BG_WS_START_HALF_MINUTE;
+    m_StartMessageIds[BG_STARTING_EVENT_FOURTH] = LANG_BG_WS_HAS_BEGUN;
 }
 
 BattleGroundWS::~BattleGroundWS()
@@ -42,54 +45,7 @@ void BattleGroundWS::Update(uint32 diff)
 {
     BattleGround::Update(diff);
 
-    // after bg start we get there (once)
-    if (GetStatus() == STATUS_WAIT_JOIN && GetPlayersSize())
-    {
-        ModifyStartDelayTime(diff);
-
-        if (!(m_Events & 0x01))
-        {
-            m_Events |= 0x01;
-
-            // setup here, only when at least one player has ported to the map
-            if (!SetupBattleGround())
-            {
-                EndNow();
-                return;
-            }
-
-            SetStartDelayTime(START_DELAY0);
-        }
-        // After 1 minute, warning is signalled
-        else if (GetStartDelayTime() <= START_DELAY1 && !(m_Events & 0x04))
-        {
-            m_Events |= 0x04;
-            SendMessageToAll(GetMangosString(LANG_BG_WS_ONE_MINUTE));
-        }
-        // After 1,5 minute, warning is signalled
-        else if (GetStartDelayTime() <= START_DELAY2 && !(m_Events & 0x08))
-        {
-            m_Events |= 0x08;
-            SendMessageToAll(GetMangosString(LANG_BG_WS_HALF_MINUTE));
-        }
-        // After 2 minutes, gates OPEN ! x)
-        else if (GetStartDelayTime() < 0 && !(m_Events & 0x10))
-        {
-            m_Events |= 0x10;
-            // TODO implement timer to despawn doors after a short while
-            OpenDoorEvent(BG_EVENT_DOOR);
-
-            SpawnEvent(WS_EVENT_SPIRITGUIDES_SPAWN, 0, true);
-            SpawnEvent(WS_EVENT_FLAG_A, 0, true);
-            SpawnEvent(WS_EVENT_FLAG_H, 0, true);
-
-            SendMessageToAll(GetMangosString(LANG_BG_WS_BEGIN));
-
-            PlaySoundToAll(SOUND_BG_START);
-            SetStatus(STATUS_IN_PROGRESS);
-        }
-    }
-    else if (GetStatus() == STATUS_IN_PROGRESS)
+    if (GetStatus() == STATUS_IN_PROGRESS)
     {
         if (m_FlagState[BG_TEAM_ALLIANCE] == BG_WS_FLAG_STATE_WAIT_RESPAWN)
         {
@@ -134,6 +90,21 @@ void BattleGroundWS::Update(uint32 diff)
     }
 }
 
+void BattleGroundWS::StartingEventCloseDoors()
+{
+}
+
+void BattleGroundWS::StartingEventOpenDoors()
+{
+    OpenDoorEvent(BG_EVENT_DOOR);
+
+    // TODO implement timer to despawn doors after a short while
+
+    SpawnEvent(WS_EVENT_SPIRITGUIDES_SPAWN, 0, true);
+    SpawnEvent(WS_EVENT_FLAG_A, 0, true);
+    SpawnEvent(WS_EVENT_FLAG_H, 0, true);
+}
+
 void BattleGroundWS::AddPlayer(Player *plr)
 {
     BattleGround::AddPlayer(plr);
@@ -163,7 +134,7 @@ void BattleGroundWS::RespawnFlag(uint32 Team, bool captured)
         //when map_update will be allowed for battlegrounds this code will be useless
         SpawnEvent(WS_EVENT_FLAG_A, 0, true);
         SpawnEvent(WS_EVENT_FLAG_H, 0, true);
-        SendMessageToAll(GetMangosString(LANG_BG_WS_F_PLACED));
+        SendMessageToAll(LANG_BG_WS_F_PLACED, CHAT_MSG_BG_SYSTEM_NEUTRAL);
         PlaySoundToAll(BG_WS_SOUND_FLAGS_RESPAWNED);        // flag respawned sound...
     }
 }
@@ -175,9 +146,9 @@ void BattleGroundWS::RespawnFlagAfterDrop(uint32 team)
 
     RespawnFlag(team, false);
     if (team == ALLIANCE)
-        SendMessageToAll(GetMangosString(LANG_BG_WS_ALLIANCE_FLAG_RESPAWNED));
+        SendMessageToAll(LANG_BG_WS_ALLIANCE_FLAG_RESPAWNED, CHAT_MSG_BG_SYSTEM_NEUTRAL);
     else
-        SendMessageToAll(GetMangosString(LANG_BG_WS_HORDE_FLAG_RESPAWNED));
+        SendMessageToAll(LANG_BG_WS_HORDE_FLAG_RESPAWNED, CHAT_MSG_BG_SYSTEM_NEUTRAL);
 
     PlaySoundToAll(BG_WS_SOUND_FLAGS_RESPAWNED);
 
@@ -195,9 +166,8 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
     if (GetStatus() != STATUS_IN_PROGRESS)
         return;
 
-    uint8 type = 0;
     uint32 winner = 0;
-    char message[256];
+//    char message[256];
 
     Source->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
     if (Source->GetTeam() == ALLIANCE)
@@ -210,8 +180,8 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
                                                             // Drop Horde Flag from Player
         Source->RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
         //message = GetMangosString(LANG_BG_WS_CAPTURED_HF);
-        sprintf(message, GetMangosString(LANG_BG_WS_CAPTURED_HF), Source->GetName());
-		type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
+//        sprintf(message, GetMangosString(LANG_BG_WS_CAPTURED_HF), Source->GetName());
+//		type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
         if (GetTeamScore(ALLIANCE) < BG_WS_MAX_TEAM_SCORE)
             AddPoint(ALLIANCE, 1);
         PlaySoundToAll(BG_WS_SOUND_FLAG_CAPTURED_ALLIANCE);
@@ -227,23 +197,24 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
                                                             // Drop Alliance Flag from Player
         Source->RemoveAurasDueToSpell(BG_WS_SPELL_SILVERWING_FLAG);
         //message = GetMangosString(LANG_BG_WS_CAPTURED_AF);
-        sprintf(message, GetMangosString(LANG_BG_WS_CAPTURED_AF), Source->GetName());
-		type = CHAT_MSG_BG_SYSTEM_HORDE;
+//        sprintf(message, GetMangosString(LANG_BG_WS_CAPTURED_AF), Source->GetName());
+//		type = CHAT_MSG_BG_SYSTEM_HORDE;
         if (GetTeamScore(HORDE) < BG_WS_MAX_TEAM_SCORE)
             AddPoint(HORDE, 1);
         PlaySoundToAll(BG_WS_SOUND_FLAG_CAPTURED_HORDE);
         RewardReputationToTeam(889, m_ReputationCapture, HORDE);
     }
     //for flag capture is reward distributed according level range
-    RewardHonorToTeamDepOnLvl(BG_WSG_FlagCapturedHonor, Source->GetTeam());
+    RewardHonorToTeam(BG_WSG_FlagCapturedHonor[GetBracketId()], Source->GetTeam());
 
     // despawn flags
     SpawnEvent(WS_EVENT_FLAG_A, 0, false);
     SpawnEvent(WS_EVENT_FLAG_H, 0, false);
 
-    WorldPacket data;
-    ChatHandler::FillMessageData(&data, Source->GetSession(), type, LANG_UNIVERSAL, NULL, Source->GetGUID(), message, NULL);
-    SendPacketToAll(&data);
+    if (Source->GetTeam() == ALLIANCE)
+        SendMessageToAll(LANG_BG_WS_CAPTURED_HF, CHAT_MSG_BG_SYSTEM_ALLIANCE, Source);
+    else
+        SendMessageToAll(LANG_BG_WS_CAPTURED_AF, CHAT_MSG_BG_SYSTEM_HORDE, Source);
 
     UpdateFlagState(Source->GetTeam(), 1);                  // flag state none
     UpdateTeamScore(Source->GetTeam());
@@ -300,8 +271,8 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
         return;
     }
 
-    char message[256];
-    uint8 type = 0;
+//    char message[256];
+//    uint8 type = 0;
     bool set = false;
 
     if (Source->GetTeam() == ALLIANCE)
@@ -314,8 +285,8 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
             Source->RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
             m_FlagState[BG_TEAM_HORDE] = BG_WS_FLAG_STATE_ON_GROUND;
             //message = GetMangosString(LANG_BG_WS_DROPPED_HF);
-            sprintf(message, GetMangosString(LANG_BG_WS_DROPPED_HF), Source->GetName());
-			type = CHAT_MSG_BG_SYSTEM_HORDE;
+//            sprintf(message, GetMangosString(LANG_BG_WS_DROPPED_HF), Source->GetName());
+//			type = CHAT_MSG_BG_SYSTEM_HORDE;
             Source->CastSpell(Source, BG_WS_SPELL_WARSONG_FLAG_DROPPED, true);
             set = true;
         }
@@ -330,8 +301,8 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
             Source->RemoveAurasDueToSpell(BG_WS_SPELL_SILVERWING_FLAG);
             m_FlagState[BG_TEAM_ALLIANCE] = BG_WS_FLAG_STATE_ON_GROUND;
             //message = GetMangosString(LANG_BG_WS_DROPPED_AF);
-            sprintf(message, GetMangosString(LANG_BG_WS_DROPPED_AF), Source->GetName());			
-			type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
+//            sprintf(message, GetMangosString(LANG_BG_WS_DROPPED_AF), Source->GetName());			
+//			type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
             Source->CastSpell(Source, BG_WS_SPELL_SILVERWING_FLAG_DROPPED, true);
             set = true;
         }
@@ -341,14 +312,16 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
     {
         UpdateFlagState(Source->GetTeam(), 1);
 
-        WorldPacket data;
-        ChatHandler::FillMessageData(&data, Source->GetSession(), type, LANG_UNIVERSAL, NULL, Source->GetGUID(), message, NULL);
-        SendPacketToAll(&data);
-
         if (Source->GetTeam() == ALLIANCE)
+        {
+            SendMessageToAll(LANG_BG_WS_DROPPED_HF, CHAT_MSG_BG_SYSTEM_HORDE, Source);
             UpdateWorldState(BG_WS_FLAG_UNK_HORDE, uint32(-1));
+        }
         else
+        {
+            SendMessageToAll(LANG_BG_WS_DROPPED_AF, CHAT_MSG_BG_SYSTEM_ALLIANCE, Source);
             UpdateWorldState(BG_WS_FLAG_UNK_ALLIANCE, uint32(-1));
+        }
 
         m_FlagsDropTimer[GetTeamIndexByTeamId(Source->GetTeam()) ? 0 : 1] = BG_WS_FLAG_DROP_TIME;
     }
@@ -359,8 +332,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     if (GetStatus() != STATUS_IN_PROGRESS)
         return;
 
-    char message[256];
-    uint8 type = 0;
+    int32 message_id = 0;
+    ChatMsg type;
 
     uint8 event = (sBattleGroundMgr.GetGameObjectEventIndex(target_obj->GetDBTableGUIDLow())).event1;
 
@@ -368,9 +341,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     if(Source->GetTeam() == HORDE && GetFlagState(ALLIANCE) == BG_WS_FLAG_STATE_ON_BASE
         && event == WS_EVENT_FLAG_A)
     {
-        //message = GetMangosString(LANG_BG_WS_PICKEDUP_AF);
-        sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_AF), Source->GetName());	
-		type = CHAT_MSG_BG_SYSTEM_HORDE;
+        message_id = LANG_BG_WS_PICKEDUP_AF;
+        type = CHAT_MSG_BG_SYSTEM_HORDE;
         PlaySoundToAll(BG_WS_SOUND_ALLIANCE_FLAG_PICKED_UP);
         SpawnEvent(WS_EVENT_FLAG_A, 0, false);
         SetAllianceFlagPicker(Source->GetGUID());
@@ -385,8 +357,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     if (Source->GetTeam() == ALLIANCE && GetFlagState(HORDE) == BG_WS_FLAG_STATE_ON_BASE
         && event == WS_EVENT_FLAG_H)
     {
-        //message = GetMangosString(LANG_BG_WS_PICKEDUP_HF);
-		sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_HF), Source->GetName());
+        message_id = LANG_BG_WS_PICKEDUP_HF;
         type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
         PlaySoundToAll(BG_WS_SOUND_HORDE_FLAG_PICKED_UP);
         SpawnEvent(WS_EVENT_FLAG_H, 0, false);
@@ -403,9 +374,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     {
         if (Source->GetTeam() == ALLIANCE)
         {
-            //message = GetMangosString(LANG_BG_WS_RETURNED_AF);
-            sprintf(message, GetMangosString(LANG_BG_WS_RETURNED_AF), Source->GetName());
-			type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
+            message_id = LANG_BG_WS_RETURNED_AF;
+            type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
             UpdateFlagState(HORDE, BG_WS_FLAG_STATE_WAIT_RESPAWN);
             RespawnFlag(ALLIANCE, false);
             PlaySoundToAll(BG_WS_SOUND_FLAG_RETURNED);
@@ -413,9 +383,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
         }
         else
         {
-            //message = GetMangosString(LANG_BG_WS_PICKEDUP_AF);
-            sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_AF), Source->GetName());
-			type = CHAT_MSG_BG_SYSTEM_HORDE;
+            message_id = LANG_BG_WS_PICKEDUP_AF;
+            type = CHAT_MSG_BG_SYSTEM_HORDE;
             PlaySoundToAll(BG_WS_SOUND_ALLIANCE_FLAG_PICKED_UP);
             SpawnEvent(WS_EVENT_FLAG_A, 0, false);
             SetAllianceFlagPicker(Source->GetGUID());
@@ -433,8 +402,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
     {
         if (Source->GetTeam() == HORDE)
         {
-            //message = GetMangosString(LANG_BG_WS_RETURNED_HF);
-			sprintf(message, GetMangosString(LANG_BG_WS_RETURNED_HF), Source->GetName());
+            message_id = LANG_BG_WS_RETURNED_HF;
             type = CHAT_MSG_BG_SYSTEM_HORDE;
             UpdateFlagState(ALLIANCE, BG_WS_FLAG_STATE_WAIT_RESPAWN);
             RespawnFlag(HORDE, false);
@@ -443,8 +411,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
         }
         else
         {
-            //message = GetMangosString(LANG_BG_WS_PICKEDUP_HF);
-			sprintf(message, GetMangosString(LANG_BG_WS_PICKEDUP_HF), Source->GetName());
+            message_id = LANG_BG_WS_PICKEDUP_HF;
             type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
             PlaySoundToAll(BG_WS_SOUND_HORDE_FLAG_PICKED_UP);
             SpawnEvent(WS_EVENT_FLAG_H, 0, false);
@@ -458,12 +425,10 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
         //target_obj->Delete();
     }
 
-    if (!type)
+    if (!message_id)
         return;
 
-    WorldPacket data;
-    ChatHandler::FillMessageData(&data, Source->GetSession(), type, LANG_UNIVERSAL, NULL, Source->GetGUID(), message, NULL);
-    SendPacketToAll(&data);
+    SendMessageToAll(message_id, type, Source);
     Source->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
 }
 
@@ -521,22 +486,11 @@ void BattleGroundWS::HandleAreaTrigger(Player *Source, uint32 Trigger)
     switch(Trigger)
     {
         case 3686:                                          // Alliance elixir of speed spawn. Trigger not working, because located inside other areatrigger, can be replaced by IsWithinDist(object, dist) in BattleGround::Update().
-            //buff_guid = m_BgObjects[BG_WS_OBJECT_SPEEDBUFF_1];
-            break;
         case 3687:                                          // Horde elixir of speed spawn. Trigger not working, because located inside other areatrigger, can be replaced by IsWithinDist(object, dist) in BattleGround::Update().
-            //buff_guid = m_BgObjects[BG_WS_OBJECT_SPEEDBUFF_2];
-            break;
         case 3706:                                          // Alliance elixir of regeneration spawn
-            //buff_guid = m_BgObjects[BG_WS_OBJECT_REGENBUFF_1];
-            break;
         case 3708:                                          // Horde elixir of regeneration spawn
-            //buff_guid = m_BgObjects[BG_WS_OBJECT_REGENBUFF_2];
-            break;
         case 3707:                                          // Alliance elixir of berserk spawn
-            //buff_guid = m_BgObjects[BG_WS_OBJECT_BERSERKBUFF_1];
-            break;
         case 3709:                                          // Horde elixir of berserk spawn
-            //buff_guid = m_BgObjects[BG_WS_OBJECT_BERSERKBUFF_2];
             break;
         case 3646:                                          // Alliance Flag spawn
             if (m_FlagState[BG_TEAM_HORDE] && !m_FlagState[BG_TEAM_ALLIANCE])
@@ -570,9 +524,6 @@ void BattleGroundWS::HandleAreaTrigger(Player *Source, uint32 Trigger)
             Source->GetSession()->SendAreaTriggerMessage("Warning: Unhandled AreaTrigger in Battleground: %u", Trigger);
             break;
     }
-
-    //if (buff_guid)
-    //    HandleTriggerBuff(buff_guid,Source);
 }
 
 bool BattleGroundWS::SetupBattleGround()
@@ -597,20 +548,19 @@ void BattleGroundWS::Reset()
         m_FlagState[i]       = BG_WS_FLAG_STATE_ON_BASE;
         m_TeamScores[i]      = 0;
     }
-    bool isBGWeekend = sBattleGroundMgr.IsBGWeekend(GetTypeID());
+    bool isBGWeekend = BattleGroundMgr::IsBGWeekend(GetTypeID());
     m_ReputationCapture = (isBGWeekend) ? 25 : 15;
     m_HonorWinKills = (isBGWeekend) ? 3 : 1;
     m_HonorEndKills = (isBGWeekend) ? 4 : 2;
-
 }
 
 void BattleGroundWS::EndBattleGround(uint32 winner)
 {
     //win reward
     if (winner == ALLIANCE)
-        RewardHonorToTeamDepOnLvl(BG_WSG_WinMatchHonor, ALLIANCE);
+        RewardHonorToTeam(BG_WSG_WinMatchHonor[GetBracketId()], ALLIANCE);
     if (winner == HORDE)
-        RewardHonorToTeamDepOnLvl(BG_WSG_WinMatchHonor, HORDE);
+        RewardHonorToTeam(BG_WSG_WinMatchHonor[GetBracketId()], HORDE);
 
     BattleGround::EndBattleGround(winner);
 }

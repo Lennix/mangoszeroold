@@ -237,11 +237,11 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
 
 void WorldSession::HandleGameObjectUseOpcode( WorldPacket & recv_data )
 {
-    uint64 guid;
+    ObjectGuid guid;
 
     recv_data >> guid;
 
-    DEBUG_LOG( "WORLD: Recvd CMSG_GAMEOBJ_USE Message [guid=%u]", GUID_LOPART(guid));
+    DEBUG_LOG("WORLD: Recvd CMSG_GAMEOBJ_USE Message guid: %s", guid.GetString().c_str());
 
     // ignore for remote control state
     if (!_player->IsSelfMover())
@@ -250,6 +250,13 @@ void WorldSession::HandleGameObjectUseOpcode( WorldPacket & recv_data )
     GameObject *obj = GetPlayer()->GetMap()->GetGameObject(guid);
     if(!obj)
         return;
+
+    // Never expect this opcode for some type GO's
+    if (obj->GetGoType() == GAMEOBJECT_TYPE_GENERIC)
+    {
+        sLog.outError("HandleGameObjectUseOpcode: CMSG_GAMEOBJ_USE for not allowed GameObject type %u (Entry %u), didn't expect this to happen.", obj->GetGoType(), obj->GetEntry());
+        return;
+    }
 
     obj->Use(_player);
 }
@@ -386,7 +393,7 @@ void WorldSession::HandleCancelAuraOpcode( WorldPacket& recvPacket)
 
 void WorldSession::HandlePetCancelAuraOpcode( WorldPacket& recvPacket)
 {
-    uint64 guid;
+    ObjectGuid guid;
     uint32 spellId;
 
     recvPacket >> guid;
@@ -405,15 +412,15 @@ void WorldSession::HandlePetCancelAuraOpcode( WorldPacket& recvPacket)
 
     Creature* pet = GetPlayer()->GetMap()->GetAnyTypeCreature(guid);
 
-    if(!pet)
+    if (!pet)
     {
-        sLog.outError( "Pet %u not exist.", uint32(GUID_LOPART(guid)) );
+        sLog.outError("HandlePetCancelAuraOpcode - %s not exist.", guid.GetString().c_str());
         return;
     }
 
-    if(pet != GetPlayer()->GetPet() && pet != GetPlayer()->GetCharm())
+    if (guid.GetRawValue() != GetPlayer()->GetPetGUID() && guid.GetRawValue() != GetPlayer()->GetCharmGUID())
     {
-        sLog.outError( "HandlePetCancelAura.Pet %u isn't pet of player %s", uint32(GUID_LOPART(guid)),GetPlayer()->GetName() );
+        sLog.outError("HandlePetCancelAura. %s isn't pet of %s", guid.GetString().c_str(), GetPlayer()->GetObjectGuid().GetString().c_str());
         return;
     }
 

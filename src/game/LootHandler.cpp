@@ -164,7 +164,7 @@ void WorldSession::HandleAutostoreLootItemOpcode( WorldPacket & recv_data )
         player->SendNewItem(newitem, uint32(item->count), false, false, true);
     }
     else
-        player->SendEquipError( msg, NULL, NULL );
+        player->SendEquipError( msg, NULL, NULL, item->itemid );
 }
 
 void WorldSession::HandleLootMoneyOpcode( WorldPacket & /*recv_data*/ )
@@ -258,8 +258,12 @@ void WorldSession::HandleLootOpcode( WorldPacket & recv_data )
 {
     DEBUG_LOG("WORLD: CMSG_LOOT");
 
-    uint64 guid;
+    ObjectGuid guid;
     recv_data >> guid;
+
+    // Check possible cheat
+    if (!_player->isAlive())
+        return;
 
     GetPlayer()->SendLoot(guid, LOOT_CORPSE);
 }
@@ -489,8 +493,10 @@ void WorldSession::HandleLootMasterGiveOpcode( WorldPacket & recv_data )
     uint8 msg = target->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, item.itemid, item.count );
     if ( msg != EQUIP_ERR_OK )
     {
-        target->SendEquipError( msg, NULL, NULL );
-        _player->SendEquipError( msg, NULL, NULL );         // send duplicate of error massage to master looter
+        target->SendEquipError( msg, NULL, NULL, item.itemid );
+
+        // send duplicate of error massage to master looter
+        _player->SendEquipError( msg, NULL, NULL, item.itemid );
         return;
     }
 

@@ -44,23 +44,6 @@
 
 #include "TemporarySummon.h"
 
-uint32 GuidHigh2TypeId(uint32 guid_hi)
-{
-    switch(guid_hi)
-    {
-        case HIGHGUID_ITEM:         return TYPEID_ITEM;
-        //case HIGHGUID_CONTAINER:    return TYPEID_CONTAINER; HIGHGUID_CONTAINER==HIGHGUID_ITEM currently
-        case HIGHGUID_UNIT:         return TYPEID_UNIT;
-        case HIGHGUID_PET:          return TYPEID_UNIT;
-        case HIGHGUID_PLAYER:       return TYPEID_PLAYER;
-        case HIGHGUID_GAMEOBJECT:   return TYPEID_GAMEOBJECT;
-        case HIGHGUID_DYNAMICOBJECT:return TYPEID_DYNAMICOBJECT;
-        case HIGHGUID_CORPSE:       return TYPEID_CORPSE;
-        case HIGHGUID_MO_TRANSPORT: return TYPEID_GAMEOBJECT;
-    }
-    return TYPEID_OBJECT;                                   // unknown
-}
-
 Object::Object( )
 {
     m_objectTypeId      = TYPEID_OBJECT;
@@ -357,16 +340,6 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer * data, UpdateMask *
                 IsActivateToQuest = true;
 
             updateMask->SetBit(GAMEOBJECT_DYN_FLAGS);
-            updateMask->SetBit(GAMEOBJECT_ANIMPROGRESS);
-
-            if(GetUInt32Value(GAMEOBJECT_FLAGS))
-            {
-                IsActivateToQuest = true;
-                updateMask->SetBit(GAMEOBJECT_FLAGS);
-            }
-
-            if (GetUInt32Value(GAMEOBJECT_ARTKIT))
-                updateMask->SetBit(GAMEOBJECT_ARTKIT);
         }
     }
     else                                                    // case UPDATETYPE_VALUES
@@ -402,7 +375,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer * data, UpdateMask *
                     {
                         if (appendValue & UNIT_NPC_FLAG_TRAINER)
                         {
-                            if (!((Creature*)this)->isCanTrainingOf(target, false))
+                            if (!((Creature*)this)->IsTrainerOf(target, false))
                                 appendValue &= ~UNIT_NPC_FLAG_TRAINER;
                         }
 
@@ -459,14 +432,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer * data, UpdateMask *
             if (updateMask->GetBit(index))
             {
                 // send in current format (float as float, uint32 as uint32)
-                if ( index == GAMEOBJECT_FLAGS )
-                {
-                    if(IsActivateToQuest || target->isGameMaster()) // activate if GM
-                        *data << (m_uint32Values[ index ] & ~GO_FLAG_INTERACT_COND);
-                    else
-                        *data << m_uint32Values[ index ];
-                }
-                else if ( index == GAMEOBJECT_DYN_FLAGS )
+                if ( index == GAMEOBJECT_DYN_FLAGS )
                 {
                     if (IsActivateToQuest)
                     {

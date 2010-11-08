@@ -154,7 +154,9 @@ enum eConfigUInt32Values
     CONFIG_UINT32_CORPSE_DECAY_RAREELITE,
     CONFIG_UINT32_CORPSE_DECAY_WORLDBOSS,
     CONFIG_UINT32_INSTANT_LOGOUT,
+    CONFIG_UINT32_BATTLEGROUND_INVITATION_TYPE,
     CONFIG_UINT32_BATTLEGROUND_PREMATURE_FINISH_TIMER,
+    CONFIG_UINT32_BATTLEGROUND_PREMADE_GROUP_WAIT_FOR_MATCH,
     CONFIG_UINT32_BATTLEGROUND_QUEUE_ANNOUNCER_JOIN,
     CONFIG_UINT32_GUILD_EVENT_LOG_COUNT,
     CONFIG_UINT32_TIMERBAR_FATIGUE_GMLEVEL,
@@ -610,7 +612,7 @@ class World
         static float m_VisibleObjectGreyDistance;
 
         // CLI command holder to be thread safe
-		ACE_Based::LockedQueue<CliCommandHolder*,ACE_Thread_Mutex> cliCmdQueue;
+        ACE_Based::LockedQueue<CliCommandHolder*,ACE_Thread_Mutex> cliCmdQueue;
         SqlResultQueue *m_resultQueue;
 
         //Player Queue
@@ -618,7 +620,7 @@ class World
 
         //sessions that are added async
         void AddSession_(WorldSession* s);
-		ACE_Based::LockedQueue<WorldSession*, ACE_Thread_Mutex> addSessQueue;
+        ACE_Based::LockedQueue<WorldSession*, ACE_Thread_Mutex> addSessQueue;
 
         //used versions
         std::string m_DBVersion;
