@@ -1345,6 +1345,7 @@ void Creature::SetDeathState(DeathState s)
         // always save boss respawn time at death to prevent crash cheating
         if (sWorld.getConfig(CONFIG_BOOL_SAVE_RESPAWN_TIME_IMMEDIATLY) || IsWorldBoss())
             SaveRespawnTime();
+    }
 
     Unit::SetDeathState(s);
 
@@ -1352,9 +1353,6 @@ void Creature::SetDeathState(DeathState s)
     {
         SetTargetGuid(ObjectGuid());                        // remove target selection in any cases (can be set at aura remove in Unit::SetDeathState)
         SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
-
-        if (canFly() && FallGround())
-            return;
 
         if (HasSearchedAssistance())
         {
@@ -1368,6 +1366,7 @@ void Creature::SetDeathState(DeathState s)
 
         Unit::SetDeathState(CORPSE);
     }
+
     if (s == JUST_ALIVED)
     {
         SetHealth(GetMaxHealth());
