@@ -4850,13 +4850,13 @@ float Player::OCTRegenMPPerSpirit()
 
     switch (Class)
     {
-        case CLASS_DRUID:   addvalue = (Spirit/5 + 15);   break;
-        case CLASS_HUNTER:  addvalue = (Spirit/5 + 15);   break;
-        case CLASS_MAGE:    addvalue = (Spirit/4 + 12.5); break;
-        case CLASS_PALADIN: addvalue = (Spirit/5 + 15);   break;
-        case CLASS_PRIEST:  addvalue = (Spirit/4 + 12.5); break;
-        case CLASS_SHAMAN:  addvalue = (Spirit/5 + 17);   break;
-        case CLASS_WARLOCK: addvalue = (Spirit/5 + 15);   break;
+        case CLASS_DRUID:   addvalue = (Spirit/5 + 15)/2;   break;
+        case CLASS_HUNTER:  addvalue = (Spirit/5 + 15)/2;   break;
+        case CLASS_MAGE:    addvalue = (Spirit/4 + 12.5)/2; break;
+        case CLASS_PALADIN: addvalue = (Spirit/5 + 15)/2;   break;
+        case CLASS_PRIEST:  addvalue = (Spirit/4 + 12.5)/2; break;
+        case CLASS_SHAMAN:  addvalue = (Spirit/5 + 17)/2;   break;
+        case CLASS_WARLOCK: addvalue = (Spirit/5 + 15)/2;   break;
     }
 
     return addvalue;
