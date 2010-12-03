@@ -154,7 +154,7 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode( WorldPacket & recv_data )
         {
             _player->AddQuest( qInfo, pObject );
 
-            if (qInfo->HasFlag(QUEST_FLAGS_PARTY_ACCEPT))
+            if (qInfo->HasQuestFlag(QUEST_FLAGS_PARTY_ACCEPT))
             {
                 if (Group* pGroup = _player->GetGroup())
                 {
@@ -233,7 +233,7 @@ void WorldSession::HandleQuestgiverQueryQuestOpcode( WorldPacket & recv_data )
 
     // Verify that the guid is valid and is a questgiver or involved in the requested quest
     Object* pObject = _player->GetObjectByTypeMask(guid, TYPEMASK_CREATURE_GAMEOBJECT_OR_ITEM);
-    if(!pObject||!pObject->HasQuest(quest) && !pObject->HasInvolvedQuest(quest))
+    if (!pObject || (!pObject->HasQuest(quest) && !pObject->HasInvolvedQuest(quest)))
     {
         _player->PlayerTalkClass->CloseGossip();
         return;
@@ -373,7 +373,7 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
 
             if (const Quest *pQuest = sObjectMgr.GetQuestTemplate(quest))
             {
-                if (pQuest->HasFlag(QUEST_MANGOS_FLAGS_TIMED))
+                if (pQuest->HasSpecialFlag(QUEST_SPECIAL_FLAG_TIMED))
                     _player->RemoveTimedQuest(quest);
             }
 
@@ -393,7 +393,7 @@ void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
 
     if (const Quest* pQuest =sObjectMgr.GetQuestTemplate(quest))
     {
-        if (!pQuest->HasFlag(QUEST_FLAGS_PARTY_ACCEPT))
+        if (!pQuest->HasQuestFlag(QUEST_FLAGS_PARTY_ACCEPT))
             return;
 
         Player* pOriginalPlayer = ObjectAccessor::FindPlayer(_player->GetDivider());
@@ -566,11 +566,14 @@ uint32 WorldSession::getDialogStatus(Player *pPlayer, Object* questgiver, uint32
         uint32 result2 = 0;
         uint32 quest_id = itr->second;
         Quest const *pQuest = sObjectMgr.GetQuestTemplate(quest_id);
-        if ( !pQuest ) continue;
+
+        if (!pQuest || !pQuest->IsActive())
+            continue;
 
         QuestStatus status = pPlayer->GetQuestStatus( quest_id );
-        if( (status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id)) ||
-            (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false)) )
+
+        if ((status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id)) ||
+            (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false)))
         {
             if ( pQuest->IsAutoComplete() && pQuest->IsRepeatable() )
                 result2 = DIALOG_STATUS_REWARD_REP;
@@ -589,7 +592,8 @@ uint32 WorldSession::getDialogStatus(Player *pPlayer, Object* questgiver, uint32
         uint32 result2 = 0;
         uint32 quest_id = itr->second;
         Quest const *pQuest = sObjectMgr.GetQuestTemplate(quest_id);
-        if ( !pQuest )
+
+        if (!pQuest || !pQuest->IsActive())
             continue;
 
         QuestStatus status = pPlayer->GetQuestStatus( quest_id );
@@ -603,10 +607,7 @@ uint32 WorldSession::getDialogStatus(Player *pPlayer, Object* questgiver, uint32
                         result2 = DIALOG_STATUS_REWARD_REP;
                     else if (pPlayer->getLevel() <= pPlayer->GetQuestLevel(pQuest) + sWorld.getConfig(CONFIG_UINT32_QUEST_LOW_LEVEL_HIDE_DIFF) )
                     {
-                        /*[-ZERO] if (pQuest->HasFlag(QUEST_FLAGS_DAILY))
-                            result2 = DIALOG_STATUS_AVAILABLE_REP;
-                        else*/
-                            result2 = DIALOG_STATUS_AVAILABLE;
+                        result2 = DIALOG_STATUS_AVAILABLE;
                     }
                     else
                         result2 = DIALOG_STATUS_CHAT;

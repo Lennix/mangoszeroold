@@ -2106,8 +2106,8 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
     {
         GameObjectInfo const* goInfo = gameObjTarget->GetGOInfo();
         // Arathi Basin banner opening !
-        if (goInfo->type == GAMEOBJECT_TYPE_BUTTON && goInfo->button.noDamageImmune ||
-            goInfo->type == GAMEOBJECT_TYPE_GOOBER && goInfo->goober.losOK)
+        if ((goInfo->type == GAMEOBJECT_TYPE_BUTTON && goInfo->button.noDamageImmune) ||
+            (goInfo->type == GAMEOBJECT_TYPE_GOOBER && goInfo->goober.losOK))
         {
             //CanUseBattleGroundObject() already called in CheckCast()
             // in battleground check
@@ -2313,7 +2313,7 @@ void Spell::EffectApplyAreaAura(SpellEffectIndex eff_idx)
 
 void Spell::EffectSummon(SpellEffectIndex eff_idx)
 {
-    if (m_caster->GetPetGUID())
+    if (!m_caster->GetPetGuid().IsEmpty())
         return;
 
     if (!unitTarget)
@@ -2371,7 +2371,7 @@ void Spell::EffectSummon(SpellEffectIndex eff_idx)
     if (duration > 0)
         spawnCreature->SetDuration(duration);
 
-    spawnCreature->SetOwnerGUID(m_caster->GetGUID());
+    spawnCreature->SetOwnerGuid(m_caster->GetObjectGuid());
     spawnCreature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
     spawnCreature->setPowerType(POWER_MANA);
     spawnCreature->setFaction(m_caster->getFaction());
@@ -2381,7 +2381,7 @@ void Spell::EffectSummon(SpellEffectIndex eff_idx)
     spawnCreature->SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, 0);
     spawnCreature->SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
     spawnCreature->SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, 1000);
-    spawnCreature->SetCreatorGUID(m_caster->GetGUID());
+    spawnCreature->SetCreatorGuid(m_caster->GetObjectGuid());
     spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
 
     spawnCreature->InitStatsForLevel(level, m_caster);
@@ -2621,7 +2621,7 @@ void Spell::EffectPickPocket(SpellEffectIndex /*eff_idx*/)
         {
             // Stealing successful
             //DEBUG_LOG("Sending loot from pickpocket");
-            ((Player*)m_caster)->SendLoot(unitTarget->GetGUID(),LOOT_PICKPOCKETING);
+            ((Player*)m_caster)->SendLoot(unitTarget->GetObjectGuid(),LOOT_PICKPOCKETING);
         }
         else
         {
@@ -2711,7 +2711,11 @@ void Spell::EffectSummonWild(SpellEffectIndex eff_idx)
         else
             m_caster->GetClosePoint(px, py, pz, 3.0f);
 
-        m_caster->SummonCreature(creature_entry, px, py, pz, m_caster->GetOrientation(), summonType, duration);
+        if(Creature *summon = m_caster->SummonCreature(creature_entry, px, py, pz, m_caster->GetOrientation(), summonType, duration))
+        {
+            summon->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
+            summon->SetCreatorGuid(m_caster->GetObjectGuid());
+        }
     }
 }
 
@@ -2804,14 +2808,14 @@ void Spell::EffectSummonGuardian(SpellEffectIndex eff_idx)
         if (duration > 0)
             spawnCreature->SetDuration(duration);
 
-        spawnCreature->SetOwnerGUID(m_caster->GetGUID());
+        spawnCreature->SetOwnerGuid(m_caster->GetObjectGuid());
         spawnCreature->setPowerType(POWER_MANA);
         spawnCreature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
         spawnCreature->setFaction(m_caster->getFaction());
         spawnCreature->SetUInt32Value(UNIT_FIELD_FLAGS, 0);
         spawnCreature->SetUInt32Value(UNIT_FIELD_BYTES_1, 0);
         spawnCreature->SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, 0);
-        spawnCreature->SetCreatorGUID(m_caster->GetGUID());
+        spawnCreature->SetCreatorGuid(m_caster->GetObjectGuid());
         spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
 
         spawnCreature->InitStatsForLevel(level, m_caster);
@@ -3191,8 +3195,8 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
             NewSummon->GetCharmInfo()->SetReactState(REACT_DEFENSIVE);
     }
 
-    NewSummon->SetOwnerGUID(m_caster->GetGUID());
-    NewSummon->SetCreatorGUID(m_caster->GetGUID());
+    NewSummon->SetOwnerGuid(m_caster->GetObjectGuid());
+    NewSummon->SetCreatorGuid(m_caster->GetObjectGuid());
     NewSummon->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
     NewSummon->setFaction(faction);
     NewSummon->SetUInt32Value(UNIT_FIELD_BYTES_0, 2048);
@@ -4197,7 +4201,7 @@ void Spell::EffectDisEnchant(SpellEffectIndex /*eff_idx*/)
 
     p_caster->UpdateCraftSkill(m_spellInfo->Id);
 
-    ((Player*)m_caster)->SendLoot(itemTarget->GetGUID(),LOOT_DISENCHANTING);
+    ((Player*)m_caster)->SendLoot(itemTarget->GetObjectGuid(),LOOT_DISENCHANTING);
 
     // item will be removed at disenchanting end
 }
@@ -4496,7 +4500,7 @@ void Spell::EffectSkinning(SpellEffectIndex /*eff_idx*/)
 
     uint32 skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
 
-    ((Player*)m_caster)->SendLoot(creature->GetGUID(),LOOT_SKINNING);
+    ((Player*)m_caster)->SendLoot(creature->GetObjectGuid(),LOOT_SKINNING);
     creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
 
     int32 reqValue = targetLevel < 10 ? 0 : targetLevel < 20 ? (targetLevel-10)*10 : targetLevel*5;
@@ -4587,8 +4591,8 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
         return;
     }
 
-    critter->SetOwnerGUID(m_caster->GetGUID());
-    critter->SetCreatorGUID(m_caster->GetGUID());
+    critter->SetOwnerGuid(m_caster->GetObjectGuid());
+    critter->SetCreatorGuid(m_caster->GetObjectGuid());
     critter->setFaction(m_caster->getFaction());
     critter->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
 

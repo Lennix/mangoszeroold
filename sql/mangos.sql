@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
-  `required_z0986_s0356_01_mangos_quest_template` bit(1) default NULL
+  `required_z1022_s0117_01_mangos_creature_ai_scripts` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -595,7 +595,7 @@ INSERT INTO `command` VALUES
 ('neargrave',3,'Syntax: .neargrave [alliance|horde]\r\n\r\nFind nearest graveyard linked to zone (or only nearest from accepts alliance or horde faction ghosts).'),
 ('notify',1,'Syntax: .notify $MessageToBroadcast\r\n\r\nSend a global message to all players online in screen.'),
 ('npc add',2,'Syntax: .npc add #creatureid\r\n\r\nSpawn a creature by the given template id of #creatureid.'),
-('npc additem',2,'Syntax: .npc additem #itemId <#maxcount><#incrtime><#extendedcost>r\r\n\r\nAdd item #itemid to item list of selected vendor. Also optionally set max count item in vendor item list and time to item count restoring and items ExtendedCost.'),
+('npc additem',2,'Syntax: .npc additem #itemId <#maxcount><#incrtime>r\r\n\r\nAdd item #itemid to item list of selected vendor. Also optionally set max count item in vendor item list and time to item count restoring.'),
 ('npc addmove',2,'Syntax: .npc addmove #creature_guid [#waittime]\r\n\r\nAdd your current location as a waypoint for creature with guid #creature_guid. And optional add wait time.'),
 ('npc addweapon',3,'Not yet implemented.'),
 ('npc allowmove',3,'Syntax: .npc allowmove\r\n\r\nEnable or disable movement creatures in world. Not implemented.'),
@@ -1158,6 +1158,7 @@ CREATE TABLE `creature_template` (
   `RacialLeader` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `RegenHealth` tinyint(3) unsigned NOT NULL DEFAULT '1',
   `equipment_id` mediumint(8) unsigned NOT NULL DEFAULT '0',
+  `vendor_id` mediumint(8) unsigned NOT NULL default '0',
   `mechanic_immune_mask` int(10) unsigned NOT NULL DEFAULT '0',
   `flags_extra` int(10) unsigned NOT NULL DEFAULT '0',
   `ScriptName` char(64) NOT NULL DEFAULT '',
@@ -1172,7 +1173,7 @@ CREATE TABLE `creature_template` (
 LOCK TABLES `creature_template` WRITE;
 /*!40000 ALTER TABLE `creature_template` DISABLE KEYS */;
 INSERT INTO `creature_template` VALUES
-(1,0,0,10045,0,'Waypoint(Only GM can see it)','Visual',0,1,1,64,64,0,0,0,35,35,0,0.91,1.14286,1,0,14,15,0,100,1,2000,2200,4096,0,0,0,0,0,0,1.76,2.42,100,8,5242886,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,3,0,0,1,0,0,130,'');
+(1,0,0,10045,0,'Waypoint(Only GM can see it)','Visual',0,1,1,64,64,0,0,0,35,35,0,0.91,1.14286,1,0,14,15,0,100,1,2000,2200,4096,0,0,0,0,0,0,1.76,2.42,100,8,5242886,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'',0,3,0,0,1,0,0,0,130,'');
 /*!40000 ALTER TABLE `creature_template` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1578,30 +1579,6 @@ LOCK TABLES `game_event_creature` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `game_event_creature_quest`
---
-
-DROP TABLE IF EXISTS `game_event_creature_quest`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `game_event_creature_quest` (
-  `id` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `quest` mediumint(8) unsigned NOT NULL DEFAULT '0',
-  `event` smallint(5) unsigned NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`,`quest`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `game_event_creature_quest`
---
-
-LOCK TABLES `game_event_creature_quest` WRITE;
-/*!40000 ALTER TABLE `game_event_creature_quest` DISABLE KEYS */;
-/*!40000 ALTER TABLE `game_event_creature_quest` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `game_event_gameobject`
 --
 
@@ -1650,26 +1627,23 @@ LOCK TABLES `game_event_model_equip` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `game_event_pool`
+-- Table structure for table `game_event_quest`
 --
 
-DROP TABLE IF EXISTS `game_event_pool`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `game_event_pool` (
-  `pool_entry` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT 'Id of the pool',
-  `event` smallint(6) NOT NULL DEFAULT '0' COMMENT 'Put negatives values to remove during event',
-  PRIMARY KEY (`pool_entry`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `game_event_quest`;
+CREATE TABLE `game_event_quest` (
+  `quest` mediumint(8) unsigned NOT NULL default '0' COMMENT 'entry from quest_template',
+  `event` smallint(5) unsigned NOT NULL default '0' COMMENT 'entry from game_event',
+  PRIMARY KEY  (`quest`,`event`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Game event system';
 
 --
--- Dumping data for table `game_event_pool`
+-- Dumping data for table `game_event_quest`
 --
 
-LOCK TABLES `game_event_pool` WRITE;
-/*!40000 ALTER TABLE `game_event_pool` DISABLE KEYS */;
-/*!40000 ALTER TABLE `game_event_pool` ENABLE KEYS */;
+LOCK TABLES `game_event_quest` WRITE;
+/*!40000 ALTER TABLE `game_event_quest` DISABLE KEYS */;
+/*!40000 ALTER TABLE `game_event_quest` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -3867,7 +3841,6 @@ CREATE TABLE `npc_vendor` (
   `item` mediumint(8) unsigned NOT NULL DEFAULT '0',
   `maxcount` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `incrtime` int(10) unsigned NOT NULL DEFAULT '0',
-  `ExtendedCost` mediumint(8) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Npc System';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -3879,6 +3852,28 @@ CREATE TABLE `npc_vendor` (
 LOCK TABLES `npc_vendor` WRITE;
 /*!40000 ALTER TABLE `npc_vendor` DISABLE KEYS */;
 /*!40000 ALTER TABLE `npc_vendor` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `npc_vendor_template`
+--
+
+DROP TABLE IF EXISTS `npc_vendor_template`;
+CREATE TABLE `npc_vendor_template` (
+  `entry` mediumint(8) unsigned NOT NULL default '0',
+  `item` mediumint(8) unsigned NOT NULL default '0',
+  `maxcount` tinyint(3) unsigned NOT NULL default '0',
+  `incrtime` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`entry`,`item`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Npc System';
+
+--
+-- Dumping data for table `npc_vendor_template`
+--
+
+LOCK TABLES `npc_vendor_template` WRITE;
+/*!40000 ALTER TABLE `npc_vendor_template` DISABLE KEYS */;
+/*!40000 ALTER TABLE `npc_vendor_template` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

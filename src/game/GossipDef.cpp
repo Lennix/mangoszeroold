@@ -461,7 +461,7 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const *pQuest, ObjectGuid npcG
     data << uint32(ActivateAccept);
     //[-ZERO] data << uint32(pQuest->GetSuggestedPlayers());
 
-    if (pQuest->HasFlag(QUEST_FLAGS_HIDDEN_REWARDS))
+    if (pQuest->HasQuestFlag(QUEST_FLAGS_HIDDEN_REWARDS))
     {
         data << uint32(0);                                  // Rewarded chosen items hidden
         data << uint32(0);                                  // Rewarded items hidden
@@ -586,7 +586,7 @@ void PlayerMenu::SendQuestQueryResponse( Quest const *pQuest )
 
     data << uint32(pQuest->GetNextQuestInChain());          // client will request this quest from NPC, if not 0
 
-    if (pQuest->HasFlag(QUEST_FLAGS_HIDDEN_REWARDS))
+    if (pQuest->HasQuestFlag(QUEST_FLAGS_HIDDEN_REWARDS))
         data << uint32(0);                                  // Hide money rewarded
     else
         data << uint32(pQuest->GetRewOrReqMoney());
@@ -594,16 +594,13 @@ void PlayerMenu::SendQuestQueryResponse( Quest const *pQuest )
     data << uint32(pQuest->GetRewMoneyMaxLevel());          // used in XP calculation at client
 
     data << uint32(pQuest->GetRewSpell());                  // reward spell, this spell will display (icon) (casted if RewSpellCast==0)
-    //data << uint32(0);
 
-   //[-ZERO] data << uint32(pQuest->GetRewSpellCast());              // casted spell
-
-    data << uint32(pQuest->GetSrcItemId());
-    data << uint32(pQuest->GetFlags() & 0xFFFF);
+    data << uint32(pQuest->GetSrcItemId());                 // source item id
+    data << uint32(pQuest->GetQuestFlags());                // quest flags
 
     int iI;
 
-    if (pQuest->HasFlag(QUEST_FLAGS_HIDDEN_REWARDS))
+    if (pQuest->HasQuestFlag(QUEST_FLAGS_HIDDEN_REWARDS))
     {
         for (iI = 0; iI < QUEST_REWARDS_COUNT; ++iI)
             data << uint32(0) << uint32(0);

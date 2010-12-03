@@ -160,6 +160,9 @@ ObjectMgr::~ObjectMgr()
     for (GuildMap::iterator itr = mGuildMap.begin(); itr != mGuildMap.end(); ++itr)
         delete itr->second;
 
+    for (CacheVendorItemMap::iterator itr = m_mCacheVendorTemplateItemMap.begin(); itr != m_mCacheVendorTemplateItemMap.end(); ++itr)
+        itr->second.Clear();
+
     for (CacheVendorItemMap::iterator itr = m_mCacheVendorItemMap.begin(); itr != m_mCacheVendorItemMap.end(); ++itr)
         itr->second.Clear();
 
@@ -540,6 +543,12 @@ void ObjectMgr::LoadCreatureTemplates()
                 sLog.outErrorDb("Table `creature_template` have creature (Entry: %u) with equipment_id %u not found in table `creature_equip_template`, set to no equipment.", cInfo->Entry, cInfo->equipmentId);
                 const_cast<CreatureInfo*>(cInfo)->equipmentId = 0;
             }
+        }
+
+        if(cInfo->vendorId > 0)
+        {
+            if(!(cInfo->npcflag & UNIT_NPC_FLAG_VENDOR))
+                sLog.outErrorDb("Table `creature_template` have creature (Entry: %u) with vendor_id %u but not have flag UNIT_NPC_FLAG_VENDOR (%u), vendor items will ignored.", cInfo->Entry, cInfo->vendorId, UNIT_NPC_FLAG_VENDOR);
         }
 
         /// if not set custom creature scale then load scale from CreatureDisplayInfo.dbc
@@ -1405,6 +1414,23 @@ void ObjectMgr::LoadItemPrototypes()
             const_cast<ItemPrototype*>(proto)->InventoryType = INVTYPE_NON_EQUIP;
         }
 
+        if (proto->InventoryType != INVTYPE_NON_EQUIP)
+        {
+            if(proto->Flags & ITEM_FLAG_LOOTABLE)
+            {
+                sLog.outErrorDb("Item container (Entry: %u) has not allowed for containers flag ITEM_FLAG_LOOTABLE (%u), flag removed.", i, ITEM_FLAG_LOOTABLE);
+                const_cast<ItemPrototype*>(proto)->Flags &= ~ITEM_FLAG_LOOTABLE;
+            }
+        }
+        else if (proto->InventoryType != INVTYPE_BAG)
+        {
+            if (proto->ContainerSlots > 0)
+            {
+                sLog.outErrorDb("Non-container item (Entry: %u) has ContainerSlots (%u), set to 0.", i, proto->ContainerSlots);
+                const_cast<ItemPrototype*>(proto)->ContainerSlots = 0;
+            }
+        }
+
         if(proto->RequiredSkill >= MAX_SKILL_TYPE)
         {
             sLog.outErrorDb("Item (Entry: %u) has wrong RequiredSkill value (%u)",i,proto->RequiredSkill);
@@ -1473,16 +1499,10 @@ void ObjectMgr::LoadItemPrototypes()
 
         if (proto->ContainerSlots)
         {
-            if(proto->ContainerSlots > MAX_BAG_SIZE)
+            if (proto->ContainerSlots > MAX_BAG_SIZE)
             {
                 sLog.outErrorDb("Item (Entry: %u) has too large value in ContainerSlots (%u), replace by hardcoded limit (%u).",i,proto->ContainerSlots,MAX_BAG_SIZE);
                 const_cast<ItemPrototype*>(proto)->ContainerSlots = MAX_BAG_SIZE;
-            }
-
-            if(proto->Flags & ITEM_FLAG_LOOTABLE)
-            {
-                sLog.outErrorDb("Item container (Entry: %u) has not allowed for containers flag ITEM_FLAG_LOOTABLE (%u), flag removed.",i,ITEM_FLAG_LOOTABLE);
-                const_cast<ItemPrototype*>(proto)->Flags &= ~ITEM_FLAG_LOOTABLE;
             }
         }
 
@@ -3100,14 +3120,12 @@ void ObjectMgr::LoadQuests()
             sLog.outErrorDb("Quest %u has `Method` = %u, expected values are 0, 1 or 2.",qinfo->GetQuestId(),qinfo->GetQuestMethod());
         }
 
-        if (qinfo->QuestFlags & ~QUEST_MANGOS_FLAGS_DB_ALLOWED)
+        if (qinfo->m_SpecialFlags > QUEST_SPECIAL_FLAG_DB_ALLOWED)
         {
-            sLog.outErrorDb("Quest %u has `SpecialFlags` = %u > max allowed value. Correct `SpecialFlags` to value <= %u",
-                qinfo->GetQuestId(),qinfo->QuestFlags,QUEST_MANGOS_FLAGS_DB_ALLOWED >> 16);
-            qinfo->QuestFlags &= QUEST_MANGOS_FLAGS_DB_ALLOWED;
+            sLog.outErrorDb("Quest %u has `SpecialFlags` = %u, above max flags not allowed for database.", qinfo->GetQuestId(), qinfo->m_SpecialFlags);
         }
 
-        if (qinfo->QuestFlags & QUEST_FLAGS_AUTO_REWARDED)
+        if (qinfo->HasQuestFlag(QUEST_FLAGS_AUTO_REWARDED))
         {
             // at auto-reward can be rewarded only RewChoiceItemId[0]
             for(int j = 1; j < QUEST_REWARD_CHOICES_COUNT; ++j )
@@ -3143,11 +3161,11 @@ void ObjectMgr::LoadQuests()
             }
 
             //check for proper RequiredSkill value (skill case)
-            if (int32 skill_id =  SkillByQuestSort(-int32(qinfo->ZoneOrSort)))
+            if (uint32 skill_id = SkillByQuestSort(-int32(qinfo->ZoneOrSort)))
             {
                 if (qinfo->RequiredSkill != skill_id)
                 {
-                    sLog.outErrorDb("Quest %u has `ZoneOrSort` = %i but `RequiredSkill` does not have a corresponding value (%i).",
+                    sLog.outErrorDb("Quest %u has `ZoneOrSort` = %i but `RequiredSkill` does not have a corresponding value (%u).",
                         qinfo->GetQuestId(),qinfo->ZoneOrSort,skill_id);
                     //override, and force proper value here?
                 }
@@ -3301,7 +3319,7 @@ void ObjectMgr::LoadQuests()
                     // no changes, quest can't be done for this requirement
                 }
 
-                qinfo->SetFlag(QUEST_MANGOS_FLAGS_DELIVER);
+                qinfo->SetSpecialFlag(QUEST_SPECIAL_FLAG_DELIVER);
 
                 if (!sItemStorage.LookupEntry<ItemPrototype>(id))
                 {
@@ -3367,12 +3385,12 @@ void ObjectMgr::LoadQuests()
 
                     if (found)
                     {
-                        if (!qinfo->HasFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT))
+                        if (!qinfo->HasSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT))
                         {
-                            sLog.outErrorDb("Spell (id: %u) have SPELL_EFFECT_QUEST_COMPLETE or SPELL_EFFECT_SEND_EVENT for quest %u and ReqCreatureOrGOId%d = 0, but quest not have flag QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT. Quest flags or ReqCreatureOrGOId%d must be fixed, quest modified to enable objective.",spellInfo->Id,qinfo->QuestId,j+1,j+1);
+                            sLog.outErrorDb("Spell (id: %u) have SPELL_EFFECT_QUEST_COMPLETE or SPELL_EFFECT_SEND_EVENT for quest %u and ReqCreatureOrGOId%d = 0, but quest not have flag QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT. Quest flags or ReqCreatureOrGOId%d must be fixed, quest modified to enable objective.",spellInfo->Id,qinfo->QuestId,j+1,j+1);
 
                             // this will prevent quest completing without objective
-                            const_cast<Quest*>(qinfo)->SetFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT);
+                            const_cast<Quest*>(qinfo)->SetSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT);
                         }
                     }
                     else
@@ -3406,7 +3424,7 @@ void ObjectMgr::LoadQuests()
             {
                 // In fact SpeakTo and Kill are quite same: either you can speak to mob:SpeakTo or you can't:Kill/Cast
 
-                qinfo->SetFlag(QUEST_MANGOS_FLAGS_KILL_OR_CAST | QUEST_MANGOS_FLAGS_SPEAKTO);
+                qinfo->SetSpecialFlag(QuestSpecialFlags(QUEST_SPECIAL_FLAG_KILL_OR_CAST | QUEST_SPECIAL_FLAG_SPEAKTO));
 
                 if (!qinfo->ReqCreatureOrGOCount[j])
                 {
@@ -3614,10 +3632,10 @@ void ObjectMgr::LoadQuests()
             m_ExclusiveQuestGroups.insert(ExclusiveQuestGroupsMap::value_type(qinfo->ExclusiveGroup, qinfo->GetQuestId()));
 
         if (qinfo->LimitTime)
-            qinfo->SetFlag(QUEST_MANGOS_FLAGS_TIMED);
+            qinfo->SetSpecialFlag(QUEST_SPECIAL_FLAG_TIMED);
     }
 
-    // check QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT for spell with SPELL_EFFECT_QUEST_COMPLETE
+    // check QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT for spell with SPELL_EFFECT_QUEST_COMPLETE
     for (uint32 i = 0; i < sSpellStore.GetNumRows(); ++i)
     {
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(i);
@@ -3637,12 +3655,15 @@ void ObjectMgr::LoadQuests()
             if (!quest)
                 continue;
 
-            if (!quest->HasFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT))
+            if (!quest->HasSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT))
             {
-                sLog.outErrorDb("Spell (id: %u) have SPELL_EFFECT_QUEST_COMPLETE for quest %u , but quest not have flag QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT. Quest flags must be fixed, quest modified to enable objective.",spellInfo->Id,quest_id);
+                sLog.outErrorDb("Spell (id: %u) have SPELL_EFFECT_QUEST_COMPLETE for quest %u , but quest does not have SpecialFlags QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT (2) set. Quest SpecialFlags should be corrected to enable this objective.", spellInfo->Id, quest_id);
+
+                // The below forced alteration has been disabled because of spell 33824 / quest 10162.
+                // A startup error will still occur with proper data in quest_template, but it will be possible to sucessfully complete the quest with the expected data.
 
                 // this will prevent quest completing without objective
-                const_cast<Quest*>(quest)->SetFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT);
+                // const_cast<Quest*>(quest)->SetSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT);
             }
         }
     }
@@ -4049,12 +4070,12 @@ void ObjectMgr::LoadScripts(ScriptMapMap& scripts, char const* tablename)
                     continue;
                 }
 
-                if (!quest->HasFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT))
+                if (!quest->HasSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT))
                 {
-                    sLog.outErrorDb("Table `%s` has quest (ID: %u) in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, but quest not have flag QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT in quest flags. Script command or quest flags wrong. Quest modified to require objective.", tablename, tmp.questExplored.questId, tmp.id);
+                    sLog.outErrorDb("Table `%s` has quest (ID: %u) in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, but quest not have flag QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT in quest flags. Script command or quest flags wrong. Quest modified to require objective.", tablename, tmp.questExplored.questId, tmp.id);
 
                     // this will prevent quest completing without objective
-                    const_cast<Quest*>(quest)->SetFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT);
+                    const_cast<Quest*>(quest)->SetSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT);
 
                     // continue; - quest objective requirement set and command can be allowed
                 }
@@ -5025,12 +5046,12 @@ void ObjectMgr::LoadQuestAreaTriggers()
             continue;
         }
 
-        if (!quest->HasFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT))
+        if (!quest->HasSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT))
         {
-            sLog.outErrorDb("Table `areatrigger_involvedrelation` has record (id: %u) for not quest %u, but quest not have flag QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT. Trigger or quest flags must be fixed, quest modified to require objective.",trigger_ID,quest_ID);
+            sLog.outErrorDb("Table `areatrigger_involvedrelation` has record (id: %u) for not quest %u, but quest not have flag QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT. Trigger or quest flags must be fixed, quest modified to require objective.",trigger_ID,quest_ID);
 
             // this will prevent quest completing without objective
-            const_cast<Quest*>(quest)->SetFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT);
+            const_cast<Quest*>(quest)->SetSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT);
 
             // continue; - quest modified to required objective and trigger can be allowed.
         }
@@ -5429,7 +5450,7 @@ WorldSafeLocsEntry const *ObjectMgr::GetClosestGraveYard(float x, float y, float
             // if find graveyard at different map from where entrance placed (or no entrance data), use any first
             if (!tempEntry ||
                 tempEntry->ghostEntranceMap < 0 ||
-                tempEntry->ghostEntranceMap != entry->map_id ||
+                uint32(tempEntry->ghostEntranceMap) != entry->map_id ||
                 (tempEntry->ghostEntranceX == 0.0f && tempEntry->ghostEntranceY == 0.0f))
             {
                 // not have any coordinates for check distance anyway
@@ -5636,7 +5657,7 @@ AreaTrigger const* ObjectMgr::GetGoBackTrigger(uint32 map_id) const
 
     for (AreaTriggerMap::const_iterator itr = mAreaTriggers.begin(); itr != mAreaTriggers.end(); ++itr)
     {
-        if(itr->second.target_mapId == temp->ghostEntranceMap)
+        if (itr->second.target_mapId == uint32(temp->ghostEntranceMap))
         {
             AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(itr->first);
             if(atEntry && atEntry->mapid == map_id)
@@ -7499,6 +7520,10 @@ bool PlayerCondition::Meets(Player const * player) const
                 return true;
             return false;
         }
+        case CONDITION_ITEM_WITH_BANK:
+            return player->HasItemCount(value1, value2, true);
+        case CONDITION_NOITEM_WITH_BANK:
+            return !player->HasItemCount(value1, value2, true);
         default:
             return false;
     }
@@ -7532,6 +7557,8 @@ bool PlayerCondition::IsValid(ConditionType condition, uint32 value1, uint32 val
         }
         case CONDITION_ITEM:
         case CONDITION_NOITEM:
+        case CONDITION_ITEM_WITH_BANK:
+        case CONDITION_NOITEM_WITH_BANK:
         {
             ItemPrototype const *proto = ObjectMgr::GetItemPrototype(value1);
             if (!proto)
@@ -8001,24 +8028,26 @@ void ObjectMgr::LoadTrainerSpell()
     sLog.outString( ">> Loaded %d Trainers", count );
 }
 
-void ObjectMgr::LoadVendors()
+void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
 {
+    CacheVendorItemMap& vendorList = isTemplates ? m_mCacheVendorTemplateItemMap : m_mCacheVendorItemMap;
+
     // For reload case
-    for (CacheVendorItemMap::iterator itr = m_mCacheVendorItemMap.begin(); itr != m_mCacheVendorItemMap.end(); ++itr)
+    for (CacheVendorItemMap::iterator itr = vendorList.begin(); itr != vendorList.end(); ++itr)
         itr->second.Clear();
-    m_mCacheVendorItemMap.clear();
+    vendorList.clear();
 
     std::set<uint32> skip_vendors;
 
-    QueryResult *result = WorldDatabase.Query("SELECT entry, item, maxcount, incrtime FROM npc_vendor");
-    if( !result )
+    QueryResult *result = WorldDatabase.PQuery("SELECT entry, item, maxcount, incrtime FROM %s", tableName);
+    if (!result)
     {
         barGoLink bar( 1 );
 
         bar.step();
 
         sLog.outString();
-        sLog.outErrorDb(">> Loaded `npc_vendor`, table is empty!");
+        sLog.outString(">> Loaded `%s`, table is empty!", tableName);
         return;
     }
 
@@ -8035,19 +8064,48 @@ void ObjectMgr::LoadVendors()
         uint32 maxcount     = fields[2].GetUInt32();
         uint32 incrtime     = fields[3].GetUInt32();
 
-        if(!IsVendorItemValid(entry,item_id,maxcount,incrtime,NULL,&skip_vendors))
+        if (!IsVendorItemValid(isTemplates, tableName, entry, item_id, maxcount, incrtime, NULL, &skip_vendors))
             continue;
 
-        VendorItemData& vList = m_mCacheVendorItemMap[entry];
+        VendorItemData& vList = vendorList[entry];
 
-        vList.AddItem(item_id,maxcount,incrtime);
+        vList.AddItem(item_id, maxcount, incrtime);
         ++count;
 
     } while (result->NextRow());
     delete result;
 
     sLog.outString();
-    sLog.outString( ">> Loaded %d Vendors ", count );
+    sLog.outString( ">> Loaded %u vendor items", count);
+}
+
+
+void ObjectMgr::LoadVendorTemplates()
+{
+    LoadVendors("npc_vendor_template", true);
+
+    // post loading check
+    std::set<uint32> vendor_ids;
+
+    for(CacheVendorItemMap::const_iterator vItr = m_mCacheVendorTemplateItemMap.begin(); vItr != m_mCacheVendorTemplateItemMap.end(); ++vItr)
+        vendor_ids.insert(vItr->first);
+
+    for(uint32 i = 1; i < sCreatureStorage.MaxEntry; ++i)
+    {
+        if (CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(i))
+        {
+            if (cInfo->vendorId)
+            {
+                if (vendor_ids.count(cInfo->vendorId) > 0)
+                    vendor_ids.erase(cInfo->vendorId);
+                else
+                    sLog.outErrorDb("Creature (Entry: %u) has vendor_id = %u for nonexistent vendor template", cInfo->Entry, cInfo->vendorId);
+            }
+        }
+    }
+
+    for(std::set<uint32>::const_iterator vItr = vendor_ids.begin(); vItr != vendor_ids.end(); ++vItr)
+        sLog.outErrorDb("Table `npc_vendor_template` has vendor template %u not used by any vendors ", *vItr);
 }
 
 void ObjectMgr::LoadNpcTextId()
@@ -8333,81 +8391,115 @@ bool ObjectMgr::RemoveVendorItem( uint32 entry,uint32 item )
     return true;
 }
 
-bool ObjectMgr::IsVendorItemValid( uint32 vendor_entry, uint32 item_id, uint32 maxcount, uint32 incrtime, Player* pl, std::set<uint32>* skip_vendors ) const
+bool ObjectMgr::IsVendorItemValid(bool isTemplate, char const* tableName, uint32 vendor_entry, uint32 item_id, uint32 maxcount, uint32 incrtime, Player* pl, std::set<uint32>* skip_vendors ) const
 {
-    CreatureInfo const* cInfo = GetCreatureTemplate(vendor_entry);
-    if(!cInfo)
-    {
-        if(pl)
-            ChatHandler(pl).SendSysMessage(LANG_COMMAND_VENDORSELECTION);
-        else
-            sLog.outErrorDb("Table `npc_vendor` has data for nonexistent creature (Entry: %u), ignoring", vendor_entry);
-        return false;
-    }
+    char const* idStr = isTemplate ? "vendor template" : "vendor";
+    CreatureInfo const* cInfo = NULL;
 
-    if(!(cInfo->npcflag & UNIT_NPC_FLAG_VENDOR))
+    if (!isTemplate)
     {
-        if(!skip_vendors || skip_vendors->count(vendor_entry)==0)
+        cInfo = GetCreatureTemplate(vendor_entry);
+        if (!cInfo)
         {
             if(pl)
                 ChatHandler(pl).SendSysMessage(LANG_COMMAND_VENDORSELECTION);
             else
-                sLog.outErrorDb("Table `npc_vendor` has data for creature (Entry: %u) without vendor flag, ignoring", vendor_entry);
-
-            if(skip_vendors)
-                skip_vendors->insert(vendor_entry);
+                sLog.outErrorDb("Table `%s` has data for nonexistent creature (Entry: %u), ignoring", tableName, vendor_entry);
+            return false;
         }
-        return false;
+
+        if (!(cInfo->npcflag & UNIT_NPC_FLAG_VENDOR))
+        {
+            if (!skip_vendors || skip_vendors->count(vendor_entry)==0)
+            {
+                if (pl)
+                    ChatHandler(pl).SendSysMessage(LANG_COMMAND_VENDORSELECTION);
+                else
+                    sLog.outErrorDb("Table `%s` has data for creature (Entry: %u) without vendor flag, ignoring", tableName, vendor_entry);
+
+                if (skip_vendors)
+                    skip_vendors->insert(vendor_entry);
+            }
+            return false;
+        }
     }
 
-    if(!GetItemPrototype(item_id))
+    if (!GetItemPrototype(item_id))
     {
-        if(pl)
+        if (pl)
             ChatHandler(pl).PSendSysMessage(LANG_ITEM_NOT_FOUND, item_id);
         else
-            sLog.outErrorDb("Table `npc_vendor` for vendor (Entry: %u) contain nonexistent item (%u), ignoring",
-                vendor_entry, item_id);
+            sLog.outErrorDb("Table `%s` for %s %u contain nonexistent item (%u), ignoring",
+                tableName, idStr, vendor_entry, item_id);
         return false;
     }
 
-    if(maxcount > 0 && incrtime == 0)
+    if (maxcount > 0 && incrtime == 0)
     {
-        if(pl)
+        if (pl)
             ChatHandler(pl).PSendSysMessage("MaxCount!=0 (%u) but IncrTime==0", maxcount);
         else
-            sLog.outErrorDb( "Table `npc_vendor` has `maxcount` (%u) for item %u of vendor (Entry: %u) but `incrtime`=0, ignoring",
-                maxcount, item_id, vendor_entry);
+            sLog.outErrorDb( "Table `%s` has `maxcount` (%u) for item %u of %s %u but `incrtime`=0, ignoring",
+                tableName, maxcount, item_id, idStr, vendor_entry);
         return false;
     }
-    else if(maxcount==0 && incrtime > 0)
+    else if (maxcount==0 && incrtime > 0)
     {
-        if(pl)
+        if (pl)
             ChatHandler(pl).PSendSysMessage("MaxCount==0 but IncrTime<>=0");
         else
-            sLog.outErrorDb( "Table `npc_vendor` has `maxcount`=0 for item %u of vendor (Entry: %u) but `incrtime`<>0, ignoring",
-                item_id, vendor_entry);
+            sLog.outErrorDb( "Table `%s` has `maxcount`=0 for item %u of %s %u but `incrtime`<>0, ignoring",
+                tableName, item_id, idStr, vendor_entry);
         return false;
     }
 
-    VendorItemData const* vItems = GetNpcVendorItemList(vendor_entry);
-    if(!vItems)
+    VendorItemData const* vItems = isTemplate ? GetNpcVendorTemplateItemList(vendor_entry) : GetNpcVendorItemList(vendor_entry);
+    VendorItemData const* tItems = isTemplate ? NULL : GetNpcVendorTemplateItemList(vendor_entry);
+
+    if (!vItems && !tItems)
         return true;                                        // later checks for non-empty lists
 
-    if(vItems->FindItem(item_id))
+    if (vItems && vItems->FindItem(item_id))
     {
         if(pl)
             ChatHandler(pl).PSendSysMessage(LANG_ITEM_ALREADY_IN_LIST,item_id);
         else
-            sLog.outErrorDb( "Table `npc_vendor` has duplicate items %u for vendor (Entry: %u), ignoring", item_id, vendor_entry);
+            sLog.outErrorDb( "Table `%s` has duplicate items %u for %s %u, ignoring",
+                tableName, item_id, idStr, vendor_entry);
+            sLog.outErrorDb( "Table `npc_vendor` has duplicate items %u for vendor (Entry: %u), ignoring",
+                item_id, vendor_entry);
         return false;
     }
 
-    if(vItems->GetItemCount() >= MAX_VENDOR_ITEMS)
+    if (!isTemplate)
     {
-        if(pl)
+        if (tItems && tItems->GetItem(item_id))
+        {
+            if (pl)
+                ChatHandler(pl).PSendSysMessage(LANG_ITEM_ALREADY_IN_LIST, item_id);
+            else
+            {
+                if (!cInfo->vendorId)
+                    sLog.outErrorDb( "Table `%s` has duplicate items %u for %s %u, ignoring",
+                        tableName, item_id, idStr, vendor_entry);
+                else
+                    sLog.outErrorDb( "Table `%s` has duplicate items %u for %s %u (or possible in vendor template %u), ignoring",
+                        tableName, item_id, idStr, vendor_entry, cInfo->vendorId);
+            }
+            return false;
+        }
+    }
+
+    uint32 countItems = vItems ? vItems->GetItemCount() : 0;
+    countItems += tItems ? tItems->GetItemCount() : 0;
+
+    if (countItems >= MAX_VENDOR_ITEMS)
+    {
+        if (pl)
             ChatHandler(pl).SendSysMessage(LANG_COMMAND_ADDVENDORITEMITEMS);
         else
-            sLog.outErrorDb( "Table `npc_vendor` has too many items (%u >= %i) for vendor (Entry: %u), ignoring", vItems->GetItemCount(), MAX_VENDOR_ITEMS, vendor_entry);
+            sLog.outErrorDb( "Table `%s` has too many items (%u >= %i) for %s %u, ignoring",
+                tableName, countItems, MAX_VENDOR_ITEMS, idStr, vendor_entry);
         return false;
     }
 

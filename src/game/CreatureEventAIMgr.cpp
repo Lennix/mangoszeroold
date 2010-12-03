@@ -636,7 +636,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                     case ACTION_T_QUEST_EVENT:
                         if (Quest const* qid = sObjectMgr.GetQuestTemplate(action.quest_event.questId))
                         {
-                            if (!qid->HasFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT))
+                            if (!qid->HasSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT))
                                 sLog.outErrorDb("CreatureEventAI:  Event %u Action %u. SpecialFlags for quest entry %u does not include |2, Action will not have any effect.", i, j+1, action.quest_event.questId);
                         }
                         else
@@ -678,7 +678,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                     case ACTION_T_QUEST_EVENT_ALL:
                         if (Quest const* qid = sObjectMgr.GetQuestTemplate(action.quest_event_all.questId))
                         {
-                            if (!qid->HasFlag(QUEST_MANGOS_FLAGS_EXPLORATION_OR_EVENT))
+                            if (!qid->HasSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT))
                                 sLog.outErrorDb("CreatureEventAI:  Event %u Action %u. SpecialFlags for quest entry %u does not include |2, Action will not have any effect.", i, j+1, action.quest_event_all.questId);
                         }
                         else
@@ -760,6 +760,30 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             {
                                 sLog.outErrorDb("CreatureEventAI:  Event %u Action %u uses wrong percent value %u.", i, j+1, action.invincibility_hp_level.hp_level);
                                 action.invincibility_hp_level.hp_level = 100;
+                            }
+                        }
+                        break;
+                    case ACTION_T_MOUNT_TO_ENTRY_OR_MODEL:
+                        if (action.mount.creatureId != 0 || action.mount.modelId != 0)
+                        {
+                            if (action.mount.creatureId && !sCreatureStorage.LookupEntry<CreatureInfo>(action.mount.creatureId))
+                            {
+                                sLog.outErrorDb("CreatureEventAI:  Event %u Action %u uses nonexistent Creature entry %u.", i, j+1, action.mount.creatureId);
+                                action.morph.creatureId = 0;
+                            }
+
+                            if (action.mount.modelId)
+                            {
+                                if (action.mount.creatureId)
+                                {
+                                    sLog.outErrorDb("CreatureEventAI:  Event %u Action %u have unused ModelId %u with also set creature id %u.", i, j+1, action.mount.modelId, action.mount.creatureId);
+                                    action.mount.modelId = 0;
+                                }
+                                else if (!sCreatureDisplayInfoStore.LookupEntry(action.mount.modelId))
+                                {
+                                    sLog.outErrorDb("CreatureEventAI:  Event %u Action %u uses nonexistent ModelId %u.", i, j+1, action.mount.modelId);
+                                    action.mount.modelId = 0;
+                                }
                             }
                         }
                         break;

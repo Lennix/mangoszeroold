@@ -103,10 +103,10 @@ void MovementInfo::Read(ByteBuffer &data)
 
     if(HasMovementFlag(MOVEFLAG_FALLING))
     {
-        data >> j_velocity;
-        data >> j_sinAngle;
-        data >> j_cosAngle;
-        data >> j_xyspeed;
+        data >> jump.velocity;
+        data >> jump.sinAngle;
+        data >> jump.cosAngle;
+        data >> jump.xyspeed;
     }
 
     if(HasMovementFlag(MOVEFLAG_SPLINE_ELEVATION))
@@ -141,10 +141,10 @@ void MovementInfo::Write(ByteBuffer &data) const
 
     if(HasMovementFlag(MOVEFLAG_FALLING))
     {
-        data << j_velocity;
-        data << j_sinAngle;
-        data << j_cosAngle;
-        data << j_xyspeed;
+        data << jump.velocity;
+        data << jump.sinAngle;
+        data << jump.cosAngle;
+        data << jump.xyspeed;
     }
 
     if(HasMovementFlag(MOVEFLAG_SPLINE_ELEVATION))
@@ -310,7 +310,6 @@ void Unit::Update( uint32 p_time )
         else
             m_lastManaUseTimer -= p_time;
     }
-
 
     // update combat timer only for players and pets
     if (isInCombat() && (GetTypeId() == TYPEID_PLAYER || ((Creature*)this)->IsPet() || ((Creature*)this)->isCharmed()))
@@ -495,9 +494,9 @@ void Unit::RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage)
 
 void Unit::DealDamageMods(Unit *pVictim, uint32 &damage, uint32* absorb)
 {
-    if (!pVictim->isAlive() || pVictim->IsTaxiFlying() || pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode())
+    if (!pVictim->isAlive() || pVictim->IsTaxiFlying() || (pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode()))
     {
-        if(absorb)
+        if (absorb)
             *absorb += damage;
         damage = 0;
         return;
@@ -586,7 +585,7 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
     if(pVictim->GetTypeId() == TYPEID_PLAYER && ((Player*)pVictim)->duel && damage >= (health-1))
     {
         // prevent kill only if killed in duel and killed by opponent or opponent controlled creature
-        if(((Player*)pVictim)->duel->opponent==this || ((Player*)pVictim)->duel->opponent->GetGUID() == GetOwnerGUID())
+        if(((Player*)pVictim)->duel->opponent==this || ((Player*)pVictim)->duel->opponent->GetObjectGuid() == GetOwnerGuid())
             damage = health-1;
 
         duel_hasEnded = true;
@@ -1296,7 +1295,7 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabilityLoss)
     if(!this || !pVictim)
         return;
 
-    if (!pVictim->isAlive() || pVictim->IsTaxiFlying() || pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode())
+    if (!pVictim->isAlive() || pVictim->IsTaxiFlying() || (pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode()))
         return;
 
     SpellEntry const *spellProto = sSpellStore.LookupEntry(damageInfo->SpellID);
@@ -1584,7 +1583,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
     if(!this || !pVictim)
         return;
 
-    if (!pVictim->isAlive() || pVictim->IsTaxiFlying() || pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode())
+    if (!pVictim->isAlive() || pVictim->IsTaxiFlying() || (pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode()))
         return;
 
     // Hmmmm dont like this emotes client must by self do all animations
@@ -1635,7 +1634,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
 
     // If this is a creature and it attacks from behind it has a probability to daze it's victim
     if( (damageInfo->hitOutCome==MELEE_HIT_CRIT || damageInfo->hitOutCome==MELEE_HIT_CRUSHING || damageInfo->hitOutCome==MELEE_HIT_NORMAL || damageInfo->hitOutCome==MELEE_HIT_GLANCING) &&
-        GetTypeId() != TYPEID_PLAYER && !((Creature*)this)->GetCharmerOrOwnerGUID() && !pVictim->HasInArc(M_PI_F, this) )
+        GetTypeId() != TYPEID_PLAYER && ((Creature*)this)->GetCharmerOrOwnerGuid().IsEmpty() && !pVictim->HasInArc(M_PI_F, this) )
     {
         // -probability is between 0% and 40%
         // 20% base chance
@@ -2197,7 +2196,8 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst (const Unit *pVictim, WeaponAttack
         }
     }
 
-    if ((GetTypeId()!=TYPEID_PLAYER && !(((Creature*)this)->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_NO_CRUSH) && !((Creature*)this)->IsPet()) &&
+    if ((GetTypeId()!=TYPEID_PLAYER && !((Creature*)this)->IsPet()) &&
+        !(((Creature*)this)->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_NO_CRUSH) &&
         !SpellCasted /*Only autoattack can be crashing blow*/ )
     {
         // mobs can score crushing blows if they're 3 or more levels above victim
@@ -3525,7 +3525,7 @@ bool Unit::RemoveNoStackAurasDueToAura(Aura *Aur)
         // single allowed spell specific from same caster or from any caster at target
         bool is_spellSpecPerTargetPerCaster = IsSingleFromSpellSpecificPerTargetPerCaster(spellId_spec,i_spellId_spec);
         bool is_spellSpecPerTarget = IsSingleFromSpellSpecificPerTarget(spellId_spec,i_spellId_spec);
-        if( is_spellSpecPerTarget || is_spellSpecPerTargetPerCaster && Aur->GetCasterGUID() == (*i).second->GetCasterGUID() )
+        if (is_spellSpecPerTarget || (is_spellSpecPerTargetPerCaster && Aur->GetCasterGUID() == (*i).second->GetCasterGUID()))
         {
             // cannot remove higher rank
             if (sSpellMgr.IsRankSpellDueToSpell(spellProto, i_spellId))
@@ -5845,7 +5845,7 @@ void Unit::ModifyAuraState(AuraState flag, bool apply)
                     if(itr->second.state == PLAYERSPELL_REMOVED) continue;
                     SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
                     if (!spellInfo || !IsPassiveSpell(spellInfo)) continue;
-                    if (spellInfo->CasterAuraState == flag)
+                    if (AuraState(spellInfo->CasterAuraState) == flag)
                         CastSpell(this, itr->first, true, NULL);
                 }
             }
@@ -5880,14 +5880,16 @@ void Unit::ModifyAuraState(AuraState flag, bool apply)
 }
 Unit *Unit::GetOwner() const
 {
-    if(uint64 ownerid = GetOwnerGUID())
+    ObjectGuid ownerid = GetOwnerGuid();
+    if (!ownerid.IsEmpty())
         return ObjectAccessor::GetUnit(*this, ownerid);
     return NULL;
 }
 
 Unit *Unit::GetCharmer() const
 {
-    if(uint64 charmerid = GetCharmerGUID())
+    ObjectGuid charmerid = GetCharmerGuid();
+    if (!charmerid.IsEmpty())
         return ObjectAccessor::GetUnit(*this, charmerid);
     return NULL;
 }
@@ -5897,13 +5899,13 @@ bool Unit::IsCharmerOrOwnerPlayerOrPlayerItself() const
     if (GetTypeId()==TYPEID_PLAYER)
         return true;
 
-    return IS_PLAYER_GUID(GetCharmerOrOwnerGUID());
+    return GetCharmerOrOwnerGuid().IsPlayer();
 }
 
 Player* Unit::GetCharmerOrOwnerPlayerOrPlayerItself()
 {
-    uint64 guid = GetCharmerOrOwnerGUID();
-    if(IS_PLAYER_GUID(guid))
+    ObjectGuid guid = GetCharmerOrOwnerGuid();
+    if (guid.IsPlayer())
         return ObjectAccessor::FindPlayer(guid);
 
     return GetTypeId()==TYPEID_PLAYER ? (Player*)this : NULL;
@@ -5911,12 +5913,13 @@ Player* Unit::GetCharmerOrOwnerPlayerOrPlayerItself()
 
 Pet* Unit::GetPet() const
 {
-    if(uint64 pet_guid = GetPetGUID())
+    ObjectGuid pet_guid = GetPetGuid();
+    if (!pet_guid.IsEmpty())
     {
         if(Pet* pet = GetMap()->GetPet(pet_guid))
             return pet;
 
-        sLog.outError("Unit::GetPet: Pet %u not exist.",GUID_LOPART(pet_guid));
+        sLog.outError("Unit::GetPet: %s not exist.", pet_guid.GetString().c_str());
         const_cast<Unit*>(this)->SetPet(0);
     }
 
@@ -5930,12 +5933,13 @@ Pet* Unit::_GetPet(ObjectGuid guid) const
 
 Unit* Unit::GetCharm() const
 {
-    if (uint64 charm_guid = GetCharmGUID())
+    ObjectGuid charm_guid = GetCharmGuid();
+    if (!charm_guid.IsEmpty())
     {
-        if(Unit* pet = ObjectAccessor::GetUnit(*this, charm_guid))
+        if (Unit* pet = ObjectAccessor::GetUnit(*this, charm_guid))
             return pet;
 
-        sLog.outError("Unit::GetCharm: Charmed creature %u not exist.",GUID_LOPART(charm_guid));
+        sLog.outError("Unit::GetCharm: Charmed %s not exist.", charm_guid.GetString().c_str());
         const_cast<Unit*>(this)->SetCharm(NULL);
     }
 
@@ -5964,12 +5968,12 @@ float Unit::GetCombatDistance( const Unit* target ) const
 
 void Unit::SetPet(Pet* pet)
 {
-    SetPetGUID(pet ? pet->GetGUID() : 0);
+    SetPetGuid(pet ? pet->GetObjectGuid() : ObjectGuid());
 }
 
 void Unit::SetCharm(Unit* pet)
 {
-    SetCharmGUID(pet ? pet->GetGUID() : 0);
+    SetCharmGuid(pet ? pet->GetObjectGuid() : ObjectGuid());
 }
 
 
@@ -7289,7 +7293,7 @@ bool Unit::isVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
                 return false;
         }
     }
-    else if(GetCharmerOrOwnerGUID())                        // distance for show pet/charmed
+    else if (!GetCharmerOrOwnerGuid().IsEmpty())             // distance for show pet/charmed
     {
         // Pet/charmed far than max visible distance for player or not in our map are not visible too
         if (!IsWithinDistInMap(viewPoint, _map.GetVisibilityDistance() + (inVisibleList ? World::GetVisibleUnitGreyDistance() : 0.0f), is3dDistance))
@@ -7303,7 +7307,7 @@ bool Unit::isVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     }
 
     // always seen by owner
-    if (GetCharmerOrOwnerGUID()==u->GetGUID())
+    if (GetCharmerOrOwnerGuid() == u->GetObjectGuid())
         return true;
 
     // isInvisibleForAlive() those units can only be seen by dead or if other
@@ -7494,7 +7498,7 @@ bool Unit::canDetectInvisibilityOf(Unit const* u) const
 {
     if(uint32 mask = (m_detectInvisibilityMask & u->m_invisibilityMask))
     {
-        for(uint32 i = 0; i < 10; ++i)
+        for(int32 i = 0; i < 10; ++i)
         {
             if(((1 << i) & mask)==0)
                 continue;
@@ -7503,22 +7507,20 @@ bool Unit::canDetectInvisibilityOf(Unit const* u) const
             int32 invLevel = 0;
             Unit::AuraList const& iAuras = u->GetAurasByType(SPELL_AURA_MOD_INVISIBILITY);
             for(Unit::AuraList::const_iterator itr = iAuras.begin(); itr != iAuras.end(); ++itr)
-                if(((*itr)->GetModifier()->m_miscvalue)==i && invLevel < (*itr)->GetModifier()->m_amount)
+                if ((*itr)->GetModifier()->m_miscvalue==i && invLevel < (*itr)->GetModifier()->m_amount)
                     invLevel = (*itr)->GetModifier()->m_amount;
 
             // find invisibility detect level
             int32 detectLevel = 0;
             Unit::AuraList const& dAuras = GetAurasByType(SPELL_AURA_MOD_INVISIBILITY_DETECTION);
             for(Unit::AuraList::const_iterator itr = dAuras.begin(); itr != dAuras.end(); ++itr)
-                if(((*itr)->GetModifier()->m_miscvalue)==i && detectLevel < (*itr)->GetModifier()->m_amount)
+                if ((*itr)->GetModifier()->m_miscvalue==i && detectLevel < (*itr)->GetModifier()->m_amount)
                     detectLevel = (*itr)->GetModifier()->m_amount;
 
-            if(i==6 && GetTypeId()==TYPEID_PLAYER)          // special drunk detection case
-            {
+            if (i==6 && GetTypeId()==TYPEID_PLAYER)         // special drunk detection case
                 detectLevel = ((Player*)this)->GetDrunkValue();
-            }
 
-            if(invLevel <= detectLevel)
+            if (invLevel <= detectLevel)
                 return true;
         }
     }
@@ -7574,6 +7576,8 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
                     return;
                 }
             }
+            break;
+        default:
             break;
     }
 
@@ -7837,11 +7841,11 @@ bool Unit::CanHaveThreatList() const
         return false;
 
     // pets can not have a threat list, unless they are controlled by a creature
-    if (creature->IsPet() && IS_PLAYER_GUID(((Pet const*)creature)->GetOwnerGUID()))
+    if (creature->IsPet() && creature->GetOwnerGuid().IsPlayer())
         return false;
 
     // charmed units can not have a threat list if charmed by player
-    if (creature->isCharmed() && IS_PLAYER_GUID(creature->GetCharmerGUID()))
+    if (creature->GetCharmerGuid().IsPlayer())
         return false;
 
     return true;
@@ -8133,11 +8137,11 @@ DiminishingLevels Unit::GetDiminishing(DiminishingGroup group)
         if(!i->hitCount)
             return DIMINISHING_LEVEL_1;
 
-        if(!i->hitTime)
+        if (!i->hitTime)
             return DIMINISHING_LEVEL_1;
 
         // If last spell was casted more than 15 seconds ago - reset the count.
-        if(i->stack==0 && getMSTimeDiff(i->hitTime,getMSTime()) > 15000)
+        if (i->stack==0 && getMSTimeDiff(i->hitTime,getMSTime()) > 15*IN_MILLISECONDS)
         {
             i->hitCount = DIMINISHING_LEVEL_1;
             return DIMINISHING_LEVEL_1;
@@ -9876,18 +9880,20 @@ void Unit::SetContestedPvP(Player *attackedPlayer)
 {
     Player* player = GetCharmerOrOwnerPlayerOrPlayerItself();
 
-    if(!player || attackedPlayer && (attackedPlayer == player || player->duel && player->duel->opponent == attackedPlayer))
+    if (!player || (attackedPlayer && (attackedPlayer == player || (player->duel && player->duel->opponent == attackedPlayer))))
         return;
 
     player->SetContestedPvPTimer(30000);
-    if(!player->hasUnitState(UNIT_STAT_ATTACK_PLAYER))
+
+    if (!player->hasUnitState(UNIT_STAT_ATTACK_PLAYER))
     {
         player->addUnitState(UNIT_STAT_ATTACK_PLAYER);
         player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_CONTESTED_PVP);
         // call MoveInLineOfSight for nearby contested guards
         SetVisibility(GetVisibility());
     }
-    if(!hasUnitState(UNIT_STAT_ATTACK_PLAYER))
+
+    if (!hasUnitState(UNIT_STAT_ATTACK_PLAYER))
     {
         addUnitState(UNIT_STAT_ATTACK_PLAYER);
         // call MoveInLineOfSight for nearby contested guards
@@ -9919,8 +9925,8 @@ Pet* Unit::CreateTamedPetFrom(Creature* creatureTarget,uint32 spell_id)
         return NULL;
     }
 
-    pet->SetOwnerGUID(GetGUID());
-    pet->SetCreatorGUID(GetGUID());
+    pet->SetOwnerGuid(GetObjectGuid());
+    pet->SetCreatorGuid(GetObjectGuid());
     pet->setFaction(getFaction());
     pet->SetUInt32Value(UNIT_CREATED_BY_SPELL, spell_id);
 

@@ -650,6 +650,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADTUTORIALS,                       // common for all characters for some account at specific realm
     PLAYER_LOGIN_QUERY_LOADREPUTATION,
     PLAYER_LOGIN_QUERY_LOADINVENTORY,
+    PLAYER_LOGIN_QUERY_LOADITEMLOOT,
     PLAYER_LOGIN_QUERY_LOADACTIONS,
     PLAYER_LOGIN_QUERY_LOADSOCIALLIST,
     PLAYER_LOGIN_QUERY_LOADHOMEBIND,
@@ -1011,8 +1012,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool StoreNewItemInBestSlots(uint32 item_id, uint32 item_count);
         Item* StoreNewItemInInventorySlot(uint32 itemEntry, uint32 amount);
 
-        void AutoStoreLoot(uint8 bag, uint8 slot, uint32 loot_id, LootStore const& store, bool broadcast = false);
-        void AutoStoreLoot(uint32 loot_id, LootStore const& store, bool broadcast = false) { AutoStoreLoot(NULL_BAG,NULL_SLOT,loot_id,store,broadcast); }
+        void AutoStoreLoot(uint32 loot_id, LootStore const& store, bool broadcast = false, uint8 bag = NULL_BAG, uint8 slot = NULL_SLOT);
+        void AutoStoreLoot(Loot& loot, bool broadcast = false, uint8 bag = NULL_BAG, uint8 slot = NULL_SLOT);
 
         uint8 _CanTakeMoreSimilarItems(uint32 entry, uint32 count, Item* pItem, uint32* no_space_count = NULL) const;
         uint8 _CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec& dest, uint32 entry, uint32 count, Item *pItem = NULL, bool swap = false, uint32* no_space_count = NULL ) const;
@@ -1147,16 +1148,19 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         uint16 FindQuestSlot( uint32 quest_id ) const;
         uint32 GetQuestSlotQuestId(uint16 slot) const { return GetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_ID_OFFSET); }
-        uint8 GetQuestSlotState(uint16 slot)   const { return GetByteValue(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET, 3); }
-        uint8 GetQuestSlotCounter(uint16 slot, uint8 counter) const { return (GetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET) >> (counter*6)) & 0x3F; }
-        uint32 GetQuestSlotTime(uint16 slot)    const { return GetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_TIME_OFFSET); }
         void SetQuestSlot(uint16 slot,uint32 quest_id, uint32 timer = 0)
         {
             SetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_ID_OFFSET,quest_id);
             SetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET,0);
             SetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_TIME_OFFSET,timer);
         }
-        void SetQuestSlotCounter(uint16 slot,uint8 counter,uint8 count) { SetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET, (count & 0x3F) << (counter*6)); }
+        void SetQuestSlotCounter(uint16 slot,uint8 counter,uint8 count)
+        {
+            uint32 val = GetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET);
+            val &= ~(0x3F << (counter*6));
+            val |= ((uint32)count << (counter*6));
+            SetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET, val);
+        }
         void SetQuestSlotState(uint16 slot, uint8 state) { SetByteFlag(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET, 3, state); }
         void RemoveQuestSlotState(uint16 slot,uint8 state) { RemoveByteFlag(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_COUNT_STATE_OFFSET, 3, state); }
         void SetQuestSlotTimer(uint16 slot,uint32 timer) { SetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot*MAX_QUEST_OFFSET + QUEST_TIME_OFFSET,timer); }
@@ -1195,7 +1199,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendQuestConfirmAccept(Quest const* pQuest, Player* pReceiver);
         void SendPushToPartyResponse( Player *pPlayer, uint32 msg );
         void SendQuestUpdateAddItem( Quest const* pQuest, uint32 item_idx, uint32 count );
-        void SendQuestUpdateAddCreatureOrGo( Quest const* pQuest, ObjectGuid guid, uint32 creatureOrGO_idx, uint32 old_count, uint32 add_count );
+        void SendQuestUpdateAddCreatureOrGo(Quest const* pQuest, ObjectGuid guid, uint32 creatureOrGO_idx, uint32 count);
 
         uint64 GetDivider() { return m_divider; };
         void SetDivider( uint64 guid ) { m_divider = guid; };
@@ -2090,8 +2094,9 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadActions(QueryResult *result);
         void _LoadAuras(QueryResult *result, uint32 timediff);
         void _LoadBoundInstances(QueryResult *result);
-        void _LoadInventory(QueryResult *result, uint32 timediff);
         void _LoadHonorCP(QueryResult *result);
+        void _LoadInventory(QueryResult *result, uint32 timediff);
+        void _LoadItemLoot(QueryResult *result);
         void _LoadMails(QueryResult *result);
         void _LoadMailedItems(QueryResult *result);
         void _LoadQuestStatus(QueryResult *result);

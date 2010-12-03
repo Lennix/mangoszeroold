@@ -271,7 +271,7 @@ m_isRemovedOnShapeLost(true), m_in_use(false)
     m_applyTime = time(NULL);
 
     int32 damage;
-    if(!caster)
+    if (!caster)
     {
         m_caster_guid = target->GetGUID();
         damage = m_currentBasePoints;
@@ -285,12 +285,12 @@ m_isRemovedOnShapeLost(true), m_in_use(false)
         m_maxduration = caster->CalculateSpellDuration(m_spellProto, m_effIndex, target);
     }
 
-    if(m_maxduration == -1 || m_isPassive && m_spellProto->DurationIndex == 0)
+    if (m_maxduration == -1 || (m_isPassive && m_spellProto->DurationIndex == 0))
         m_permanent = true;
 
     Player* modOwner = caster ? caster->GetSpellModOwner() : NULL;
 
-    if(!m_permanent && modOwner)
+    if (!m_permanent && modOwner)
     {
         modOwner->ApplySpellMod(GetId(), SPELLMOD_DURATION, m_maxduration);
         // Get zero duration aura after - need set m_maxduration > 0 for apply/remove aura work
@@ -565,6 +565,7 @@ void AreaAura::Update(uint32 diff)
     else                                                    // aura at non-caster
     {
         Unit* caster = GetCaster();
+        Unit* target = GetTarget();
 
         Aura::Update(diff);
 
@@ -573,35 +574,35 @@ void AreaAura::Update(uint32 diff)
         // or caster is (no longer) friendly
         bool needFriendly = true;
         if( !caster || caster->hasUnitState(UNIT_STAT_ISOLATED) ||
-            !caster->IsWithinDistInMap(m_target, m_radius)      ||
+            !caster->IsWithinDistInMap(target, m_radius)        ||
             !caster->HasAura(GetId(), GetEffIndex())            ||
-            caster->IsFriendlyTo(m_target) != needFriendly
+            caster->IsFriendlyTo(target) != needFriendly
            )
         {
-            m_target->RemoveAura(GetId(), GetEffIndex());
+            target->RemoveAura(GetId(), GetEffIndex());
         }
         else if( m_areaAuraType == AREA_AURA_PARTY)         // check if in same sub group
         {
             // not check group if target == owner or target == pet
-            if (caster->GetCharmerOrOwnerGUID() != m_target->GetGUID() && caster->GetGUID() != m_target->GetCharmerOrOwnerGUID())
+            if (caster->GetCharmerOrOwnerGuid() != target->GetObjectGuid() && caster->GetObjectGuid() != target->GetCharmerOrOwnerGuid())
             {
                 Player* check = caster->GetCharmerOrOwnerPlayerOrPlayerItself();
 
                 Group *pGroup = check ? check->GetGroup() : NULL;
                 if( pGroup )
                 {
-                    Player* checkTarget = m_target->GetCharmerOrOwnerPlayerOrPlayerItself();
+                    Player* checkTarget = target->GetCharmerOrOwnerPlayerOrPlayerItself();
                     if(!checkTarget || !pGroup->SameSubGroup(check, checkTarget))
-                        m_target->RemoveAura(GetId(), GetEffIndex());
+                        target->RemoveAura(GetId(), GetEffIndex());
                 }
                 else
-                    m_target->RemoveAura(GetId(), GetEffIndex());
+                    target->RemoveAura(GetId(), GetEffIndex());
             }
         }
-        else if( m_areaAuraType == AREA_AURA_PET )
+        else if (m_areaAuraType == AREA_AURA_PET)
         {
-            if( m_target->GetGUID() != caster->GetCharmerOrOwnerGUID() )
-                m_target->RemoveAura(GetId(), GetEffIndex());
+            if (target->GetObjectGuid() != caster->GetCharmerOrOwnerGuid())
+                target->RemoveAura(GetId(), GetEffIndex());
         }
     }
 }
@@ -2085,10 +2086,10 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
                 uint32 aurMechMask = GetAllSpellMechanicMask(aurSpellInfo);
 
                 // If spell that caused this aura has Croud Control or Daze effect
-                if((aurMechMask & MECHANIC_NOT_REMOVED_BY_SHAPESHIFT) ||
+                if ((aurMechMask & MECHANIC_NOT_REMOVED_BY_SHAPESHIFT) ||
                     // some Daze spells have these parameters instead of MECHANIC_DAZE (skip snare spells)
-                    aurSpellInfo->SpellIconID == 15 && aurSpellInfo->Dispel == 0 &&
-                    (aurMechMask & (1 << (MECHANIC_SNARE-1)))==0)
+                    (aurSpellInfo->SpellIconID == 15 && aurSpellInfo->Dispel == 0 &&
+                    (aurMechMask & (1 << (MECHANIC_SNARE-1))) == 0))
                 {
                     ++iter;
                     continue;
@@ -2378,7 +2379,7 @@ void Aura::HandleForceReaction(bool apply, bool Real)
     player->GetReputationMgr().SendForceReactions();
 
     // stop fighting if at apply forced rank friendly or at remove real rank friendly
-    if (apply && faction_rank >= REP_FRIENDLY || !apply && player->GetReputationRank(faction_id) >= REP_FRIENDLY)
+    if ((apply && faction_rank >= REP_FRIENDLY) || (!apply && player->GetReputationRank(faction_id) >= REP_FRIENDLY))
         player->StopAttackFaction(faction_id);
 }
 
@@ -2397,16 +2398,16 @@ void Aura::HandleAuraModSkill(bool apply, bool /*Real*/)
 
 void Aura::HandleChannelDeathItem(bool apply, bool Real)
 {
-    if(Real && !apply)
+    if (Real && !apply)
     {
-        if(m_removeMode != AURA_REMOVE_BY_DEATH)
+        if (m_removeMode != AURA_REMOVE_BY_DEATH)
             return;
         // Item amount
         if (m_modifier.m_amount <= 0)
             return;
 
         SpellEntry const *spellInfo = GetSpellProto();
-        if(spellInfo->EffectItemType[m_effIndex] == 0)
+        if (spellInfo->EffectItemType[m_effIndex] == 0)
             return;
 
         Unit* victim = GetTarget();
@@ -2419,7 +2420,7 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         {
             // Only from non-grey units
             if (!((Player*)caster)->isHonorOrXPTarget(victim) ||
-                victim->GetTypeId() == TYPEID_UNIT && !((Player*)caster)->isAllowedToLoot((Creature*)victim))
+                (victim->GetTypeId() == TYPEID_UNIT && !((Player*)caster)->isAllowedToLoot((Creature*)victim)))
                 return;
         }
 
@@ -2536,7 +2537,7 @@ void Aura::HandleModPossess(bool apply, bool Real)
         target->addUnitState(UNIT_STAT_CONTROLLED);
 
         target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-        target->SetCharmerGUID(p_caster->GetGUID());
+        target->SetCharmerGuid(p_caster->GetObjectGuid());
         target->setFaction(p_caster->getFaction());
 
         // target should became visible at SetView call(if not visible before):
@@ -2596,7 +2597,7 @@ void Aura::HandleModPossess(bool apply, bool Real)
 
         target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
 
-        target->SetCharmerGUID(0);
+        target->SetCharmerGuid(ObjectGuid());
 
         if(target->GetTypeId() == TYPEID_PLAYER)
         {
@@ -2705,18 +2706,13 @@ void Aura::HandleModCharm(bool apply, bool Real)
 
     if( apply )
     {
-		//cannot charm only one player enemy
-        //if(target->GetTypeId() == TYPEID_PLAYER)
-        //    if(caster->getThreatManager().getThreatList().size() < 2)
-        //        return;
-
-        if (target->GetCharmerGUID())
+        if (!target->GetCharmerGuid().IsEmpty())
         {
             target->RemoveSpellsCausingAura(SPELL_AURA_MOD_CHARM);
             target->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS);
         }
 
-        target->SetCharmerGUID(GetCasterGUID());
+        target->SetCharmerGuid(GetCasterGuid());
         target->setFaction(caster->getFaction());
         target->CastStop(m_target == caster ? GetId() : 0);
         caster->SetCharm(m_target);
@@ -2762,7 +2758,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
     }
     else
     {
-        target->SetCharmerGUID(0);
+        target->SetCharmerGuid(ObjectGuid());
 
         if(target->GetTypeId() == TYPEID_PLAYER)
             ((Player*)target)->setFactionForRace(target->getRace());

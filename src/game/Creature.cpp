@@ -569,7 +569,7 @@ void Creature::RegenerateMana()
     uint32 addvalue = 0;
 
     // Combat and any controlled creature
-    if (isInCombat() || GetCharmerOrOwnerGUID())
+    if (isInCombat() || !GetCharmerOrOwnerGuid().IsEmpty())
     {
         if(!IsUnderLastManaUseEffect())
         {
@@ -599,7 +599,7 @@ void Creature::RegenerateHealth()
     uint32 addvalue = 0;
 
     // Not only pet, but any controlled creature
-    if(GetCharmerOrOwnerGUID())
+    if (!GetCharmerOrOwnerGuid().IsEmpty())
     {
         float HealthIncreaseRate = sWorld.getConfig(CONFIG_FLOAT_RATE_HEALTH);
         float Spirit = GetStat(STAT_SPIRIT);
@@ -827,7 +827,7 @@ void Creature::PrepareBodyLootState()
             // have normal loot
             if (GetCreatureInfo()->maxgold > 0 || GetCreatureInfo()->lootid ||
                 // ... or can have skinning after
-                GetCreatureInfo()->SkinLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))
+                (GetCreatureInfo()->SkinLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW)))
             {
                 SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
                 return;
@@ -1694,7 +1694,7 @@ bool Creature::CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction /
         return false;
 
     // only free creature
-    if (GetCharmerOrOwnerGUID())
+    if (!GetCharmerOrOwnerGuid().IsEmpty())
         return false;
 
     // only from same creature faction
@@ -2114,6 +2114,11 @@ uint32 Creature::GetScriptId() const
 VendorItemData const* Creature::GetVendorItems() const
 {
     return sObjectMgr.GetNpcVendorItemList(GetEntry());
+}
+
+VendorItemData const* Creature::GetVendorTemplateItems() const
+{
+    return GetCreatureInfo()->vendorId ? sObjectMgr.GetNpcVendorItemList(GetCreatureInfo()->vendorId) : NULL;
 }
 
 uint32 Creature::GetVendorItemCurrentCount(VendorItem const* vItem)

@@ -1436,7 +1436,7 @@ bool ChatHandler::HandleNpcAddVendorItemCommand(char* args)
 
     uint32 vendor_entry = vendor ? vendor->GetEntry() : 0;
 
-    if (!sObjectMgr.IsVendorItemValid(vendor_entry, itemId, maxcount, incrtime, m_session->GetPlayer()))
+    if (!sObjectMgr.IsVendorItemValid(false, "npc_vendor", vendor_entry, itemId, maxcount, incrtime, m_session->GetPlayer()))
     {
         SetSentErrorMessage(true);
         return false;
@@ -1994,7 +1994,7 @@ bool ChatHandler::HandleNpcTameCommand(char* /*args*/)
 
     Player *player = m_session->GetPlayer ();
 
-    if (player->GetPetGUID())
+    if (!player->GetPetGuid().IsEmpty())
     {
         SendSysMessage(LANG_YOU_ALREADY_HAVE_PET);
         SetSentErrorMessage(true);
@@ -4150,7 +4150,7 @@ bool ChatHandler::HandleEventStartCommand(char* args)
 
     GameEventMgr::GameEventDataMap const& events = sGameEventMgr.GetEventMap();
 
-    if(event_id < 1 || event_id >=(int32)events.size())
+    if (event_id < 1 || event_id >= events.size())
     {
         SendSysMessage(LANG_EVENT_NOT_EXIST);
         SetSentErrorMessage(true);
@@ -4190,7 +4190,7 @@ bool ChatHandler::HandleEventStopCommand(char* args)
 
     GameEventMgr::GameEventDataMap const& events = sGameEventMgr.GetEventMap();
 
-    if(event_id < 1 || event_id >=(int32)events.size())
+    if (event_id < 1 || event_id >= events.size())
     {
         SendSysMessage(LANG_EVENT_NOT_EXIST);
         SetSentErrorMessage(true);

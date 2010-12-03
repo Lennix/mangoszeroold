@@ -1033,7 +1033,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
         // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
         if (m_spellInfo->speed > 0.0f &&
             unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) &&
-            unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
+            unit->GetCharmerOrOwnerGuid() != m_caster->GetObjectGuid())
         {
             realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_EVADE);
             return;
@@ -1654,7 +1654,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     {
                         if( targetOwner->GetTypeId() == TYPEID_PLAYER &&
                             target->GetTypeId() == TYPEID_UNIT && (((Creature*)target)->IsPet()) &&
-                            target->GetOwnerGUID() == targetOwner->GetGUID() &&
+                            target->GetOwnerGuid() == targetOwner->GetObjectGuid() &&
                             pGroup->IsMember(((Player*)targetOwner)->GetObjectGuid()))
                         {
                             targetUnitMap.push_back(target);
@@ -3529,10 +3529,11 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (m_targets.m_targetMask == TARGET_FLAG_SELF &&
                     m_spellInfo->EffectImplicitTargetA[EFFECT_INDEX_1] == TARGET_CHAIN_DAMAGE)
                 {
-                    if (target = m_caster->GetMap()->GetUnit(((Player *)m_caster)->GetSelectionGuid()))
-                        m_targets.setUnitTarget(target);
-                    else
+                    target = m_caster->GetMap()->GetUnit(((Player *)m_caster)->GetSelectionGuid());
+                    if (!target)
                         return SPELL_FAILED_BAD_TARGETS;
+
+                    m_targets.setUnitTarget(target);
                 }
             }
 
@@ -3613,7 +3614,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
             // TODO: this check can be applied and for player to prevent cheating when IsPositiveSpell will return always correct result.
             // check target for pet/charmed casts (not self targeted), self targeted cast used for area effects and etc
-            if (!explicit_target_mode && m_caster->GetTypeId() == TYPEID_UNIT && m_caster->GetCharmerOrOwnerGUID())
+            if (!explicit_target_mode && m_caster->GetTypeId() == TYPEID_UNIT && !m_caster->GetCharmerOrOwnerGuid().IsEmpty())
             {
                 // check correctness positive/negative cast target (pet cast real check and cheating check)
                 if(IsPositiveSpell(m_spellInfo->Id))
@@ -3986,7 +3987,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     return SPELL_FAILED_DONT_REPORT;
                 }
 
-                if(plrCaster->GetPetGUID() || plrCaster->GetCharmGUID())
+                if (!plrCaster->GetPetGuid().IsEmpty() || !plrCaster->GetCharmGuid().IsEmpty())
                 {
                     plrCaster->SendPetTameFailure(PETTAME_ANOTHERSUMMONACTIVE);
                     return SPELL_FAILED_DONT_REPORT;
@@ -4072,9 +4073,9 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_POWER_DRAIN:
             {
                 // Can be area effect, Check only for players and not check if target - caster (spell can have multiply drain/burn effects)
-                if(m_caster->GetTypeId() == TYPEID_PLAYER)
-                    if(Unit* target = m_targets.getUnitTarget())
-                        if(target != m_caster && target->getPowerType() != m_spellInfo->EffectMiscValue[i])
+                if (m_caster->GetTypeId() == TYPEID_PLAYER)
+                    if (Unit* target = m_targets.getUnitTarget())
+                        if (target != m_caster && int32(target->getPowerType()) != m_spellInfo->EffectMiscValue[i])
                             return SPELL_FAILED_BAD_TARGETS;
                 break;
             }
@@ -4118,34 +4119,43 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_OPEN_LOCK_ITEM:
             case SPELL_EFFECT_OPEN_LOCK:
             {
-                if( m_spellInfo->EffectImplicitTargetA[i] != TARGET_GAMEOBJECT &&
-                    m_spellInfo->EffectImplicitTargetA[i] != TARGET_GAMEOBJECT_ITEM )
-                    break;
-
-                if( m_caster->GetTypeId() != TYPEID_PLAYER  // only players can open locks, gather etc.
-                    // we need a go target in case of TARGET_GAMEOBJECT
-                    || m_spellInfo->EffectImplicitTargetA[i] == TARGET_GAMEOBJECT && !m_targets.getGOTarget()
-                    // we need a go target, or an openable item target in case of TARGET_GAMEOBJECT_ITEM
-                    || m_spellInfo->EffectImplicitTargetA[i] == TARGET_GAMEOBJECT_ITEM && !m_targets.getGOTarget() &&
-                    (!m_targets.getItemTarget() || m_targets.getItemTarget()->GetOwner() != m_caster ||
-                    !m_targets.getItemTarget()->GetProto()->LockID || m_targets.getItemTarget()->HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_UNLOCKED)))
+                if (m_caster->GetTypeId() != TYPEID_PLAYER)  // only players can open locks, gather etc.
                     return SPELL_FAILED_BAD_TARGETS;
 
-                // In BattleGround players can use only flags and banners
-                if( ((Player*)m_caster)->InBattleGround() &&
-                    !((Player*)m_caster)->CanUseBattleGroundObject() )
-                    return SPELL_FAILED_TRY_AGAIN;
+                // we need a go target in case of TARGET_GAMEOBJECT (for other targets acceptable GO and items)
+                if (m_spellInfo->EffectImplicitTargetA[i] == TARGET_GAMEOBJECT)
+                {
+                    if (!m_targets.getGOTarget())
+                        return SPELL_FAILED_BAD_TARGETS;
+                }
 
                 // get the lock entry
                 uint32 lockId = 0;
                 if (GameObject* go = m_targets.getGOTarget())
                 {
+                    // In BattleGround players can use only flags and banners
+                    if( ((Player*)m_caster)->InBattleGround() &&
+                        !((Player*)m_caster)->CanUseBattleGroundObject() )
+                        return SPELL_FAILED_TRY_AGAIN;
+
                     lockId = go->GetGOInfo()->GetLockId();
                     if (!lockId)
-                        return SPELL_FAILED_BAD_TARGETS;
+                        return SPELL_FAILED_ALREADY_OPEN;
                 }
-                else if(Item* itm = m_targets.getItemTarget())
-                    lockId = itm->GetProto()->LockID;
+                else if(Item* item = m_targets.getItemTarget())
+                {
+                    // not own (trade?)
+                    if (item->GetOwner() != m_caster)
+                        return SPELL_FAILED_ITEM_GONE;
+
+                    lockId = item->GetProto()->LockID;
+
+                    // if already unlocked
+                    if (!lockId || item->HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_UNLOCKED))
+                        return SPELL_FAILED_ALREADY_OPEN;
+                }
+                else
+                    return SPELL_FAILED_BAD_TARGETS;
 
                 SkillType skillId = SKILL_NONE;
                 int32 reqSkillValue = 0;
@@ -4186,17 +4196,17 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_SUMMON_PHANTASM:
             case SPELL_EFFECT_SUMMON_DEMON:
             {
-                if(m_caster->GetPetGUID())
+                if (!m_caster->GetPetGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_SUMMON;
 
-                if(m_caster->GetCharmGUID())
+                if (!m_caster->GetCharmGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_CHARM;
 
                 break;
             }
             case SPELL_EFFECT_SUMMON_PET:
             {
-                if(m_caster->GetPetGUID())                  //let warlock do a replacement summon
+                if (!m_caster->GetPetGuid().IsEmpty())      //let warlock do a replacement summon
                 {
 
                     Pet* pet = ((Player*)m_caster)->GetPet();
@@ -4210,7 +4220,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                         return SPELL_FAILED_ALREADY_HAVE_SUMMON;
                 }
 
-                if(m_caster->GetCharmGUID())
+                if (!m_caster->GetCharmGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_CHARM;
 
                 break;
@@ -4272,73 +4282,73 @@ SpellCastResult Spell::CheckCast(bool strict)
         {
             case SPELL_AURA_MOD_POSSESS:
             {
-                if(m_caster->GetTypeId() != TYPEID_PLAYER)
+                if (m_caster->GetTypeId() != TYPEID_PLAYER)
                     return SPELL_FAILED_UNKNOWN;
 
-                if(m_targets.getUnitTarget() == m_caster)
+                if (m_targets.getUnitTarget() == m_caster)
                     return SPELL_FAILED_BAD_TARGETS;
 
-                if(m_caster->GetPetGUID())
+                if (!m_caster->GetPetGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_SUMMON;
 
-                if(m_caster->GetCharmGUID())
+                if (!m_caster->GetCharmGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_CHARM;
 
-                if(m_caster->GetCharmerGUID())
+                if (!m_caster->GetCharmerGuid().IsEmpty())
                     return SPELL_FAILED_CHARMED;
 
-                if(!m_targets.getUnitTarget())
+                if (!m_targets.getUnitTarget())
                     return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
 
-                if(m_targets.getUnitTarget()->GetCharmerGUID())
+                if (!m_targets.getUnitTarget()->GetCharmerGuid().IsEmpty())
                     return SPELL_FAILED_CHARMED;
 
-                if(int32(m_targets.getUnitTarget()->getLevel()) > CalculateDamage(SpellEffectIndex(i),m_targets.getUnitTarget()))
+                if (int32(m_targets.getUnitTarget()->getLevel()) > CalculateDamage(SpellEffectIndex(i),m_targets.getUnitTarget()))
                     return SPELL_FAILED_HIGHLEVEL;
 
                 break;
             }
             case SPELL_AURA_MOD_CHARM:
             {
-                if(m_targets.getUnitTarget() == m_caster)
+                if (m_targets.getUnitTarget() == m_caster)
                     return SPELL_FAILED_BAD_TARGETS;
 
-                if(m_caster->GetPetGUID())
+                if (!m_caster->GetPetGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_SUMMON;
 
-                if(m_caster->GetCharmGUID())
+                if (!m_caster->GetCharmGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_CHARM;
 
-                if(m_caster->GetCharmerGUID())
+                if (!m_caster->GetCharmerGuid().IsEmpty())
                     return SPELL_FAILED_CHARMED;
 
-                if(!m_targets.getUnitTarget())
+                if (!m_targets.getUnitTarget())
                     return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
 
-                if(m_targets.getUnitTarget()->GetCharmerGUID())
+                if (!m_targets.getUnitTarget()->GetCharmerGuid().IsEmpty())
                     return SPELL_FAILED_CHARMED;
 
-                if(int32(m_targets.getUnitTarget()->getLevel()) > CalculateDamage(SpellEffectIndex(i),m_targets.getUnitTarget()))
+                if (int32(m_targets.getUnitTarget()->getLevel()) > CalculateDamage(SpellEffectIndex(i),m_targets.getUnitTarget()))
                     return SPELL_FAILED_HIGHLEVEL;
 
                 break;
             }
             case SPELL_AURA_MOD_POSSESS_PET:
             {
-                if(m_caster->GetTypeId() != TYPEID_PLAYER)
+                if (m_caster->GetTypeId() != TYPEID_PLAYER)
                     return SPELL_FAILED_UNKNOWN;
 
-                if(m_caster->GetCharmGUID())
+                if (!m_caster->GetCharmGuid().IsEmpty())
                     return SPELL_FAILED_ALREADY_HAVE_CHARM;
 
-                if(m_caster->GetCharmerGUID())
+                if (!m_caster->GetCharmerGuid().IsEmpty())
                     return SPELL_FAILED_CHARMED;
 
                 Pet* pet = m_caster->GetPet();
-                if(!pet)
+                if (!pet)
                     return SPELL_FAILED_NO_PET;
 
-                if(pet->GetCharmerGUID())
+                if (!pet->GetCharmerGuid().IsEmpty())
                     return SPELL_FAILED_CHARMED;
 
                 break;
@@ -5285,7 +5295,7 @@ bool Spell::CheckTarget( Unit* target, SpellEffectIndex eff )
 
     // Check targets for not_selectable unit flag and remove
     // A player can cast spells on his pet (or other controlled unit) though in any state
-    if (target != m_caster && target->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
+    if (target != m_caster && target->GetCharmerOrOwnerGuid() != m_caster->GetObjectGuid())
     {
         // any unattackable target skipped
         if (target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
@@ -5356,7 +5366,7 @@ bool Spell::CheckTarget( Unit* target, SpellEffectIndex eff )
 bool Spell::IsNeedSendToClient() const
 {
     return m_spellInfo->SpellVisual!=0 || IsChanneledSpell(m_spellInfo) ||
-        m_spellInfo->speed > 0.0f || !m_triggeredByAuraSpell && !m_IsTriggeredSpell;
+        m_spellInfo->speed > 0.0f || (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
 }
 
 bool Spell::IsTriggeredSpellWithRedundentData() const
@@ -5575,15 +5585,8 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
  */
 void Spell::FillAreaTargets(UnitList &targetUnitMap, float x, float y, float radius, SpellNotifyPushType pushType, SpellTargets spellTargets, WorldObject* originalCaster /*=NULL*/)
 {
-    CellPair p(MaNGOS::ComputeCellPair(x, y));
-    Cell cell(p);
-    cell.data.Part.reserved = ALL_DISTRICT;
-    cell.SetNoCreate();
     MaNGOS::SpellNotifierCreatureAndPlayer notifier(*this, targetUnitMap, radius, pushType, spellTargets, originalCaster);
-    TypeContainerVisitor<MaNGOS::SpellNotifierCreatureAndPlayer, WorldTypeMapContainer > world_notifier(notifier);
-    TypeContainerVisitor<MaNGOS::SpellNotifierCreatureAndPlayer, GridTypeMapContainer > grid_notifier(notifier);
-    cell.Visit(p, world_notifier, *m_caster->GetMap(), *m_caster, radius);
-    cell.Visit(p, grid_notifier, *m_caster->GetMap(), *m_caster, radius);
+    Cell::VisitAllObjects(x, y, m_caster->GetMap(), notifier, radius);
 }
 
 void Spell::FillRaidOrPartyTargets( UnitList &TagUnitMap, Unit* target, float radius, bool raid, bool withPets, bool withcaster )
