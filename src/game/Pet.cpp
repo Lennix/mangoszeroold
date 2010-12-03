@@ -230,16 +230,19 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
             SetUInt32Value(UNIT_FIELD_BYTES_0, 2048);
             SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
                                                             // this enables popup window (pet dismiss, cancel)
-            break;
+            SetUInt32Value(UNIT_FIELD_PETNUMBER, fields[0].GetUInt32() );
+			break;
         case HUNTER_PET:
             SetUInt32Value(UNIT_FIELD_BYTES_0, 0x02020100);
             SetByteValue(UNIT_FIELD_BYTES_1, 1, fields[8].GetUInt32());
             SetSheath(SHEATH_STATE_MELEE);
             SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_UNK3 | UNIT_BYTE2_FLAG_AURAS | UNIT_BYTE2_FLAG_UNK5 );
             SetByteValue(UNIT_FIELD_BYTES_2, 2, fields[12].GetBool() ? UNIT_RENAME_NOT_ALLOWED : UNIT_RENAME_ALLOWED);
-
-            SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
-                                                            // this enables popup window (pet abandon, cancel)
+			if(!fields[12].GetBool())
+				SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE + UNIT_FLAG_PREPARATION + UNIT_FLAG_RENAME);
+			else
+				SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE + UNIT_FLAG_PREPARATION);
+															// this enables popup window (pet abandon, cancel, rename)
             SetTP(fields[9].GetInt32());
             SetMaxPower(POWER_HAPPINESS, GetCreatePowers(POWER_HAPPINESS));
             SetPower(   POWER_HAPPINESS,fields[15].GetUInt32());
