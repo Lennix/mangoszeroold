@@ -612,25 +612,15 @@ void Map::Update(const uint32 &t_diff)
     {
         Player* plr = m_mapRefIter->getSource();
 
-        if(!plr->IsInWorld())
+        if (!plr->IsInWorld() || !plr->IsPositionValid())
             continue;
 
-        CellPair standing_cell(MaNGOS::ComputeCellPair(plr->GetPositionX(), plr->GetPositionY()));
-
-        // Check for correctness of standing_cell, it also avoids problems with update_cell
-        if (standing_cell.x_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP || standing_cell.y_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP)
-            continue;
-
-        // the overloaded operators handle range checking
-        // so ther's no need for range checking inside the loop
-        CellPair begin_cell(standing_cell), end_cell(standing_cell);
         //lets update mobs/objects in ALL visible cells around player!
         CellArea area = Cell::CalculateCellArea(plr->GetPositionX(), plr->GetPositionY(), GetVisibilityDistance());
-        area.ResizeBorders(begin_cell, end_cell);
 
-        for(uint32 x = begin_cell.x_coord; x <= end_cell.x_coord; ++x)
+        for(uint32 x = area.low_bound.x_coord; x <= area.high_bound.x_coord; ++x)
         {
-            for(uint32 y = begin_cell.y_coord; y <= end_cell.y_coord; ++y)
+            for(uint32 y = area.low_bound.y_coord; y <= area.high_bound.y_coord; ++y)
             {
                 // marked cells are those that have been visited
                 // don't visit the same cell twice
@@ -660,24 +650,15 @@ void Map::Update(const uint32 &t_diff)
             // step to next-next, and if we step to end() then newly added objects can wait next update.
             ++m_activeNonPlayersIter;
 
-            if(!obj->IsInWorld())
+            if (!obj->IsInWorld() || !obj->IsPositionValid())
                 continue;
 
-            CellPair standing_cell(MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY()));
+            //lets update mobs/objects in ALL visible cells around player!
+            CellArea area = Cell::CalculateCellArea(obj->GetPositionX(), obj->GetPositionY(), GetVisibilityDistance());
 
-            // Check for correctness of standing_cell, it also avoids problems with update_cell
-            if (standing_cell.x_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP || standing_cell.y_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP)
-                continue;
-
-            // the overloaded operators handle range checking
-            // so ther's no need for range checking inside the loop
-            CellPair begin_cell(standing_cell), end_cell(standing_cell);
-            begin_cell << 1; begin_cell -= 1;               // upper left
-            end_cell >> 1; end_cell += 1;                   // lower right
-
-            for(uint32 x = begin_cell.x_coord; x <= end_cell.x_coord; ++x)
+            for(uint32 x = area.low_bound.x_coord; x <= area.high_bound.x_coord; ++x)
             {
-                for(uint32 y = begin_cell.y_coord; y <= end_cell.y_coord; ++y)
+                for(uint32 y = area.low_bound.y_coord; y <= area.high_bound.y_coord; ++y)
                 {
                     // marked cells are those that have been visited
                     // don't visit the same cell twice
@@ -2183,8 +2164,11 @@ bool InstanceMap::Add(Player *player)
                                 pGroup->GetId(),
                                 groupBind->save->GetMapId(), groupBind->save->GetInstanceId(),
                                 groupBind->save->GetPlayerCount(), groupBind->save->GetGroupCount(), groupBind->save->CanReset());
-                        MANGOS_ASSERT(false);
+
+                        // no reason crash if we can fix state
+                        player->UnbindInstance(GetId());
                     }
+
                     // bind to the group or keep using the group save
                     if (!groupBind)
                         pGroup->BindToInstance(GetInstanceSave(), false);
@@ -2320,7 +2304,7 @@ void InstanceMap::CreateInstanceData(bool load)
 /*
     Returns true if there are no players in the instance
 */
-bool InstanceMap::Reset(uint8 method)
+bool InstanceMap::Reset(InstanceResetMethod method)
 {
     // note: since the map may not be loaded when the instance needs to be reset
     // the instance must be deleted from the DB by InstanceSaveManager
@@ -2702,7 +2686,7 @@ void Map::ScriptsProcess()
                 if (step.script->talk.flags & 0x02)
                     target = source;
 
-                uint64 unit_target = target ? target->GetGUID() : 0;
+                Unit* unitTarget = target && target->isType(TYPEMASK_UNIT) ? static_cast<Unit*>(target) : NULL;
                 int32 textId = step.script->talk.textId[0];
 
                 // May have text for random
@@ -2722,35 +2706,35 @@ void Map::ScriptsProcess()
                 switch(step.script->talk.chatType)
                 {
                     case CHAT_TYPE_SAY:
-                        pSource->MonsterSay(textId, step.script->talk.language, unit_target);
+                        pSource->MonsterSay(textId, step.script->talk.language, unitTarget);
                         break;
                     case CHAT_TYPE_YELL:
-                        pSource->MonsterYell(textId, step.script->talk.language, unit_target);
+                        pSource->MonsterYell(textId, step.script->talk.language, unitTarget);
                         break;
                     case CHAT_TYPE_TEXT_EMOTE:
-                        pSource->MonsterTextEmote(textId, unit_target);
+                        pSource->MonsterTextEmote(textId, unitTarget);
                         break;
                     case CHAT_TYPE_BOSS_EMOTE:
-                        pSource->MonsterTextEmote(textId, unit_target, true);
+                        pSource->MonsterTextEmote(textId, unitTarget, true);
                         break;
                     case CHAT_TYPE_WHISPER:
-                        if (!unit_target || !IS_PLAYER_GUID(unit_target))
+                        if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
                         {
-                            sLog.outError("SCRIPT_COMMAND_TALK (script id %u) attempt to whisper (%u) 0-guid or non-player, skipping.", step.script->id, step.script->talk.chatType);
+                            sLog.outError("SCRIPT_COMMAND_TALK (script id %u) attempt to whisper (%u) to %s, skipping.", step.script->id, step.script->talk.chatType, unitTarget ? unitTarget->GetObjectGuid().GetString().c_str() : "<no target>");
                             break;
                         }
-                        pSource->MonsterWhisper(textId, unit_target);
+                        pSource->MonsterWhisper(textId, unitTarget);
                         break;
                     case CHAT_TYPE_BOSS_WHISPER:
-                        if (!unit_target || !IS_PLAYER_GUID(unit_target))
+                        if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
                         {
-                            sLog.outError("SCRIPT_COMMAND_TALK (script id %u) attempt to whisper (%u) 0-guid or non-player, skipping.", step.script->id, step.script->talk.chatType);
+                            sLog.outError("SCRIPT_COMMAND_TALK (script id %u) attempt to whisper (%u) to %s, skipping.", step.script->id, step.script->talk.chatType, unitTarget ? unitTarget->GetObjectGuid().GetString().c_str() : "<no target>");
                             break;
                         }
-                        pSource->MonsterWhisper(textId, unit_target, true);
+                        pSource->MonsterWhisper(textId, unitTarget, true);
                         break;
                     case CHAT_TYPE_ZONE_YELL:
-                        pSource->MonsterYellToZone(textId, step.script->talk.language, unit_target);
+                        pSource->MonsterYellToZone(textId, step.script->talk.language, unitTarget);
                         break;
                     default:
                         break;                              // must be already checked at load

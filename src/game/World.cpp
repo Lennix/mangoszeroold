@@ -214,7 +214,7 @@ World::AddSession_ (WorldSession* s)
         if(old != m_sessions.end())
         {
             // prevent decrease sessions count if session queued
-            if(RemoveQueuedPlayer(old->second))
+            if(RemoveQueuedSession(old->second))
                 decrease_session = false;
             // not remove replaced session form queue if listed
             delete old->second;
@@ -223,9 +223,9 @@ World::AddSession_ (WorldSession* s)
 
     m_sessions[s->GetAccountId ()] = s;
 
-    uint32 Sessions = GetActiveAndQueuedSessionCount ();
-    uint32 pLimit = GetPlayerAmountLimit ();
-    uint32 QueueSize = GetQueueSize ();                     //number of players in the queue
+    uint32 Sessions = GetActiveAndQueuedSessionCount();
+    uint32 pLimit = GetPlayerAmountLimit();
+    uint32 QueueSize = GetQueuedSessionCount();             //number of players in the queue
 
     //so we don't count the user trying to
     //login as a session and queue the socket that we are using
@@ -234,8 +234,8 @@ World::AddSession_ (WorldSession* s)
 
     if (pLimit > 0 && Sessions >= pLimit && s->GetSecurity () == SEC_PLAYER )
     {
-        AddQueuedPlayer (s);
-        UpdateMaxSessionCounters ();
+        AddQueuedSession(s);
+        UpdateMaxSessionCounters();
         DETAIL_LOG("PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId (), ++QueueSize);
         return;
     }
@@ -256,26 +256,26 @@ World::AddSession_ (WorldSession* s)
         float popu = float(GetActiveSessionCount());        // updated number of users on the server
         popu /= pLimit;
         popu *= 2;
-        LoginDatabase.PExecute ("UPDATE realmlist SET population = '%f' WHERE id = '%d'", popu, realmID);
+        LoginDatabase.PExecute ("UPDATE realmlist SET population = '%f' WHERE id = '%u'", popu, realmID);
         DETAIL_LOG("Server Population (%f).", popu);
     }
 }
 
-int32 World::GetQueuePos(WorldSession* sess)
+int32 World::GetQueuedSessionPos(WorldSession* sess)
 {
     uint32 position = 1;
 
-    for(Queue::const_iterator iter = m_QueuedPlayer.begin(); iter != m_QueuedPlayer.end(); ++iter, ++position)
+    for(Queue::const_iterator iter = m_QueuedSessions.begin(); iter != m_QueuedSessions.end(); ++iter, ++position)
         if((*iter) == sess)
             return position;
 
     return 0;
 }
 
-void World::AddQueuedPlayer(WorldSession* sess)
+void World::AddQueuedSession(WorldSession* sess)
 {
     sess->SetInQueue(true);
-    m_QueuedPlayer.push_back (sess);
+    m_QueuedSessions.push_back (sess);
 
     // [-ZERO] Possible wrong
     // The 1st SMSG_AUTH_RESPONSE needs to contain other info too.
@@ -284,29 +284,29 @@ void World::AddQueuedPlayer(WorldSession* sess)
     packet << uint32 (0);                                   // BillingTimeRemaining
     packet << uint8 (0);                                    // BillingPlanFlags
     packet << uint32 (0);                                   // BillingTimeRested
-    packet << uint32(GetQueuePos (sess));
+    packet << uint32(GetQueuedSessionPos(sess));            // position in queue
     sess->SendPacket (&packet);
 
     //sess->SendAuthWaitQue (GetQueuePos (sess));
 }
 
-bool World::RemoveQueuedPlayer(WorldSession* sess)
+bool World::RemoveQueuedSession(WorldSession* sess)
 {
     // sessions count including queued to remove (if removed_session set)
     uint32 sessions = GetActiveSessionCount();
 
     uint32 position = 1;
-    Queue::iterator iter = m_QueuedPlayer.begin();
+    Queue::iterator iter = m_QueuedSessions.begin();
 
     // search to remove and count skipped positions
     bool found = false;
 
-    for(;iter != m_QueuedPlayer.end(); ++iter, ++position)
+    for(;iter != m_QueuedSessions.end(); ++iter, ++position)
     {
         if(*iter==sess)
         {
             sess->SetInQueue(false);
-            iter = m_QueuedPlayer.erase(iter);
+            iter = m_QueuedSessions.erase(iter);
             found = true;                                   // removing queued session
             break;
         }
@@ -320,21 +320,21 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
         --sessions;
 
     // accept first in queue
-    if( (!m_playerLimit || (int32)sessions < m_playerLimit) && !m_QueuedPlayer.empty() )
+    if( (!m_playerLimit || (int32)sessions < m_playerLimit) && !m_QueuedSessions.empty() )
     {
-        WorldSession* pop_sess = m_QueuedPlayer.front();
+        WorldSession* pop_sess = m_QueuedSessions.front();
         pop_sess->SetInQueue(false);
         pop_sess->SendAuthWaitQue(0);
-        m_QueuedPlayer.pop_front();
+        m_QueuedSessions.pop_front();
 
         // update iter to point first queued socket or end() if queue is empty now
-        iter = m_QueuedPlayer.begin();
+        iter = m_QueuedSessions.begin();
         position = 1;
     }
 
     // update position from iter to end()
     // iter point to first not updated socket, position store new position
-    for(; iter != m_QueuedPlayer.end(); ++iter, ++position)
+    for(; iter != m_QueuedSessions.end(); ++iter, ++position)
         (*iter)->SendAuthWaitQue(position);
 
     return found;
@@ -811,9 +811,6 @@ void World::SetInitialWorldSettings()
     LoadConfigSettings();
     sMod.ModInit();
 
-    ///- Init highest guids before any table loading to prevent using not initialized guids in some code.
-    sObjectMgr.SetHighestGuids();
-
     ///- Check the existence of the map files for all races' startup areas.
     if (!MapManager::ExistMapAndVMap(0,-6240.32f, 331.033f) ||
         !MapManager::ExistMapAndVMap(0,-8949.95f,-132.493f) ||
@@ -843,7 +840,7 @@ void World::SetInitialWorldSettings()
     // not send custom type REALM_FFA_PVP to realm list
     uint32 server_type = IsFFAPvPRealm() ? REALM_TYPE_PVP : getConfig(CONFIG_UINT32_GAME_TYPE);
     uint32 realm_zone = getConfig(CONFIG_UINT32_REALM_ZONE);
-    LoginDatabase.PExecute("UPDATE realmlist SET icon = %u, timezone = %u WHERE id = '%d'", server_type, realm_zone, realmID);
+    LoginDatabase.PExecute("UPDATE realmlist SET icon = %u, timezone = %u WHERE id = '%u'", server_type, realm_zone, realmID);
 
     ///- Remove the bones (they should not exist in DB though) and old corpses after a restart
     CharacterDatabase.PExecute("DELETE FROM corpse WHERE corpse_type = '0' OR time < (UNIX_TIMESTAMP()-'%u')", 3*DAY);
@@ -852,6 +849,7 @@ void World::SetInitialWorldSettings()
     sLog.outString("Initialize data stores...");
     LoadDBCStores(m_dataPath);
     DetectDBCLang();
+    sObjectMgr.SetDBCLocaleIndex(GetDefaultDbcLocale());    // Get once for all the locale index of DBC language (console/broadcasts)
 
     sLog.outString( "Loading Script Names...");
     sObjectMgr.LoadScriptNames();
@@ -870,20 +868,10 @@ void World::SetInitialWorldSettings()
     sInstanceSaveMgr.PackInstances();
 
     sLog.outString( "Packing groups..." );
-    sObjectMgr.PackGroupIds();
+    sObjectMgr.PackGroupIds();                              // must be after CleanupInstances
 
-    sLog.outString();
-    sLog.outString( "Loading Localization strings..." );
-    sObjectMgr.LoadCreatureLocales();
-    sObjectMgr.LoadGameObjectLocales();
-    sObjectMgr.LoadItemLocales();
-    sObjectMgr.LoadQuestLocales();
-    sObjectMgr.LoadNpcTextLocales();
-    sObjectMgr.LoadPageTextLocales();
-    sObjectMgr.LoadGossipMenuItemsLocales();
-    sObjectMgr.LoadPointOfInterestLocales();
-    sObjectMgr.SetDBCLocaleIndex(GetDefaultDbcLocale());    // Get once for all the locale index of DBC language (console/broadcasts)
-    sLog.outString( ">>> Localization strings loaded" );
+    ///- Init highest guids before any guid using table loading to prevent using not initialized guids in some code.
+    sObjectMgr.SetHighestGuids();                           // must be after packing instances
     sLog.outString();
 
     sLog.outString( "Loading Page Texts..." );
@@ -1065,6 +1053,45 @@ void World::SetInitialWorldSettings()
     sLog.outString( "Loading Skill Fishing base level requirements..." );
     sObjectMgr.LoadFishingBaseSkillLevel();
 
+    sLog.outString( "Loading Npc Text Id..." );
+    sObjectMgr.LoadNpcTextId();                             // must be after load Creature and LoadGossipText
+
+    sLog.outString( "Loading Gossip scripts..." );
+    sObjectMgr.LoadGossipScripts();                         // must be before gossip menu options
+
+    sLog.outString( "Loading Gossip menus..." );
+    sObjectMgr.LoadGossipMenu();
+
+    sLog.outString( "Loading Gossip menu options..." );
+    sObjectMgr.LoadGossipMenuItems();
+
+    sLog.outString( "Loading Vendors..." );
+    sObjectMgr.LoadVendorTemplates();                       // must be after load ItemTemplate
+    sObjectMgr.LoadVendors();                               // must be after load CreatureTemplate, VendorTemplate, and ItemTemplate
+
+    sLog.outString( "Loading Trainers..." );
+    sObjectMgr.LoadTrainerSpell();                          // must be after load CreatureTemplate
+
+    sLog.outString( "Loading Waypoint scripts..." );        // before loading from creature_movement
+    sObjectMgr.LoadCreatureMovementScripts();
+
+    sLog.outString( "Loading Waypoints..." );
+    sLog.outString();
+    sWaypointMgr.Load();
+
+    ///- Loading localization data
+    sLog.outString( "Loading Localization strings..." );
+    sObjectMgr.LoadCreatureLocales();                       // must be after CreatureInfo loading
+    sObjectMgr.LoadGameObjectLocales();                     // must be after GameobjectInfo loading
+    sObjectMgr.LoadItemLocales();                           // must be after ItemPrototypes loading
+    sObjectMgr.LoadQuestLocales();                          // must be after QuestTemplates loading
+    sObjectMgr.LoadNpcTextLocales();                        // must be after LoadGossipText
+    sObjectMgr.LoadPageTextLocales();                       // must be after PageText loading
+    sObjectMgr.LoadGossipMenuItemsLocales();                // must be after gossip menu items loading
+    sObjectMgr.LoadPointOfInterestLocales();                // must be after POI loading
+    sLog.outString( ">>> Localization strings loaded" );
+    sLog.outString();
+
     ///- Load dynamic data tables from the database
     sLog.outString( "Loading Auctions..." );
     sLog.outString();
@@ -1093,32 +1120,6 @@ void World::SetInitialWorldSettings()
 
     sLog.outString( "Loading GameTeleports..." );
     sObjectMgr.LoadGameTele();
-
-    sLog.outString( "Loading Npc Text Id..." );
-    sObjectMgr.LoadNpcTextId();                             // must be after load Creature and NpcText
-
-    sLog.outString( "Loading Gossip scripts..." );
-    sObjectMgr.LoadGossipScripts();                         // must be before gossip menu options
-
-    sLog.outString( "Loading Gossip menus..." );
-    sObjectMgr.LoadGossipMenu();
-
-    sLog.outString( "Loading Gossip menu options..." );
-    sObjectMgr.LoadGossipMenuItems();
-
-    sLog.outString( "Loading Vendors..." );
-    sObjectMgr.LoadVendorTemplates();                       // must be after load ItemTemplate
-    sObjectMgr.LoadVendors();                               // must be after load CreatureTemplate, VendorTemplate, and ItemTemplate
-
-    sLog.outString( "Loading Trainers..." );
-    sObjectMgr.LoadTrainerSpell();                          // must be after load CreatureTemplate
-
-    sLog.outString( "Loading Waypoint scripts..." );        // before loading from creature_movement
-    sObjectMgr.LoadCreatureMovementScripts();
-
-    sLog.outString( "Loading Waypoints..." );
-    sLog.outString();
-    sWaypointMgr.Load();
 
     sLog.outString( "Loading GM tickets...");
     sTicketMgr.LoadGMTickets();
@@ -1540,7 +1541,7 @@ void World::SendZoneText(uint32 zone, const char* text, WorldSession *self, uint
 /// Kick (and save) all players
 void World::KickAll()
 {
-    m_QueuedPlayer.clear();                                 // prevent send queue update packet and login queued sessions
+    m_QueuedSessions.clear();                               // prevent send queue update packet and login queued sessions
 
     // session not removed at kick and will removed in next update tick
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
@@ -1773,7 +1774,7 @@ void World::UpdateSessions( uint32 diff )
         ///- and remove not active sessions from the list
         if(!itr->second->Update(diff))                      // As interval = 0
         {
-            RemoveQueuedPlayer (itr->second);
+            RemoveQueuedSession (itr->second);
             delete itr->second;
             m_sessions.erase(itr);
         }
@@ -1867,7 +1868,7 @@ void World::_UpdateRealmCharCount(QueryResult *resultCharCount, uint32 accountId
         Field *fields = resultCharCount->Fetch();
         uint32 charCount = fields[0].GetUInt32();
         delete resultCharCount;
-        LoginDatabase.PExecute("DELETE FROM realmcharacters WHERE acctid= '%d' AND realmid = '%d'", accountId, realmID);
+        LoginDatabase.PExecute("DELETE FROM realmcharacters WHERE acctid= '%u' AND realmid = '%u'", accountId, realmID);
         LoginDatabase.PExecute("INSERT INTO realmcharacters (numchars, acctid, realmid) VALUES (%u, %u, %u)", charCount, accountId, realmID);
     }
 }
@@ -1882,14 +1883,15 @@ void World::SetPlayerLimit( int32 limit, bool needUpdate )
 
     m_playerLimit = limit;
 
-//    if(db_update_need)
-//      LoginDatabase.PExecute("UPDATE realmlist SET allowedSecurityLevel = '%u' WHERE id = '%d'",uint8(GetPlayerSecurityLimit()),realmID);
+//    if (db_update_need)
+//        LoginDatabase.PExecute("UPDATE realmlist SET allowedSecurityLevel = '%u' WHERE id = '%u'",
+//            uint32(GetPlayerSecurityLimit()), realmID);
 }
 
 void World::UpdateMaxSessionCounters()
 {
-    m_maxActiveSessionCount = std::max(m_maxActiveSessionCount,uint32(m_sessions.size()-m_QueuedPlayer.size()));
-    m_maxQueuedSessionCount = std::max(m_maxQueuedSessionCount,uint32(m_QueuedPlayer.size()));
+    m_maxActiveSessionCount = std::max(m_maxActiveSessionCount,uint32(m_sessions.size()-m_QueuedSessions.size()));
+    m_maxQueuedSessionCount = std::max(m_maxQueuedSessionCount,uint32(m_QueuedSessions.size()));
 }
 
 void World::LoadDBVersion()

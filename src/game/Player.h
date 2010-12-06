@@ -37,6 +37,7 @@
 #include "ReputationMgr.h"
 #include "BattleGround.h"
 #include "DBCStores.h"
+#include "SharedDefines.h"
 
 #include<string>
 #include<vector>
@@ -317,6 +318,8 @@ enum DrunkenState
     DRUNKEN_DRUNK   = 2,
     DRUNKEN_SMASHED = 3
 };
+
+#define MAX_DRUNKEN   4
 
 enum TYPE_OF_HONOR
 {
@@ -1551,7 +1554,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendDelayResponse(const uint32);
         void SendLogXPGain(uint32 GivenXP,Unit* victim,uint32 RestXP);
 
-        //notifiers
+        // notifiers
         void SendAttackSwingCantAttack();
         void SendAttackSwingCancelAttack();
         void SendAttackSwingDeadTarget();
@@ -1561,7 +1564,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendAutoRepeatCancel();
         void SendExplorationExperience(uint32 Area, uint32 Experience);
 
-        void ResetInstances(uint8 method);
+        void ResetInstances(InstanceResetMethod method);
         void SendResetInstanceSuccess(uint32 MapId);
         void SendResetInstanceFailed(uint32 reason, uint32 MapId);
         void SendResetFailedNotify(uint32 mapid);

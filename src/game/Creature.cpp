@@ -209,7 +209,6 @@ bool Creature::InitEntry(uint32 Entry, uint32 team, const CreatureData *data )
         return false;
     }
 
-    uint32 actualEntry = Entry;
     CreatureInfo const *cinfo = normalInfo;
     if (normalInfo->HeroicEntry)
     {
@@ -229,6 +228,12 @@ bool Creature::InitEntry(uint32 Entry, uint32 team, const CreatureData *data )
     m_creatureInfo = cinfo;                                 // map mode related always
 
     SetObjectScale(cinfo->scale);
+
+    // equal to player Race field, but creature does not have race
+    SetByteValue(UNIT_FIELD_BYTES_0, 0, 0);
+
+    // known valid are: CLASS_WARRIOR,CLASS_PALADIN,CLASS_ROGUE,CLASS_MAGE
+    SetByteValue(UNIT_FIELD_BYTES_0, 1, uint8(cinfo->unit_class));
 
     uint32 display_id = ChooseDisplayId(GetCreatureInfo(), data);
     if (!display_id)                                        // Cancel load if no display id
@@ -527,10 +532,10 @@ void Creature::Update(uint32 diff)
 
             RegenerateMana();
 
-            m_regenTimer = 2000;
+            m_regenTimer = REGEN_TIME_FULL;
             break;
         }
-        case DEAD_FALLING:
+        case CORPSE_FALLING:
         {
             SetDeathState(CORPSE);
         }
@@ -1360,7 +1365,7 @@ void Creature::SetDeathState(DeathState s)
             UpdateSpeed(MOVE_RUN, false);
         }
 
-        // return, since we promote to DEAD_FALLING. DEAD_FALLING is promoted to CORPSE at next update.
+        // return, since we promote to CORPSE_FALLING. CORPSE_FALLING is promoted to CORPSE at next update.
         if (CanFly() && FallGround())
             return;
 
@@ -1386,8 +1391,8 @@ void Creature::SetDeathState(DeathState s)
 
 bool Creature::FallGround()
 {
-    // Let's abort after we called this function one time
-    if (getDeathState() == DEAD_FALLING)
+    // Only if state is JUST_DIED. CORPSE_FALLING is set below and promoted to CORPSE later
+    if (getDeathState() != JUST_DIED)
         return false;
 
     // Let's do with no vmap because no way to get far distance with vmap high call
@@ -1399,7 +1404,7 @@ bool Creature::FallGround()
     if (Z < 0.1f || Z >= INVALID_HEIGHT)
         return false;
 
-    Unit::SetDeathState(DEAD_FALLING);
+    Unit::SetDeathState(CORPSE_FALLING);
 
     float dz = tz - GetPositionZ();
     float distance = sqrt(dz*dz);
@@ -1434,7 +1439,7 @@ void Creature::Respawn()
     SetVisibility(currentVis);                              // restore visibility state
     UpdateObjectVisibility();
 
-    if(getDeathState() == DEAD)
+    if (IsDespawned())
     {
         if (m_DBTableGuid)
             sObjectMgr.SaveCreatureRespawnTime(m_DBTableGuid,GetInstanceId(), 0);
@@ -1790,9 +1795,6 @@ bool Creature::LoadCreatureAddon(bool reload)
 
     if (cainfo->mount != 0)
         Mount(cainfo->mount);
-
-    if (cainfo->bytes0 != 0)
-        SetUInt32Value(UNIT_FIELD_BYTES_0, cainfo->bytes0);
 
     if (cainfo->bytes1 != 0)
     {

@@ -53,7 +53,7 @@ bool ChatHandler::HandleNpcSayCommand(char* args)
         return false;
     }
 
-    pCreature->MonsterSay(args, LANG_UNIVERSAL, 0);
+    pCreature->MonsterSay(args, LANG_UNIVERSAL);
 
     return true;
 }
@@ -71,7 +71,7 @@ bool ChatHandler::HandleNpcYellCommand(char* args)
         return false;
     }
 
-    pCreature->MonsterYell(args, LANG_UNIVERSAL, 0);
+    pCreature->MonsterYell(args, LANG_UNIVERSAL);
 
     return true;
 }
@@ -91,7 +91,7 @@ bool ChatHandler::HandleNpcTextEmoteCommand(char* args)
         return false;
     }
 
-    pCreature->MonsterTextEmote(args, 0);
+    pCreature->MonsterTextEmote(args, NULL);
 
     return true;
 }
@@ -116,7 +116,7 @@ bool ChatHandler::HandleNpcWhisperCommand(char* args)
     if (HasLowerSecurity(target, 0))
         return false;
 
-    pCreature->MonsterWhisper(args, target->GetGUID());
+    pCreature->MonsterWhisper(args, target);
 
     return true;
 }
@@ -542,8 +542,16 @@ bool ChatHandler::HandleGonameCommand(char* args)
                 InstanceGroupBind *gBind = group ? group->GetBoundInstance(target->GetMapId()) : NULL;
                 // if no bind exists, create a solo bind
                 if (!gBind)
+                {
                     if (InstanceSave *save = target->GetMap()->GetInstanceSave())
-                        _player->BindToInstance(save, !save->CanReset());
+                    {
+                        // if player is group leader then we need add group bind
+                        if (group && group->IsLeader(_player->GetObjectGuid()))
+                            group->BindToInstance(save, !save->CanReset());
+                        else
+                            _player->BindToInstance(save, !save->CanReset());
+                    }
+                }
             }
 
         }
