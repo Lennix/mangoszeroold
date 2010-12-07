@@ -9208,11 +9208,11 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
             {
                 // If last charge dropped add spell to remove list
 				// Check for Shadow Vulnerability debuff so it doesnt get consumed by non-shadow spells
+				uint32 ID = 0;
+				if (triggeredByAura->GetSpellProto() && triggeredByAura->GetSpellProto()->Id)
+				 ID = triggeredByAura->GetSpellProto()->Id;
 				if ((procSpell && GetSpellSchoolMask(procSpell) && (GetSpellSchoolMask(procSpell) == SPELL_SCHOOL_MASK_SHADOW)) || 
-				   !(auraModifier->m_auraname) || !(auraModifier->m_miscvalue) ||
-				   !( (auraModifier->m_auraname == SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN) &&
-				   (auraModifier->m_miscvalue == SPELL_SCHOOL_MASK_SHADOW)))  
-
+                    !ID || !((ID == 17800) || (ID == 17799) || (ID == 17798) || (ID == 17797) || (ID == 17794)))
 			   {
                 if(itr->second == i->triggeredByAura && triggeredByAura->DropAuraCharge())
                 {
