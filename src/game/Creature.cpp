@@ -218,7 +218,7 @@ bool Creature::InitEntry(uint32 Entry, uint32 team, const CreatureData *data )
             cinfo = sObjectMgr.GetCreatureTemplate(normalInfo->HeroicEntry);
             if (!cinfo)
             {
-                sLog.outErrorDb("Creature::UpdateEntry creature heroic entry %u does not exist.", actualEntry);
+                sLog.outErrorDb("Creature::UpdateEntry creature heroic entry %u does not exist.", normalInfo->HeroicEntry);
                 return false;
             }
         }

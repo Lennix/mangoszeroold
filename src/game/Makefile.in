@@ -125,15 +125,15 @@ am_libmangosgame_a_OBJECTS = Mod.$(OBJEXT) SpellMod.$(OBJEXT) \
 	SpellAuras.$(OBJEXT) Spell.$(OBJEXT) SpellEffects.$(OBJEXT) \
 	SkillDiscovery.$(OBJEXT) SkillExtraItems.$(OBJEXT) \
 	SpellHandler.$(OBJEXT) SocialMgr.$(OBJEXT) SpellMgr.$(OBJEXT) \
-	StatSystem.$(OBJEXT) TargetedMovementGenerator.$(OBJEXT) \
-	TaxiHandler.$(OBJEXT) TemporarySummon.$(OBJEXT) \
-	TotemAI.$(OBJEXT) Totem.$(OBJEXT) TradeHandler.$(OBJEXT) \
-	Transports.$(OBJEXT) ThreatManager.$(OBJEXT) Unit.$(OBJEXT) \
-	UpdateData.$(OBJEXT) WaypointManager.$(OBJEXT) \
-	WaypointMovementGenerator.$(OBJEXT) Weather.$(OBJEXT) \
-	World.$(OBJEXT) WorldSession.$(OBJEXT) WorldSocket.$(OBJEXT) \
-	WorldSocketMgr.$(OBJEXT) FollowerReference.$(OBJEXT) \
-	GroupReference.$(OBJEXT)
+	SQLStorages.$(OBJEXT) StatSystem.$(OBJEXT) \
+	TargetedMovementGenerator.$(OBJEXT) TaxiHandler.$(OBJEXT) \
+	TemporarySummon.$(OBJEXT) TotemAI.$(OBJEXT) Totem.$(OBJEXT) \
+	TradeHandler.$(OBJEXT) Transports.$(OBJEXT) \
+	ThreatManager.$(OBJEXT) Unit.$(OBJEXT) UpdateData.$(OBJEXT) \
+	WaypointManager.$(OBJEXT) WaypointMovementGenerator.$(OBJEXT) \
+	Weather.$(OBJEXT) World.$(OBJEXT) WorldSession.$(OBJEXT) \
+	WorldSocket.$(OBJEXT) WorldSocketMgr.$(OBJEXT) \
+	FollowerReference.$(OBJEXT) GroupReference.$(OBJEXT)
 libmangosgame_a_OBJECTS = $(am_libmangosgame_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -518,6 +518,8 @@ libmangosgame_a_SOURCES = \
 	SocialMgr.h \
 	SpellMgr.cpp \
 	SpellMgr.h \
+	SQLStorages.cpp \
+	SQLStorages.h \
 	StatSystem.cpp \
 	TargetedMovementGenerator.cpp \
 	TargetedMovementGenerator.h \
@@ -717,6 +719,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RandomMovementGenerator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ReactorAI.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ReputationMgr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SQLStorages.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ScriptCalls.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SkillDiscovery.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SkillExtraItems.Po@am__quote@

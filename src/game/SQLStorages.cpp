@@ -21,8 +21,8 @@
 #include "Database/SQLStorageImpl.h"
 #include "Database/DatabaseEnv.h"
 
-const char CreatureInfosrcfmt[]="iiiiissiiiiiiiiiiifffiffiifiiiiiiiiiiffiiiiiiiiiiiiiiiiiiisiiilliiiis";
-const char CreatureInfodstfmt[]="iiiiissiiiiiiiiiiifffiffiifiiiiiiiiiiffiiiiiiiiiiiiiiiiiiisiiilliiiii";
+const char CreatureInfosrcfmt[]="iiiiiissiiiiiiiiiiifffiffiifiiiiiiiiiffiiiiiiiiiiiiiiiiiiisiiilliiiis";
+const char CreatureInfodstfmt[]="iiiiiissiiiiiiiiiiifffiffiifiiiiiiiiiffiiiiiiiiiiiiiiiiiiisiiilliiiii";
 const char CreatureDataAddonInfofmt[]="iiiiiis";
 const char CreatureModelfmt[]="iffbii";
 const char CreatureInfoAddonInfofmt[]="iiiiiis";
